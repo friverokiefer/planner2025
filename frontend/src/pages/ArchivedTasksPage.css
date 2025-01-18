@@ -1,0 +1,20 @@
+/* frontend/src/pages/ArchivedTasksPage.css */
+
+.archived-tasks-page {
+    padding: 20px;
+}
+
+.archived-tasks-page h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.task-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.error {
+    color: var(--danger-color);
+}

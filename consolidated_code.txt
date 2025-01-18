@@ -1,0 +1,3468 @@
+
+----- ./consolidate_code.py -----
+import os
+
+# Nombre del archivo de salida
+OUTPUT_FILE = "consolidated_code.txt"
+
+# Directorios a excluir
+EXCLUDED_DIRS = {"node_modules", ".git", "__pycache__", "venv", "user_data"}
+
+# Extensiones de archivo a incluir
+INCLUDED_EXTENSIONS = {".js", ".css", ".html", ".py"}
+
+def consolidate_code():
+    """
+    Consolida el contenido de los archivos especificados en OUTPUT_FILE,
+    excluyendo los directorios y extensiones definidos.
+    """
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as output:
+        for root, dirs, files in os.walk("."):
+            # Filtrar directorios excluidos
+            dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRS]
+
+            for file in files:
+                # Procesar solo archivos con las extensiones incluidas
+                if any(file.endswith(ext) for ext in INCLUDED_EXTENSIONS):
+                    filepath = os.path.join(root, file)
+                    # Escribir el encabezado del archivo
+                    output.write(f"\n----- {filepath} -----\n")
+                    try:
+                        # Leer y escribir el contenido del archivo
+                        with open(filepath, "r", encoding="utf-8") as f:
+                            output.write(f.read())
+                    except UnicodeDecodeError:
+                        output.write("\n[Error: Archivo contiene caracteres no compatibles]\n")
+                    except FileNotFoundError:
+                        output.write("\n[Error: Archivo no encontrado]\n")
+                    except Exception as e:
+                        # Manejar otros errores de lectura
+                        output.write(f"\n[Error inesperado: {e}]\n")
+    print(f"\nEl código consolidado ha sido guardado en {OUTPUT_FILE}")
+
+if __name__ == "__main__":
+    consolidate_code()
+
+----- ./frontend/public/index.html -----
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Planner2025</title>
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+----- ./frontend/src/App.css -----
+/* frontend/src/App.css */
+/* Estilos para el encabezado */
+.header {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: #ffffff;
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .header h1 {
+    margin: 0;
+    font-size: 2.5rem;
+    text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2);
+  }
+  
+  .header nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 30px;
+  }
+  
+  .header nav ul li a {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 1.2rem;
+    transition: color 0.3s ease, transform 0.3s ease;
+    display: flex;
+    align-items: center;
+  }
+  
+  .header nav ul li a:hover {
+    color: #f0f0f0;
+    transform: translateY(-2px);
+  }
+  
+  .header nav ul li a svg {
+    margin-right: 8px;
+  }
+  
+  /* Estilos para el contenedor principal */
+  .main-container {
+    padding: 40px;
+    background-color: #f8f9fa;
+    min-height: 80vh;
+  }
+  
+  /* Estilos para el pie de página */
+  .footer {
+    background-color: #343a40;
+    color: #ffffff;
+    text-align: center;
+    padding: 20px;
+    position: relative;
+    bottom: 0;
+    width: 100%;
+  }
+  
+  /* Estilos para enlaces activos */
+  .header nav ul li .active {
+    font-weight: bold;
+    color: #f0f0f0; /* o el color que prefieras para el enlace activo */
+  }
+  
+  /* Estilos para el submenu */
+  .submenu {
+    position: relative;
+  }
+  
+  .submenu ul {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    padding: 10px;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .submenu:hover ul {
+    display: block;
+  }
+  
+  .submenu ul li {
+    width: 100%;
+  }
+  
+  .submenu ul li a {
+    padding: 8px 16px;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 1.1rem;
+    transition: background-color 0.3s ease;
+  }
+  
+  .submenu ul li a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+----- ./frontend/src/index.js -----
+// frontend/src/index.js
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
+import 'bootstrap/dist/css/bootstrap.min.css'; // Importación correcta de Bootstrap
+
+ReactDOM.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+  document.getElementById('root')
+);
+
+----- ./frontend/src/App.js -----
+// frontend/src/App.js
+import React from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link,
+  NavLink,
+} from 'react-router-dom';
+import TaskPage from './pages/TaskPage';
+import ProfilePage from './pages/ProfilePage';
+import FinancePage from './pages/FinancePage';
+import ArchivedTasksPage from './pages/ArchivedTasksPage';
+import TaskMetricsPage from './pages/TaskMetricsPage'; // Importa la nueva página
+import './App.css';
+import {
+  FaTasks,
+  FaUser,
+  FaChartLine,
+  FaArchive,
+  FaChartPie,
+} from 'react-icons/fa';
+
+function App() {
+  return (
+    <Router>
+      <header className="header">
+        <h1>Planner2025</h1>
+        <nav>
+          <ul>
+            <li>
+              <NavLink to="/profile" activeClassName="active">
+                <FaUser color="#ffffff" /> Profile
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/" exact activeClassName="active">
+                <FaTasks color="#ffffff" /> Tasks
+              </NavLink>
+            </li>
+            <li className="submenu">
+              <NavLink to="/archived" activeClassName="active">
+                <FaArchive color="#ffffff" /> Archived
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/metrics" activeClassName="active">
+                <FaChartPie color="#ffffff" /> Metrics
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/finance" activeClassName="active">
+                <FaChartLine color="#ffffff" /> Finance
+              </NavLink>
+            </li>
+          </ul>
+        </nav>
+      </header>
+      <div className="main-container">
+        <Routes>
+          <Route path="/" element={<TaskPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/finance" element={<FinancePage />} />
+          <Route path="/archived" element={<ArchivedTasksPage />} />
+          <Route path="/metrics" element={<TaskMetricsPage />} /> {/* Nueva ruta para métricas */}
+        </Routes>
+      </div>
+      <footer className="footer">
+        © 2025 Planner2025. Built with 💜 by Felipe.
+      </footer>
+    </Router>
+  );
+}
+
+export default App;
+----- ./frontend/src/components/TaskList.css -----
+/* frontend/src/components/TaskList.css */
+
+.task-list {
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.filter-toggle {
+    position: absolute;
+    top: -15px;
+    right: 0;
+    z-index: 1;
+}
+
+.filters {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 25px;
+    gap: 20px;
+    flex-wrap: wrap;
+    background-color: #f1f1f1;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.filters .form-group {
+    flex: 1;
+    min-width: 220px;
+}
+
+.filters .form-group label {
+    font-weight: bold;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.filters .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.task-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Estilo para el efecto de arrastre */
+.dragging {
+    background-color: #f0f8ff;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    transform: rotate(2deg);
+}
+
+/* Mejorar distribución de filtros en pantallas pequeñas */
+@media (max-width: 768px) {
+    .filters {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .filters .form-group {
+        min-width: 100%;
+    }
+}
+
+----- ./frontend/src/components/ConfirmModal.css -----
+/* ConfirmModal.css */
+
+.modal-body p {
+    font-size: 16px;
+    color: var(--text-color);
+}
+
+.modal-footer button {
+    min-width: 100px;
+}
+
+@media (max-width: 576px) {
+    .modal-content {
+        padding: 10px;
+    }
+
+    .modal-header,
+    .modal-footer {
+        padding: 10px;
+    }
+}
+
+/* Estilos para los botones del modal */
+.btn-secondary {
+    background-color: #6c757d;
+    border: none;
+    color: white;
+    transition: background-color 0.3s;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border: none;
+    color: white;
+    transition: background-color 0.3s;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+----- ./frontend/src/components/EditTaskModal.js -----
+// frontend/src/components/EditTaskModal.js
+
+import React, { useState, useEffect } from 'react';
+import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
+import './EditTaskModal.css';
+import useSound from '../hooks/useSound';
+import editProfileSound from '../assets/sounds/notification-1-269296.mp3';
+
+function EditTaskModal({ show, handleClose, task, handleSave }) {
+  const [updatedTask, setUpdatedTask] = useState({
+    name: task.name || '',
+    description: task.description || '',
+    priority: task.priority || 'Low',
+    difficulty: task.difficulty || 1, // Cambiado a número
+    status: task.status || 'Pending',
+    estimated_time: task.estimated_time || '',
+    actual_time: task.actual_time || '',
+  });
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const playEditProfileSound = useSound(editProfileSound);
+
+  useEffect(() => {
+    setUpdatedTask({
+      name: task.name || '',
+      description: task.description || '',
+      priority: task.priority || 'Low',
+      difficulty: task.difficulty || 1, // Restablecido a número
+      status: task.status || 'Pending',
+      estimated_time: task.estimated_time || '',
+      actual_time: task.actual_time || '',
+    });
+    setFormError('');
+    setFormSuccess('');
+  }, [task, show]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    let newValue = value;
+
+    // Convertir campos numéricos a números
+    if (name === 'difficulty') {
+      newValue = parseInt(value, 10);
+    } else if (name === 'estimated_time' || name === 'actual_time') {
+      newValue = value === '' ? '' : parseFloat(value);
+    }
+
+    setUpdatedTask({ ...updatedTask, [name]: newValue });
+  };
+
+  const onSave = async () => {
+    setFormError('');
+    setFormSuccess('');
+
+    // Validación básica
+    if (!updatedTask.name.trim()) {
+      setFormError('El nombre de la tarea es obligatorio.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTask),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        handleSave(data);
+        playEditProfileSound();
+        setFormSuccess('Tarea actualizada exitosamente.');
+        setTimeout(() => {
+          handleClose();
+        }, 1000);
+      } else {
+        const errorData = await response.json();
+        setFormError(errorData.error || 'Error al actualizar la tarea.');
+      }
+    } catch (error) {
+      console.error('Error al actualizar la tarea:', error);
+      setFormError('Error al actualizar la tarea.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal show={show} onHide={handleClose} centered>
+      <Modal.Header closeButton>
+        <Modal.Title>Editar Tarea</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {formError && <Alert variant="danger">{formError}</Alert>}
+        {formSuccess && <Alert variant="success">{formSuccess}</Alert>}
+        <Form>
+          <Form.Group controlId="formTaskName">
+            <Form.Label>Nombre</Form.Label>
+            <Form.Control
+              type="text"
+              name="name"
+              value={updatedTask.name}
+              onChange={handleChange}
+              placeholder="Ingrese el nombre de la tarea"
+              required
+            />
+          </Form.Group>
+
+          <Form.Group controlId="formTaskDescription" className="mt-3">
+            <Form.Label>Descripción</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              name="description"
+              value={updatedTask.description}
+              onChange={handleChange}
+              placeholder="Ingrese una descripción opcional"
+            />
+          </Form.Group>
+
+          <Form.Group controlId="formTaskPriority" className="mt-3">
+            <Form.Label>Prioridad</Form.Label>
+            <Form.Control
+              as="select"
+              name="priority"
+              value={updatedTask.priority}
+              onChange={handleChange}
+            >
+              <option>Low</option>
+              <option>Medium</option>
+              <option>High</option>
+            </Form.Control>
+          </Form.Group>
+
+          <Form.Group controlId="formTaskDifficulty" className="mt-3">
+            <Form.Label>Dificultad</Form.Label>
+            <Form.Control
+              as="select"
+              name="difficulty"
+              value={updatedTask.difficulty}
+              onChange={handleChange}
+            >
+              <option value={1}>1 - Fácil</option>
+              <option value={2}>2 - Medio</option>
+              <option value={3}>3 - Difícil</option>
+            </Form.Control>
+          </Form.Group>
+
+          <Form.Group controlId="formTaskStatus" className="mt-3">
+            <Form.Label>Estado</Form.Label>
+            <Form.Control
+              as="select"
+              name="status"
+              value={updatedTask.status}
+              onChange={handleChange}
+            >
+              <option>Pending</option>
+              <option>In Progress</option>
+              <option>Completed</option>
+            </Form.Control>
+          </Form.Group>
+
+          <Form.Group controlId="formTaskEstimatedTime" className="mt-3">
+            <Form.Label>Tiempo Estimado (horas)</Form.Label>
+            <Form.Control
+              type="number"
+              name="estimated_time"
+              value={updatedTask.estimated_time}
+              onChange={handleChange}
+              placeholder="Ingrese el tiempo estimado"
+              min="0"
+              step="0.1"
+            />
+          </Form.Group>
+
+          <Form.Group controlId="formTaskActualTime" className="mt-3">
+            <Form.Label>Tiempo Real (horas)</Form.Label>
+            <Form.Control
+              type="number"
+              name="actual_time"
+              value={updatedTask.actual_time}
+              onChange={handleChange}
+              placeholder="Ingrese el tiempo real"
+              min="0"
+              step="0.1"
+            />
+          </Form.Group>
+        </Form>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={handleClose} disabled={loading}>
+          Cancelar
+        </Button>
+        <Button variant="primary" onClick={onSave} disabled={loading}>
+          {loading ? (
+            <>
+              <Spinner
+                as="span"
+                animation="border"
+                size="sm"
+                role="status"
+                aria-hidden="true"
+              />{' '}
+              Guardando...
+            </>
+          ) : (
+            'Guardar Cambios'
+          )}
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+export default EditTaskModal;
+
+----- ./frontend/src/components/EditTaskModal.css -----
+/* frontend/src/components/EditTaskModal.css */
+
+.modal-body form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .modal-body form .form-group label {
+    font-weight: bold;
+    color: var(--text-color);
+  }
+  
+  .modal-body form .form-control {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+  }
+  
+  .modal-footer button {
+    min-width: 100px;
+  }
+  
+  @media (max-width: 576px) {
+    .modal-content {
+      padding: 10px;
+    }
+  
+    .modal-header,
+    .modal-footer {
+      padding: 10px;
+    }
+  }
+  
+----- ./frontend/src/components/TaskItem.js -----
+import React, { useState } from 'react';
+import './TaskItem.css';
+import {
+  FaTrashAlt,
+  FaCheck,
+  FaEdit,
+  FaArchive,
+  FaUndo,
+  FaEllipsisV,
+} from 'react-icons/fa';
+import { Dropdown, Button, Alert } from 'react-bootstrap';
+import EditTaskModal from './EditTaskModal';
+import ConfirmModal from './ConfirmModal';
+import useSound from '../hooks/useSound';
+import completeSound from '../assets/sounds/notification-1-269296.mp3';
+import deleteSound from '../assets/sounds/notification-2-269292.mp3';
+import editSound from '../assets/sounds/notification-sound-3-262896.mp3';
+import archiveSound from '../assets/sounds/intro-sound-2-269294.mp3';
+
+function TaskItem({
+  task,
+  onComplete,
+  onDelete,
+  onEdit,
+  onArchive,
+  onUnarchive,
+}) {
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [actionError, setActionError] = useState('');
+
+  const playCompleteSound = useSound(completeSound);
+  const playDeleteSound = useSound(deleteSound);
+  const playEditSound = useSound(editSound);
+  const playArchiveSound = useSound(archiveSound);
+
+  if (!task || typeof task.id === 'undefined') {
+    console.error('El objeto "task" o "task.id" es indefinido:', task);
+    return null;
+  }
+
+  const handleComplete = async () => {
+    setActionError('');
+    try {
+      const response = await fetch(`/api/tasks/${task.id}/complete`, {
+        method: 'PUT',
+      });
+      if (response.ok) {
+        const updatedTask = await response.json();
+        onComplete(updatedTask.id);
+        playCompleteSound();
+      } else {
+        const errorData = await response.json();
+        setActionError(errorData.error || 'Error al completar la tarea');
+      }
+    } catch (error) {
+      console.error('Error al completar la tarea:', error);
+      setActionError('Error al completar la tarea');
+    }
+  };
+
+  const handleContinue = async () => {
+    setActionError('');
+    try {
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'In Progress' }),
+      });
+      if (response.ok) {
+        const updatedTask = await response.json();
+        onEdit(task.id, updatedTask);
+        playCompleteSound();
+      } else {
+        const errorData = await response.json();
+        setActionError(errorData.error || 'Error al continuar la tarea');
+      }
+    } catch (error) {
+      console.error('Error al continuar la tarea:', error);
+      setActionError('Error al continuar la tarea');
+    }
+  };
+
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    setActionError('');
+    try {
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        onDelete(task.id);
+        playDeleteSound();
+        setShowDeleteConfirm(false);
+      } else {
+        const errorData = await response.json();
+        setActionError(errorData.error || 'Error al eliminar la tarea');
+      }
+    } catch (error) {
+      console.error('Error al eliminar la tarea:', error);
+      setActionError('Error al eliminar la tarea');
+    }
+  };
+
+  const handleEditSave = (updatedTask) => {
+    onEdit(task.id, updatedTask);
+    playEditSound();
+    setShowEditModal(false);
+  };
+
+  const handleArchive = async () => {
+    setActionError('');
+    try {
+      const response = await fetch(`/api/tasks/${task.id}/archive`, {
+        method: 'PUT',
+      });
+      if (response.ok) {
+        onArchive(task.id);
+        playArchiveSound();
+      } else {
+        const errorData = await response.json();
+        setActionError(errorData.error || 'Error al archivar la tarea');
+      }
+    } catch (error) {
+      console.error('Error al archivar la tarea:', error);
+      setActionError('Error al archivar la tarea');
+    }
+  };
+
+  const handleUnarchive = async () => {
+    setActionError('');
+    try {
+      const response = await fetch(`/api/tasks/${task.id}/unarchive`, {
+        method: 'PUT',
+      });
+      if (response.ok) {
+        const updatedTask = await response.json();
+        onUnarchive(updatedTask.id);
+      } else {
+        const errorData = await response.json();
+        setActionError(errorData.error || 'Error al desarchivar la tarea');
+      }
+    } catch (error) {
+      console.error('Error al desarchivar la tarea:', error);
+      setActionError('Error al desarchivar la tarea');
+    }
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    if (!newStatus) {
+      console.error('Nuevo estado no proporcionado.');
+      return;
+    }
+
+    setActionError('');
+    try {
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (response.ok) {
+        const updatedTask = await response.json();
+        onEdit(task.id, updatedTask);
+      } else {
+        const errorData = await response.json();
+        setActionError(errorData.error || 'Error al cambiar el estado de la tarea');
+      }
+    } catch (error) {
+      console.error('Error al cambiar el estado de la tarea:', error);
+      setActionError('Error al cambiar el estado de la tarea');
+    }
+  };
+
+  const handleDifficultyChange = async (newDifficulty) => {
+    if (!newDifficulty) {
+      console.error('Nueva dificultad no proporcionada.');
+      return;
+    }
+
+    setActionError('');
+    try {
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ difficulty: parseInt(newDifficulty, 10) }),
+      });
+      if (response.ok) {
+        const updatedTask = await response.json();
+        onEdit(task.id, updatedTask);
+      } else {
+        const errorData = await response.json();
+        setActionError(errorData.error || 'Error al cambiar la dificultad de la tarea');
+      }
+    } catch (error) {
+      console.error('Error al cambiar la dificultad de la tarea:', error);
+      setActionError('Error al cambiar la dificultad de la tarea');
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Pending':
+        return '#007bff';
+      case 'In Progress':
+        return '#ffc107';
+      case 'Completed':
+        return '#28a745';
+      case 'Archived':
+        return '#6c757d';
+      default:
+        return '#6c757d';
+    }
+  };
+
+  const getDifficultyColor = (difficulty) => {
+    switch (difficulty) {
+      case 1:
+        return '#28a745';
+      case 2:
+        return '#ffc107';
+      case 3:
+        return '#dc3545';
+      default:
+        return '#6c757d';
+    }
+  };
+
+  return (
+    <>
+      <div
+        className={`task-item ${
+          task.status === 'Completed' ? 'completed' : ''
+        } ${task.status === 'Archived' ? 'archived' : ''}`}
+      >
+        <div className="dropdown-top-right">
+          <Dropdown>
+            <Dropdown.Toggle variant="secondary" id={`dropdown-${task.id}`}>
+              <FaEllipsisV />
+            </Dropdown.Toggle>
+
+            <Dropdown.Menu>
+              {task.status !== 'Archived' && (
+                <>
+                  <Dropdown.Item onClick={() => setShowEditModal(true)}>
+                    <FaEdit /> Editar
+                  </Dropdown.Item>
+                  {task.status !== 'Completed' && (
+                    <Dropdown.Item
+                      onClick={handleComplete}
+                      className="complete-dropdown-item"
+                    >
+                      <FaCheck /> Completar
+                    </Dropdown.Item>
+                  )}
+                  {task.status === 'Completed' && (
+                    <Dropdown.Item
+                      onClick={handleContinue}
+                      className="continue-dropdown-item"
+                    >
+                      <FaUndo /> Continuar
+                    </Dropdown.Item>
+                  )}
+                  <Dropdown.Item
+                    onClick={handleArchive}
+                    className="archive-dropdown-item"
+                  >
+                    <FaArchive /> Archivar
+                  </Dropdown.Item>
+                </>
+              )}
+              {task.status === 'Archived' && (
+                <>
+                  <Dropdown.Item
+                    onClick={handleUnarchive}
+                    className="unarchive-dropdown-item"
+                  >
+                    <FaUndo /> Desarchivar
+                  </Dropdown.Item>
+                </>
+              )}
+              <Dropdown.Divider />
+              <Dropdown.Item
+                onClick={handleDelete}
+                className="delete-dropdown-item"
+              >
+                <FaTrashAlt /> Eliminar
+              </Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown>
+        </div>
+
+        <h3>{task.name}</h3>
+        <p>{task.description}</p>
+
+        {task.status !== 'Archived' && (
+          <div className="status-difficulty">
+            <Dropdown className="status-dropdown">
+              <Dropdown.Toggle
+                variant="light"
+                className="status-toggle"
+                style={{
+                  backgroundColor: getStatusColor(task.status),
+                  color: 'white',
+                }}
+              >
+                {task.status}
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                <Dropdown.Item
+                  onClick={() => handleStatusChange('Pending')}
+                  className="status-pending"
+                >
+                  Pendiente
+                </Dropdown.Item>
+                <Dropdown.Item
+                  onClick={() => handleStatusChange('In Progress')}
+                  className="status-in-progress"
+                >
+                  En Progreso
+                </Dropdown.Item>
+                <Dropdown.Item
+                  onClick={() => handleStatusChange('Completed')}
+                  className="status-completed"
+                >
+                  Completado
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+
+            <Dropdown className="difficulty-dropdown">
+              <Dropdown.Toggle
+                variant="light"
+                className="difficulty-toggle"
+                style={{
+                  backgroundColor: getDifficultyColor(task.difficulty),
+                  color: 'white',
+                }}
+              >
+                {task.difficulty === 1
+                  ? 'Fácil'
+                  : task.difficulty === 2
+                  ? 'Medio'
+                  : 'Difícil'}
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                <Dropdown.Item
+                  onClick={() => handleDifficultyChange(1)}
+                  className="difficulty-1"
+                >
+                  1 - Fácil
+                </Dropdown.Item>
+                <Dropdown.Item
+                  onClick={() => handleDifficultyChange(2)}
+                  className="difficulty-2"
+                >
+                  2 - Medio
+                </Dropdown.Item>
+                <Dropdown.Item
+                  onClick={() => handleDifficultyChange(3)}
+                  className="difficulty-3"
+                >
+                  3 - Difícil
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+          </div>
+        )}
+
+        <p>Fecha de Creación: {new Date(task.created_at).toLocaleString()}</p>
+        {task.estimated_time && (
+          <p>Tiempo Estimado: {task.estimated_time} horas</p>
+        )}
+        {task.actual_time && <p>Tiempo Real: {task.actual_time} horas</p>}
+
+        {task.status !== 'Archived' && task.status !== 'Completed' && (
+          <Button
+            variant="success"
+            className="complete-button"
+            onClick={handleComplete}
+            title="Completar Tarea"
+          >
+            <FaCheck /> Completar
+          </Button>
+        )}
+
+        {task.status === 'Archived' && (
+          <Button
+            variant="info"
+            className="unarchive-button"
+            onClick={handleUnarchive}
+            title="Desarchivar Tarea"
+          >
+            <FaUndo /> Desarchivar
+          </Button>
+        )}
+
+        {actionError && <Alert variant="danger">{actionError}</Alert>}
+      </div>
+
+      <EditTaskModal
+        show={showEditModal}
+        handleClose={() => setShowEditModal(false)}
+        task={task}
+        handleSave={handleEditSave}
+      />
+
+      <ConfirmModal
+        show={showDeleteConfirm}
+        handleClose={() => setShowDeleteConfirm(false)}
+        handleConfirm={confirmDelete}
+        title="Confirmar Eliminación"
+        body="¿Estás seguro de que deseas eliminar esta tarea? Esta acción no se puede deshacer."
+      />
+    </>
+  );
+}
+
+export default TaskItem;
+----- ./frontend/src/components/TaskForm.js -----
+// frontend/src/components/TaskForm.js
+import React, { useState } from 'react';
+import './TaskForm.css';
+import useSound from '../hooks/useSound';
+import addTaskSound from '../assets/sounds/notification-1-269296.mp3';
+
+function TaskForm({ onTaskAdded }) {
+  const [task, setTask] = useState({
+    name: '',
+    description: '',
+    priority: 'Low',
+    difficulty: 1, // Cambiado a número
+    status: 'Pending',
+    estimated_time: '',
+  });
+  const [message, setMessage] = useState('');
+  const playAddSound = useSound(addTaskSound);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    let newValue = value;
+
+    // Convertir campos numéricos a números
+    if (name === 'difficulty') {
+      newValue = parseInt(value, 10);
+    } else if (name === 'estimated_time') {
+      newValue = value === '' ? '' : parseFloat(value);
+    }
+
+    setTask({ ...task, [name]: newValue });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(task),
+      });
+
+      if (response.ok) {
+        const newTask = await response.json();
+        onTaskAdded(newTask);
+        playAddSound();
+        setTask({
+          name: '',
+          description: '',
+          priority: 'Low',
+          difficulty: 1, // Restablecido a número
+          status: 'Pending',
+          estimated_time: '',
+        });
+        setMessage('¡Tarea agregada exitosamente!');
+      } else {
+        setMessage('Fallo al agregar la tarea.');
+      }
+    } catch (error) {
+      console.error('Error al agregar tarea:', error);
+      setMessage('Ocurrió un error.');
+    }
+  };
+
+  return (
+    <form className="task-form" onSubmit={handleSubmit}>
+      <h2>Agregar Nueva Tarea</h2>
+      {message && <p className={message.includes('exitosamente') ? 'success' : 'error'}>{message}</p>}
+      <label>
+        Nombre:
+        <input
+          type="text"
+          name="name"
+          value={task.name}
+          onChange={handleChange}
+          required
+          placeholder="Ingrese el nombre de la tarea"
+        />
+      </label>
+      <label>
+        Descripción:
+        <textarea
+          name="description"
+          value={task.description}
+          onChange={handleChange}
+          placeholder="Ingrese la descripción de la tarea"
+        ></textarea>
+      </label>
+      <label>
+        Prioridad:
+        <select name="priority" value={task.priority} onChange={handleChange}>
+          <option value="Low">Baja</option>
+          <option value="Medium">Media</option>
+          <option value="High">Alta</option>
+        </select>
+      </label>
+      <label>
+        Dificultad:
+        <select name="difficulty" value={task.difficulty} onChange={handleChange}>
+          <option value={1}>1 - Fácil</option>
+          <option value={2}>2 - Medio</option>
+          <option value={3}>3 - Difícil</option>
+        </select>
+      </label>
+      <label>
+        Estado:
+        <select name="status" value={task.status} onChange={handleChange}>
+          <option value="Pending">Pendiente</option>
+          <option value="In Progress">En Progreso</option>
+          <option value="Completed">Completado</option>
+        </select>
+      </label>
+      <label>
+        Tiempo Estimado (horas):
+        <input
+          type="number"
+          name="estimated_time"
+          value={task.estimated_time}
+          onChange={handleChange}
+          min="0"
+          step="0.5"
+          placeholder="Horas estimadas"
+        />
+      </label>
+      <button type="submit" className="btn btn-success">Agregar Tarea</button>
+    </form>
+  );
+}
+
+export default TaskForm;
+
+----- ./frontend/src/components/TaskForm.css -----
+/* frontend/src/components/TaskForm.css */
+
+.task-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.task-form h2 {
+    text-align: center;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+}
+
+.task-form label {
+    display: flex;
+    flex-direction: column;
+    font-size: 16px;
+    color: var(--text-color);
+}
+
+.task-form input,
+.task-form textarea,
+.task-form select {
+    padding: 10px;
+    font-size: 16px;
+    margin-top: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.task-form input:focus,
+.task-form textarea:focus,
+.task-form select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 5px rgba(74, 144, 226, 0.5);
+}
+
+.task-form button {
+    background: linear-gradient(45deg, var(--success-color), var(--secondary-color));
+    color: white;
+    padding: 12px;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+}
+
+.task-form button:hover {
+    background: linear-gradient(45deg, #218838, #50c2a8);
+    transform: translateY(-2px);
+}
+
+.success {
+    color: var(--success-color);
+    text-align: center;
+    font-weight: bold;
+}
+
+.error {
+    color: var(--danger-color);
+    text-align: center;
+    font-weight: bold;
+}
+
+----- ./frontend/src/components/EditProfileModal.css -----
+/* frontend/src/components/EditProfileModal.css */
+
+.modal-body form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.modal-body form .form-group label {
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.modal-body form .form-control {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.modal-body form .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 5px rgba(74, 144, 226, 0.5);
+}
+
+.modal-footer button {
+    min-width: 100px;
+}
+
+@media (max-width: 576px) {
+    .modal-content {
+        padding: 10px;
+    }
+
+    .modal-header,
+    .modal-footer {
+        padding: 10px;
+    }
+}
+
+/* Estilos para el botón de Subir Imagen */
+#formImageUpload .form-control {
+    cursor: pointer;
+    padding: 10px;
+    border: 1px dashed var(--border-color);
+    border-radius: 4px;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+#formImageUpload .form-control:hover {
+    background-color: #f8f9fa;
+    border-color: var(--primary-color);
+}
+
+/* Estilos para la vista previa de la imagen */
+.img-preview {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-top: 10px;
+    border: 2px solid var(--primary-color);
+}
+
+/* Estilos para mensajes de error y éxito */
+.success-message {
+    color: var(--success-color);
+    text-align: center;
+    font-weight: bold;
+}
+
+.error-message {
+    color: var(--danger-color);
+    text-align: center;
+    font-weight: bold;
+}
+
+----- ./frontend/src/components/EditProfileModal.js -----
+// frontend/src/components/EditProfileModal.js
+
+import React, { useState, useEffect } from 'react';
+import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
+import './EditProfileModal.css';
+import useSound from '../hooks/useSound';
+import editProfileSound from '../assets/sounds/notification-1-269296.mp3';
+
+function EditProfileModal({ show, handleClose, profile, handleSave }) {
+  const [updatedProfile, setUpdatedProfile] = useState({
+    name: profile.name || '',
+    email: profile.email || '',
+    bio: profile.bio || '',
+    profile_picture_url: profile.profile_picture_url || '',
+  });
+  const [imageFile, setImageFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
+
+  const playEditProfileSound = useSound(editProfileSound);
+
+  useEffect(() => {
+    setUpdatedProfile({
+      name: profile.name || '',
+      email: profile.email || '',
+      bio: profile.bio || '',
+      profile_picture_url: profile.profile_picture_url || '',
+    });
+    setFormError('');
+    setFormSuccess('');
+  }, [profile, show]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setUpdatedProfile({ ...updatedProfile, [name]: value });
+  };
+
+  const handleImageChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0]);
+    }
+  };
+
+  const uploadImage = async () => {
+    if (!imageFile) return null;
+
+    const formData = new FormData();
+    formData.append('profilePicture', imageFile);
+
+    try {
+      setUploading(true);
+      const response = await fetch('/api/upload/profile-picture', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.imageUrl;
+      } else {
+        const errorData = await response.json();
+        setUploadError(errorData.error || 'Error al subir la imagen');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error al subir la imagen:', error);
+      setUploadError('Error al subir la imagen');
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onSave = async () => {
+    setFormError('');
+    setFormSuccess('');
+    let imageUrl = updatedProfile.profile_picture_url;
+
+    if (imageFile) {
+      const uploadedUrl = await uploadImage();
+      if (uploadedUrl) {
+        imageUrl = uploadedUrl;
+      } else {
+        return;
+      }
+    }
+
+    // Validación básica en el frontend
+    if (!updatedProfile.name.trim() || !updatedProfile.email.trim()) {
+      setFormError('El nombre y el email son obligatorios.');
+      return;
+    }
+
+    // Actualizar el perfil en el backend
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...updatedProfile, profile_picture_url: imageUrl }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        handleSave(data);
+        playEditProfileSound();
+        setFormSuccess('Perfil actualizado exitosamente.');
+        setImageFile(null);
+        setUploadError('');
+        setTimeout(() => {
+          handleClose();
+          setFormSuccess('');
+        }, 2000);
+      } else {
+        const errorData = await response.json();
+        setFormError(errorData.error || 'Error al actualizar el perfil');
+      }
+    } catch (error) {
+      console.error('Error al actualizar el perfil:', error);
+      setFormError('Error al actualizar el perfil');
+    }
+  };
+
+  return (
+    <Modal show={show} onHide={() => { handleClose(); setUploadError(''); setFormError(''); setFormSuccess(''); }} centered>
+      <Modal.Header closeButton>
+        <Modal.Title>Editar Perfil</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {formError && <Alert variant="danger">{formError}</Alert>}
+        {formSuccess && <Alert variant="success">{formSuccess}</Alert>}
+        <Form>
+          <Form.Group controlId="formProfileName">
+            <Form.Label>Nombre</Form.Label>
+            <Form.Control
+              type="text"
+              name="name"
+              value={updatedProfile.name}
+              onChange={handleChange}
+              placeholder="Ingrese su nombre"
+              required
+            />
+          </Form.Group>
+
+          <Form.Group controlId="formProfileEmail" className="mt-3">
+            <Form.Label>Email</Form.Label>
+            <Form.Control
+              type="email"
+              name="email"
+              value={updatedProfile.email}
+              onChange={handleChange}
+              placeholder="Ingrese su email"
+              required
+            />
+          </Form.Group>
+
+          <Form.Group controlId="formProfileBio" className="mt-3">
+            <Form.Label>Biografía</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              name="bio"
+              value={updatedProfile.bio}
+              onChange={handleChange}
+              placeholder="Ingrese una breve biografía"
+            />
+          </Form.Group>
+
+          <Form.Group controlId="formImageUpload" className="mt-3">
+            <Form.Label>Imagen de Perfil</Form.Label>
+            <Form.Control
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+            />
+            {uploadError && <p className="text-danger mt-2">{uploadError}</p>}
+            {updatedProfile.profile_picture_url && (
+              <div className="mt-3">
+                <img
+                  src={updatedProfile.profile_picture_url}
+                  alt="Profile Preview"
+                  className="img-preview"
+                />
+              </div>
+            )}
+          </Form.Group>
+        </Form>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={() => { handleClose(); setUploadError(''); setFormError(''); setFormSuccess(''); }}>
+          Cancelar
+        </Button>
+        <Button variant="primary" onClick={onSave} disabled={uploading}>
+          {uploading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> : 'Guardar Cambios'}
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+export default EditProfileModal;
+
+----- ./frontend/src/components/TaskItem.css -----
+/* frontend/src/components/TaskItem.css */
+
+.task-item {
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #ffffff;
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
+    position: relative;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.task-item:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.task-item.completed {
+    background-color: #d4edda; /* Verde claro */
+    border-color: #c3e6cb; /* Verde más oscuro */
+}
+
+.task-item.archived {
+    background-color: #f8f9fa; /* Gris claro */
+    border-color: #dae0e5; /* Gris más oscuro */
+}
+
+.task-item.archived:hover {
+    background-color: #e2e6ea; /* Gris intermedio */
+}
+
+/* Dropdown en la esquina superior derecha */
+.dropdown-top-right {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+}
+
+/* Estilos para los Dropdowns de Estado y Dificultad */
+.status-difficulty {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.status-dropdown .dropdown-toggle,
+.difficulty-dropdown .dropdown-toggle {
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.status-dropdown .dropdown-menu,
+.difficulty-dropdown .dropdown-menu {
+    min-width: 150px;
+}
+
+.status-dropdown .dropdown-item.status-pending {
+    color: #007bff; /* Azul */
+}
+
+.status-dropdown .dropdown-item.status-in-progress {
+    color: #ffc107; /* Amarillo */
+}
+
+.status-dropdown .dropdown-item.status-completed {
+    color: #28a745; /* Verde */
+}
+
+.difficulty-dropdown .dropdown-item.difficulty-1 {
+    color: #28a745; /* Verde */
+}
+
+.difficulty-dropdown .dropdown-item.difficulty-2 {
+    color: #ffc107; /* Amarillo */
+}
+
+.difficulty-dropdown .dropdown-item.difficulty-3 {
+    color: #dc3545; /* Rojo */
+}
+
+/* Botón Completar en la esquina inferior izquierda */
+.complete-button {
+    align-self: flex-start;
+    background-color: #28a745; /* Verde */
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.complete-button:hover {
+    background-color: #218838;
+}
+
+/* Botón Desarchivar en la esquina inferior izquierda */
+.unarchive-button {
+    align-self: flex-start;
+    background-color: #17a2b8; /* Azul */
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.unarchive-button:hover {
+    background-color: #138496;
+}
+
+/* Estilos para los Dropdown Items con colores */
+.complete-dropdown-item {
+    color: #28a745; /* Verde */
+}
+
+.continue-dropdown-item {
+    color: #ffc107; /* Amarillo */
+}
+
+.archive-dropdown-item {
+    color: #6c757d; /* Gris */
+}
+
+.unarchive-dropdown-item {
+    color: #17a2b8; /* Azul */
+}
+
+.delete-dropdown-item {
+    color: #dc3545; /* Rojo */
+}
+
+/* Botón de Eliminar en la esquina inferior derecha */
+.delete-button {
+    background-color: transparent;
+    color: #dc3545; /* Rojo */
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    transition: color 0.3s;
+}
+
+.delete-button:hover {
+    color: #a71d2a;
+}
+
+----- ./frontend/src/components/ConfirmModal.js -----
+// frontend/src/components/ConfirmModal.js
+import React from 'react';
+import { Modal, Button } from 'react-bootstrap';
+import './ConfirmModal.css';
+
+function ConfirmModal({ show, handleClose, handleConfirm, title, body }) {
+  return (
+    <Modal show={show} onHide={handleClose} centered>
+      <Modal.Header closeButton>
+        <Modal.Title>{title || 'Confirmación'}</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <p>{body || '¿Estás seguro?'}</p>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={handleClose}>
+          Cancelar
+        </Button>
+        <Button variant="danger" onClick={handleConfirm}>
+          Confirmar
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+export default ConfirmModal;
+
+----- ./frontend/src/components/TaskList.js -----
+// frontend/src/components/TaskList.js
+import React, { useState, useEffect } from 'react';
+import TaskItem from './TaskItem';
+import './TaskList.css';
+import { Form, Row, Col, Button } from 'react-bootstrap';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { FaFilter, FaTimes } from 'react-icons/fa';
+
+function TaskList({ tasks, setTasks }) {
+  const [filters, setFilters] = useState({
+    priority: [],
+    difficulty: [],
+    status: [],
+  });
+
+  const [filteredTasks, setFilteredTasks] = useState(tasks);
+  const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    applyFilters();
+    // eslint-disable-next-line
+  }, [tasks, filters]);
+
+  const handleFilterChange = (category, value) => {
+    setFilters((prevFilters) => {
+      const newCategory = prevFilters[category].includes(value)
+        ? prevFilters[category].filter((item) => item !== value)
+        : [...prevFilters[category], value];
+      return { ...prevFilters, [category]: newCategory };
+    });
+  };
+
+  const applyFilters = () => {
+    let filtered = [...tasks];
+
+    // Filtros de Prioridad
+    if (filters.priority.length > 0) {
+      filtered = filtered.filter(task => filters.priority.includes(task.priority));
+    }
+
+    // Filtros de Dificultad
+    if (filters.difficulty.length > 0) {
+      filtered = filtered.filter(task => filters.difficulty.includes(task.difficulty.toString()));
+    }
+
+    // Filtros de Estado
+    if (filters.status.length > 0) {
+      filtered = filtered.filter(task => filters.status.includes(task.status));
+    }
+
+    setFilteredTasks(filtered);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      priority: [],
+      difficulty: [],
+      status: [],
+    });
+  };
+
+  const handleOnDragEnd = (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(filteredTasks);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setFilteredTasks(items);
+
+    // Opcional: Actualizar el orden en el backend si es necesario
+  };
+
+  return (
+    <div className="task-list">
+      {/* Botón para Mostrar/Ocultar Filtros */}
+      <Button variant="outline-primary" className="filter-toggle" onClick={() => setShowFilters(!showFilters)}>
+        {showFilters ? <FaTimes /> : <FaFilter />} {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+      </Button>
+
+      {showFilters && (
+        <div className="filters">
+          <Form>
+            <Row>
+              <Col md={4} sm={12}>
+                <Form.Group>
+                  <Form.Label><FaFilter /> Prioridad</Form.Label>
+                  <Form.Check
+                    type="checkbox"
+                    label="Baja"
+                    value="Low"
+                    checked={filters.priority.includes('Low')}
+                    onChange={() => handleFilterChange('priority', 'Low')}
+                  />
+                  <Form.Check
+                    type="checkbox"
+                    label="Media"
+                    value="Medium"
+                    checked={filters.priority.includes('Medium')}
+                    onChange={() => handleFilterChange('priority', 'Medium')}
+                  />
+                  <Form.Check
+                    type="checkbox"
+                    label="Alta"
+                    value="High"
+                    checked={filters.priority.includes('High')}
+                    onChange={() => handleFilterChange('priority', 'High')}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4} sm={12}>
+                <Form.Group>
+                  <Form.Label><FaFilter /> Dificultad</Form.Label>
+                  <Form.Check
+                    type="checkbox"
+                    label="1 - Fácil"
+                    value="1"
+                    checked={filters.difficulty.includes('1')}
+                    onChange={() => handleFilterChange('difficulty', '1')}
+                  />
+                  <Form.Check
+                    type="checkbox"
+                    label="2 - Medio"
+                    value="2"
+                    checked={filters.difficulty.includes('2')}
+                    onChange={() => handleFilterChange('difficulty', '2')}
+                  />
+                  <Form.Check
+                    type="checkbox"
+                    label="3 - Difícil"
+                    value="3"
+                    checked={filters.difficulty.includes('3')}
+                    onChange={() => handleFilterChange('difficulty', '3')}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4} sm={12}>
+                <Form.Group>
+                  <Form.Label><FaFilter /> Estado</Form.Label>
+                  <Form.Check
+                    type="checkbox"
+                    label="Pendiente"
+                    value="Pending"
+                    checked={filters.status.includes('Pending')}
+                    onChange={() => handleFilterChange('status', 'Pending')}
+                  />
+                  <Form.Check
+                    type="checkbox"
+                    label="En Progreso"
+                    value="In Progress"
+                    checked={filters.status.includes('In Progress')}
+                    onChange={() => handleFilterChange('status', 'In Progress')}
+                  />
+                  <Form.Check
+                    type="checkbox"
+                    label="Completado"
+                    value="Completed"
+                    checked={filters.status.includes('Completed')}
+                    onChange={() => handleFilterChange('status', 'Completed')}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+            <Button variant="secondary" onClick={handleClearFilters} className="mt-3">
+              Limpiar Filtros
+            </Button>
+          </Form>
+        </div>
+      )}
+
+      <DragDropContext onDragEnd={handleOnDragEnd}>
+        <Droppable droppableId="tasks">
+          {(provided) => (
+            <div className="task-container" {...provided.droppableProps} ref={provided.innerRef}>
+              {filteredTasks.length > 0 ? (
+                filteredTasks.map((task, index) => (
+                  <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className={snapshot.isDragging ? 'dragging' : ''}
+                      >
+                        <TaskItem
+                          task={task}
+                          onComplete={(id) => setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'Completed' } : t))}
+                          onDelete={(id) => setTasks(prev => prev.filter(t => t.id !== id))}
+                          onEdit={(id, updatedTask) => setTasks(prev => prev.map(t => t.id === id ? updatedTask : t))}
+                          onArchive={(id) => setTasks(prev => prev.filter(t => t.id !== id))}
+                          onUnarchive={(id) => setTasks(prev => [...prev, { ...task, status: 'Pending' }])}
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                ))
+              ) : (
+                <p>No hay tareas que coincidan con los filtros seleccionados.</p>
+              )}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </div>
+  );
+}
+
+export default TaskList;
+
+----- ./frontend/src/hooks/useSound.js -----
+// frontend/src/hooks/useSound.js
+import { useCallback } from 'react';
+
+const useSound = (url) => {
+  const play = useCallback(() => {
+    const audio = new Audio(url);
+    audio.play().catch((error) => {
+      console.error('Error al reproducir el sonido:', error);
+    });
+  }, [url]);
+
+  return play;
+};
+
+export default useSound;
+
+----- ./frontend/src/pages/ArchivedTasksPage.js -----
+// frontend/src/pages/ArchivedTasksPage.js
+
+import React, { useState, useEffect } from 'react';
+import TaskItem from '../components/TaskItem';
+import ConfirmModal from '../components/ConfirmModal';
+import './ArchivedTasksPage.css';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { Alert } from 'react-bootstrap';
+
+function ArchivedTasksPage() {
+  const [archivedTasks, setArchivedTasks] = useState([]);
+  const [error, setError] = useState(null);
+
+  // Para confirmar eliminación
+  const [taskToDelete, setTaskToDelete] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [actionError, setActionError] = useState('');
+
+  const fetchArchivedTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks/archived');
+      if (!response.ok) {
+        throw new Error('Error al obtener las tareas archivadas');
+      }
+      const data = await response.json();
+      setArchivedTasks(data);
+    } catch (err) {
+      console.error('Error al obtener tareas archivadas:', err);
+      setError('Error al obtener tareas archivadas');
+    }
+  };
+
+  useEffect(() => {
+    fetchArchivedTasks();
+  }, []);
+
+  const handleUnarchive = async (id) => {
+    setActionError('');
+    try {
+      const response = await fetch(`/api/tasks/${id}/unarchive`, {
+        method: 'PUT',
+      });
+      if (response.ok) {
+        const updatedTask = await response.json();
+        setArchivedTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+      } else {
+        const errorData = await response.json();
+        setActionError(errorData.error || 'Error al desarchivar la tarea');
+      }
+    } catch (error) {
+      console.error('Error al desarchivar la tarea:', error);
+      setActionError('Error al desarchivar la tarea');
+    }
+  };
+
+  const handleEdit = async (id, updatedTask) => {
+    setActionError('');
+    try {
+      const response = await fetch(`/api/tasks/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTask),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setArchivedTasks((prevTasks) => prevTasks.map(task => task.id === id ? data : task));
+      } else {
+        const errorData = await response.json();
+        setActionError(errorData.error || 'Error al editar la tarea archivada');
+      }
+    } catch (error) {
+      console.error('Error al editar la tarea archivada:', error);
+      setActionError('Error al editar la tarea archivada');
+    }
+  };
+
+  const handleDelete = (task) => {
+    setTaskToDelete(task);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    setActionError('');
+    try {
+      const response = await fetch(`/api/tasks/${taskToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        setArchivedTasks((prevTasks) => prevTasks.filter(task => task.id !== taskToDelete.id));
+        setShowDeleteConfirm(false);
+        setTaskToDelete(null);
+      } else {
+        const errorData = await response.json();
+        setActionError(errorData.error || 'Error al eliminar la tarea archivada');
+      }
+    } catch (error) {
+      console.error('Error al eliminar la tarea archivada:', error);
+      setActionError('Error al eliminar la tarea archivada');
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
+    setTaskToDelete(null);
+  };
+
+  const handleOnDragEnd = (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(archivedTasks);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setArchivedTasks(items);
+
+    // Opcional: Actualizar el orden en el backend si es necesario
+  };
+
+  return (
+    <div className="archived-tasks-page">
+      <h2>Tareas Archivadas</h2>
+      {error && <Alert variant="danger">{error}</Alert>}
+      {actionError && <Alert variant="danger">{actionError}</Alert>}
+      <DragDropContext onDragEnd={handleOnDragEnd}>
+        <Droppable droppableId="archivedTasks">
+          {(provided) => (
+            <div className="task-container" {...provided.droppableProps} ref={provided.innerRef}>
+              {archivedTasks.length > 0 ? (
+                archivedTasks.map((task, index) => (
+                  <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className={snapshot.isDragging ? 'dragging' : ''}
+                      >
+                        <TaskItem
+                          task={task}
+                          onUnarchive={handleUnarchive}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                          // No es necesario pasar onComplete y onArchive ya que las tareas están archivadas
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                ))
+              ) : (
+                <p>No hay tareas archivadas.</p>
+              )}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+
+      {taskToDelete && (
+        <ConfirmModal
+          show={showDeleteConfirm}
+          handleClose={handleDeleteCancel}
+          handleConfirm={confirmDelete}
+          title="Confirmar Eliminación"
+          body="¿Estás seguro de que deseas eliminar esta tarea archivada? Esta acción no se puede deshacer."
+        />
+      )}
+    </div>
+  );
+}
+
+export default ArchivedTasksPage;
+
+----- ./frontend/src/pages/ProfilePage.css -----
+/* frontend/src/pages/ProfilePage.css */
+
+.profile-layout {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 30px;
+}
+
+.profile-sidebar {
+    width: 350px;
+    background-color: #ffffff;
+    padding: 35px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.profile-sidebar:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+}
+
+.profile-picture-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 25px;
+}
+
+.profile-picture {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--primary-color);
+    cursor: pointer;
+    transition: transform 0.3s, border-color 0.3s;
+}
+
+.profile-picture:hover {
+    transform: scale(1.05);
+    border-color: var(--secondary-color);
+}
+
+.profile-placeholder {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background-color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.profile-placeholder:hover {
+    background-color: var(--primary-color);
+    transform: scale(1.05);
+}
+
+.profile-sidebar h3 {
+    margin-bottom: 15px;
+    color: var(--text-color);
+    font-size: 24px;
+}
+
+.profile-sidebar p {
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-size: 16px;
+}
+
+.btn-info {
+    background: linear-gradient(45deg, var(--info-color), var(--secondary-color));
+    border: none;
+    transition: background 0.3s;
+}
+
+.btn-info:hover {
+    background: linear-gradient(45deg, #138496, var(--primary-color));
+}
+
+.profile-dashboard {
+    flex: 2;
+    min-width: 300px;
+    background-color: #ffffff;
+    padding: 35px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.profile-dashboard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+}
+
+.profile-dashboard h2 {
+    margin-bottom: 30px;
+    color: var(--primary-color);
+    text-align: center;
+}
+
+.charts-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 50px;
+    justify-content: center;
+}
+
+.chart-item {
+    flex: 1;
+    min-width: 350px;
+    background-color: #f9f9f9;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.additional-stats {
+    margin-top: 40px;
+    background-color: #f1f1f1;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.additional-stats p {
+    font-size: 18px;
+    margin: 12px 0;
+    color: var(--text-color);
+}
+
+@media (max-width: 768px) {
+    .charts-container {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+----- ./frontend/src/pages/TaskMetricsPage.js -----
+// frontend/src/pages/TaskMetricsPage.js
+import React, { useState, useEffect } from 'react';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+} from 'recharts';
+import { Alert } from 'react-bootstrap';
+
+function TaskMetricsPage() {
+  const [stats, setStats] = useState({
+    totalTasks: 0,
+    completed: 0,
+    pending: 0,
+    inProgress: 0,
+    priorityDistribution: {},
+    difficultyDistribution: {},
+  });
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/tasks/stats');
+        if (!response.ok) {
+          throw new Error('Error al obtener estadísticas');
+        }
+        const data = await response.json();
+        setStats(data);
+      } catch (err) {
+        console.error('Error al obtener estadísticas:', err);
+        setError('Error al obtener estadísticas');
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const COLORS = ['#28a745', '#ffc107', '#dc3545', '#007bff'];
+
+  const pieData = [
+    { name: 'Completadas', value: stats.completed },
+    { name: 'Pendientes', value: stats.pending },
+    { name: 'En Progreso', value: stats.inProgress },
+  ];
+
+  const priorityData = Object.entries(stats.priorityDistribution).map(
+    ([priority, value]) => ({
+      priority,
+      value,
+    })
+  );
+
+  const difficultyData = Object.entries(stats.difficultyDistribution).map(
+    ([difficulty, value]) => ({
+      difficulty,
+      value,
+    })
+  );
+
+  return (
+    <div className="profile-dashboard">
+      <h2>Task Metrics Dashboard</h2>
+      {error && <Alert variant="danger">{error}</Alert>}
+      <div className="charts-container">
+        <div className="chart-item">
+          <h4>Estado de Tareas</h4>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                fill="#8884d8"
+                label
+              >
+                {pieData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="chart-item">
+          <h4>Distribución por Prioridad</h4>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={priorityData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="priority" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="value" fill="#8884d8" name="Cantidad" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="chart-item">
+          <h4>Distribución por Dificultad</h4>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={difficultyData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="difficulty" />
+              <YAxis allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="value" fill="#8884d8" name="Cantidad" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <div className="additional-stats">
+        <p>Total de Tareas: {stats.totalTasks}</p>
+        <p>Completadas: {stats.completed}</p>
+        <p>Pendientes: {stats.pending}</p>
+        <p>En Progreso: {stats.inProgress}</p>
+      </div>
+    </div>
+  );
+}
+
+export default TaskMetricsPage;
+----- ./frontend/src/pages/FinancePage.js -----
+// frontend/src/pages/FinancePage.js
+import React, { useState } from 'react';
+import { Modal, Button, Form } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import './FinancePage.css';
+
+function FinancePage() {
+  const [showModal, setShowModal] = useState(true);
+  const [password, setPassword] = useState('');
+  const [authenticated, setAuthenticated] = useState(false);
+  const [error, setError] = useState('');
+
+  const handlePasswordSubmit = (e) => {
+    e.preventDefault();
+    if (password === '1234') { // Considera utilizar variables de entorno para la contraseña
+      setAuthenticated(true);
+      setShowModal(false);
+      setError('');
+    } else {
+      setError('Contraseña incorrecta. Inténtalo de nuevo.');
+    }
+  };
+
+  return (
+    <div className="finance-page">
+      <h1>Finance Page</h1>
+      {!authenticated ? (
+        <Modal show={showModal} onHide={() => {}} backdrop="static" keyboard={false} centered>
+          <Modal.Header>
+            <Modal.Title>Sección Protegida</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form onSubmit={handlePasswordSubmit}>
+              <Form.Group controlId="formPassword">
+                <Form.Label>Ingresa la contraseña para acceder:</Form.Label>
+                <Form.Control
+                  type="password"
+                  placeholder="Contraseña"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </Form.Group>
+              {error && <p className="text-danger mt-2">{error}</p>}
+              <Button variant="primary" type="submit" className="mt-3">
+                Ingresar
+              </Button>
+              {/* Botón para Volver a Tareas */}
+              <Link to="/">
+                <Button variant="secondary" className="mt-3 ms-2">
+                  Volver a Tareas
+                </Button>
+              </Link>
+            </Form>
+          </Modal.Body>
+        </Modal>
+      ) : (
+        <div className="finance-content">
+          <h2>Sección de Finanzas</h2>
+          <p>Esta es una sección sensible. ¡Bienvenido!</p>
+          {/* Aquí puedes agregar el contenido de finanzas */}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default FinancePage;
+
+----- ./frontend/src/pages/ArchivedTasksPage.css -----
+/* frontend/src/pages/ArchivedTasksPage.css */
+
+.archived-tasks-page {
+    padding: 20px;
+}
+
+.archived-tasks-page h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.task-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.error {
+    color: var(--danger-color);
+}
+
+----- ./frontend/src/pages/TaskPage.js -----
+// ./frontend/src/pages/TaskPage.js
+import React, { useState, useEffect } from 'react';
+import TaskForm from '../components/TaskForm';
+import TaskList from '../components/TaskList';
+import './TaskPage.css';
+import { Alert } from 'react-bootstrap';
+
+function TaskPage() {
+  const [tasks, setTasks] = useState([]);
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState('');
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks'); // URL relativa gracias al proxy
+      if (!response.ok) {
+        throw new Error('Error al obtener las tareas');
+      }
+      const data = await response.json();
+      setTasks(data);
+    } catch (err) {
+      console.error('Error al obtener las tareas:', err);
+      setError('Error al obtener las tareas');
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  return (
+    <div className="task-page">
+      <h2>Gestor de Tareas</h2>
+      {error && <Alert variant="danger">{error}</Alert>}
+      {message && <Alert variant="success">{message}</Alert>}
+      <div className="task-layout">
+        <div className="task-form-column">
+          <TaskForm onTaskAdded={(newTask) => {
+            setTasks((prev) => [newTask, ...prev]);
+            setMessage('¡Tarea agregada exitosamente!');
+            setTimeout(() => setMessage(''), 3000);
+          }} />
+        </div>
+        <div className="task-list-column">
+          <TaskList tasks={tasks} setTasks={setTasks} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default TaskPage;
+
+----- ./frontend/src/pages/ProfilePage.js -----
+// frontend/src/pages/ProfilePage.js
+import React, { useState, useEffect } from 'react';
+import './ProfilePage.css';
+import EditProfileModal from '../components/EditProfileModal';
+import useSound from '../hooks/useSound';
+import editProfileSound from '../assets/sounds/intro-sound-1-269293.mp3';
+import { Alert } from 'react-bootstrap';
+
+function ProfilePage() {
+  const [profile, setProfile] = useState({
+    name: '',
+    email: '',
+    bio: '',
+    profile_picture_url: '',
+  });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [error, setError] = useState(null);
+  const playEditProfileSound = useSound(editProfileSound);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch('/api/profile');
+        if (!response.ok) {
+          throw new Error('Error al obtener el perfil');
+        }
+        const data = await response.json();
+        setProfile(data);
+      } catch (err) {
+        console.error('Error al obtener el perfil:', err);
+        setError('Error al obtener el perfil');
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleSaveProfile = async (updatedProfile) => {
+    setProfile(updatedProfile);
+    playEditProfileSound();
+
+    try {
+      const response = await fetch('/api/profile', {
+        // Endpoint corregido
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedProfile),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data);
+        playEditProfileSound();
+      } else {
+        console.error('Error al actualizar el perfil');
+      }
+    } catch (error) {
+      console.error('Error al actualizar el perfil:', error);
+    }
+  };
+
+  return (
+    <div className="profile-layout">
+      <aside className="profile-sidebar">
+        <div className="profile-picture-container">
+          {profile.profile_picture_url ? (
+            <img
+              src={profile.profile_picture_url}
+              alt="Profile"
+              className="profile-picture"
+              onClick={() => setShowEditModal(true)} // Permitir editar al hacer clic
+              title="Editar Perfil"
+            />
+          ) : (
+            <div className="profile-placeholder" onClick={() => setShowEditModal(true)}>
+              Subir Imagen
+            </div>
+          )}
+        </div>
+        <h3>{profile.name}</h3>
+        <p>{profile.bio}</p>
+        <p>{profile.email}</p>
+        <button className="btn btn-info mt-3" onClick={() => setShowEditModal(true)}>
+          Editar Perfil
+        </button>
+      </aside>
+      <EditProfileModal
+        show={showEditModal}
+        handleClose={() => setShowEditModal(false)}
+        profile={profile}
+        handleSave={handleSaveProfile}
+      />
+    </div>
+  );
+}
+
+export default ProfilePage;
+----- ./frontend/src/pages/FinancePage.css -----
+/* frontend/src/pages/FinancePage.css */
+
+.finance-page {
+  padding: 30px;
+  text-align: center;
+}
+
+.finance-page h1 {
+  color: var(--primary-color);
+  margin-bottom: 25px;
+}
+
+.finance-content {
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: inline-block;
+  text-align: left;
+}
+
+.finance-content h2 {
+  color: var(--primary-color);
+  margin-bottom: 20px;
+}
+
+.finance-content p {
+  font-size: 18px;
+  color: var(--text-color);
+}
+
+/* Estilos para el modal */
+.modal-body form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.modal-body form .form-group label {
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.modal-body form .form-control {
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.modal-footer button {
+  min-width: 100px;
+}
+
+/* Estilos para los botones del modal */
+.btn-primary {
+  background-color: var(--primary-color);
+  border: none;
+  transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+  background-color: #357ab8;
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  border: none;
+  transition: background-color 0.3s;
+}
+
+.btn-secondary:hover {
+  background-color: #3bc0a4;
+}
+
+/* Estilos para mensajes de error */
+.text-danger {
+  font-weight: bold;
+}
+
+----- ./frontend/src/pages/TaskPage.css -----
+/* frontend/src/pages/TaskPage.css */
+
+.task-page {
+    padding: 25px;
+}
+
+.task-page h2 {
+    margin-bottom: 25px;
+    color: var(--primary-color);
+    text-align: center;
+}
+
+.task-layout {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.task-form-column {
+    flex: 1;
+    min-width: 300px;
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.task-list-column {
+    flex: 2;
+    min-width: 300px;
+}
+
+----- ./backend/index.js -----
+// backend/index.js
+
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const tasksRoutes = require('./src/routes/tasks');
+const uploadRoutes = require('./src/routes/upload');
+const profileRoutes = require('./src/routes/profile'); // Importar las rutas del perfil
+const morgan = require('morgan'); // Para logging de solicitudes
+const helmet = require('helmet'); // Para mejorar la seguridad
+const rateLimit = require('express-rate-limit'); // Para limitar el número de solicitudes
+const path = require('path');
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Configurar 'trust proxy' si se está detrás de un proxy (como en producción)
+app.set('trust proxy', 1); // Ajusta según tu configuración de despliegue
+
+// Middleware de seguridad
+app.use(helmet());
+
+// Configuración de CORS
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000']; // Añadimos 'http://localhost:5000'
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Permitir solicitudes sin origen (ej., herramientas como Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = `La política de CORS no permite el acceso desde el origen ${origin}.`;
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
+  })
+);
+
+// Middleware para limitar las solicitudes
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // límite de 100 solicitudes por IP
+  message:
+    'Demasiadas solicitudes desde esta IP, por favor intenta de nuevo más tarde.',
+});
+app.use(limiter);
+
+// Middleware para parsear JSON
+app.use(express.json());
+
+// Middleware para logging de solicitudes HTTP en desarrollo
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
+// Servir archivos estáticos desde 'uploads'
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Rutas
+app.use('/api/tasks', tasksRoutes);
+app.use('/api/upload', uploadRoutes); // Utilizar la nueva ruta de subida
+app.use('/api/profile', profileRoutes); // Utilizar las rutas del perfil
+
+// Ruta raíz
+app.get('/', (req, res) => {
+  res.send('API Planner2025');
+});
+
+// Middleware de manejo de errores 404
+app.use((req, res, next) => {
+  res.status(404).json({ error: 'Ruta no encontrada' });
+});
+
+// Middleware de manejo de errores generales
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: err.message || 'Error interno del servidor' });
+});
+
+// Iniciar el servidor
+app.listen(PORT, () => {
+  console.log(`Servidor backend corriendo en el puerto ${PORT}`);
+});
+
+----- ./backend/src/config/db.js -----
+// backend/src/config/db.js
+
+const { Pool } = require('pg');
+const dotenv = require('dotenv');
+
+dotenv.config();
+
+const pool = new Pool({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_DATABASE,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+});
+
+pool.on('connect', () => {
+  console.log('Conectado a la base de datos PostgreSQL');
+});
+
+module.exports = pool;
+
+----- ./backend/src/models/profile.js -----
+// backend/src/models/profile.js
+
+const pool = require('../config/db');
+
+const Profile = {
+  // Obtener el perfil (asumiendo un solo perfil)
+  getProfile: async () => {
+    const res = await pool.query('SELECT * FROM profiles LIMIT 1');
+    return res.rows[0];
+  },
+
+  // Actualizar el perfil
+  updateProfile: async (profile) => {
+    const { name, email, bio, profile_picture_url } = profile;
+    const res = await pool.query(
+      `UPDATE profiles
+       SET name = $1,
+           email = $2,
+           bio = $3,
+           profile_picture_url = $4,
+           updated_at = NOW()
+       WHERE id = (SELECT id FROM profiles LIMIT 1)
+       RETURNING *`,
+      [name, email, bio, profile_picture_url]
+    );
+    return res.rows[0];
+  },
+};
+
+module.exports = Profile;
+
+----- ./backend/src/models/task.js -----
+// backend/src/models/task.js
+const pool = require('../config/db');
+
+const Task = {
+  getAll: async () => {
+    const { rows } = await pool.query(
+      'SELECT * FROM tasks WHERE archived_at IS NULL'
+    );
+    return rows;
+  },
+
+  getById: async (id) => {
+    const { rows } = await pool.query('SELECT * FROM tasks WHERE id = $1', [id]);
+    return rows[0];
+  },
+
+  create: async (taskData) => {
+    const {
+      name,
+      description,
+      category,
+      priority,
+      difficulty,
+      estimated_time,
+    } = taskData;
+    const { rows } = await pool.query(
+      'INSERT INTO tasks (name, description, category, priority, difficulty, estimated_time) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [name, description, category, priority, difficulty, estimated_time]
+    );
+    return rows[0];
+  },
+
+  complete: async (id) => {
+    const { rows } = await pool.query(
+      'UPDATE tasks SET status = $1, completed_at = $2, updated_at = NOW() WHERE id = $3 RETURNING *',
+      ['Completed', new Date(), id]
+    );
+    return rows[0];
+  },
+
+  archive: async (id) => {
+    const { rows } = await pool.query(
+      'UPDATE tasks SET status = $1, archived_at = $2, updated_at = NOW() WHERE id = $3 RETURNING *',
+      ['Archived', new Date(), id]
+    );
+    return rows[0];
+  },
+
+  unarchive: async (id) => {
+    const { rows } = await pool.query(
+      'UPDATE tasks SET status = $1, archived_at = NULL, updated_at = NOW() WHERE id = $2 RETURNING *',
+      ['Pending', id]
+    );
+    return rows[0];
+  },
+
+  update: async (id, taskData) => {
+    const {
+      name,
+      description,
+      category,
+      priority,
+      difficulty,
+      status,
+      completed_at,
+      time_taken,
+      archived_at,
+      estimated_time,
+      actual_time,
+    } = taskData;
+  
+    const query = `
+      UPDATE tasks
+      SET
+        name = COALESCE($1, name),
+        description = COALESCE($2, description),
+        category = COALESCE($3, category),
+        priority = COALESCE($4, priority),
+        difficulty = COALESCE($5, difficulty),
+        status = COALESCE($6, status),
+        completed_at = COALESCE($7, completed_at),
+        time_taken = COALESCE($8, time_taken),
+        archived_at = COALESCE($9, archived_at),
+        estimated_time = COALESCE($10, estimated_time),
+        actual_time = COALESCE($11, actual_time),
+        updated_at = NOW()
+      WHERE id = $12
+      RETURNING *;
+    `;
+  
+    const values = [
+      name,
+      description,
+      category,
+      priority,
+      difficulty,
+      status,
+      completed_at,
+      time_taken,
+      archived_at,
+      estimated_time,
+      actual_time,
+      id,
+    ];
+  
+    console.log('Update Query:', query);
+    console.log('Values:', values);
+  
+    try {
+      const { rows } = await pool.query(query, values);
+      return rows[0];
+    } catch (error) {
+      console.error('Error al actualizar la tarea:', error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
+  },
+
+  countAll: async () => {
+    const { rows } = await pool.query('SELECT COUNT(*) FROM tasks');
+    return parseInt(rows[0].count, 10);
+  },
+
+  countByStatus: async (status) => {
+    const { rows } = await pool.query(
+      'SELECT COUNT(*) FROM tasks WHERE status = $1',
+      [status]
+    );
+    return parseInt(rows[0].count, 10);
+  },
+
+  getArchivedTasks: async () => {
+    const { rows } = await pool.query(
+      'SELECT * FROM tasks WHERE archived_at IS NOT NULL'
+    );
+    return rows;
+  },
+  getDifficultyByPriority: async () => {
+    const { rows } = await pool.query(
+      'SELECT priority, AVG(difficulty) as avg_difficulty FROM tasks GROUP BY priority'
+    );
+    return rows;
+  },
+};
+
+module.exports = Task;
+----- ./backend/src/controllers/tasksController.js -----
+// backend/src/controllers/tasksController.js
+const Task = require('../models/task');
+const { validationResult } = require('express-validator');
+
+const tasksController = {
+  // Obtener todas las tareas no archivadas
+  getAllTasks: async (req, res) => {
+    try {
+      const tasks = await Task.getAll();
+      res.json(tasks);
+    } catch (error) {
+      console.error('Error al obtener las tareas:', error);
+      res.status(500).json({ error: 'Error al obtener las tareas' });
+    }
+  },
+
+  // Obtener una tarea por ID
+  getTaskById: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+      const task = await Task.getById(req.params.id);
+      if (task) {
+        res.json(task);
+      } else {
+        res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+    } catch (error) {
+      console.error('Error al obtener la tarea:', error);
+      res.status(500).json({ error: 'Error al obtener la tarea' });
+    }
+  },
+
+  // Crear una nueva tarea
+  createTask: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+      const newTask = await Task.create(req.body);
+      res.status(201).json(newTask);
+    } catch (error) {
+      console.error('Error al crear la tarea:', error);
+      res.status(500).json({ error: 'Error al crear la tarea' });
+    }
+  },
+
+  // Completar una tarea
+  completeTask: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+      const updatedTask = await Task.complete(req.params.id);
+      if (updatedTask) {
+        res.json(updatedTask);
+      } else {
+        res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+    } catch (error) {
+      console.error('Error al completar la tarea:', error);
+      res.status(500).json({ error: 'Error al completar la tarea' });
+    }
+  },
+
+  // Archivar una tarea
+  archiveTask: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+      const updatedTask = await Task.archive(req.params.id);
+      if (updatedTask) {
+        res.json(updatedTask);
+      } else {
+        res.status(404).json({ error: 'Tarea no encontrada para archivar' });
+      }
+    } catch (error) {
+      console.error('Error al archivar la tarea:', error);
+      res.status(500).json({ error: 'Error al archivar la tarea' });
+    }
+  },
+
+  // Desarchivar una tarea
+  unarchiveTask: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+      const updatedTask = await Task.unarchive(req.params.id);
+      if (updatedTask) {
+        res.json(updatedTask);
+      } else {
+        res.status(404).json({ error: 'Tarea no encontrada para desarchivar' });
+      }
+    } catch (error) {
+      console.error('Error al desarchivar la tarea:', error);
+      res.status(500).json({ error: 'Error al desarchivar la tarea' });
+    }
+  },
+
+  // Actualizar una tarea existente
+  updateTask: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const { status, difficulty } = req.body;
+    const validStatuses = ['Pending', 'In Progress', 'Completed', 'Archived'];
+    const validDifficulties = [1, 2, 3];
+
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Estado no válido' });
+    }
+    if (difficulty && !validDifficulties.includes(difficulty)) {
+      return res.status(400).json({ error: 'Dificultad no válida' });
+    }
+
+    try {
+      const updatedTask = await Task.update(req.params.id, req.body);
+      if (updatedTask) {
+        res.json(updatedTask);
+      } else {
+        res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+    } catch (error) {
+      console.error('Error al actualizar la tarea:', error);
+      res.status(500).json({ error: 'Error al actualizar la tarea' });
+    }
+  },
+
+  // Eliminar una tarea
+  deleteTask: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+      await Task.delete(req.params.id);
+      res.json({ message: 'Tarea eliminada' });
+    } catch (error) {
+      console.error('Error al eliminar la tarea:', error);
+      res.status(500).json({ error: 'Error al eliminar la tarea' });
+    }
+  },
+
+  // Obtener estadísticas de tareas
+  getStats: async (req, res) => {
+    try {
+      const totalTasks = await Task.countAll();
+      const completed = await Task.countByStatus('Completed');
+      const pending = await Task.countByStatus('Pending');
+      const inProgress = await Task.countByStatus('In Progress');
+      const priorityDistribution = await Task.getDifficultyByPriority();
+      res.json({
+        totalTasks,
+        completed,
+        pending,
+        inProgress,
+        priorityDistribution,
+      });
+    } catch (error) {
+      console.error('Error al obtener estadísticas:', error);
+      res.status(500).json({ error: 'Error al obtener estadísticas' });
+    }
+  },
+
+  // Obtener tareas archivadas
+  getArchivedTasks: async (req, res) => {
+    try {
+      const archivedTasks = await Task.getArchivedTasks();
+      res.json(archivedTasks);
+    } catch (error) {
+      console.error('Error al obtener tareas archivadas:', error);
+      res.status(500).json({ error: 'Error al obtener tareas archivadas' });
+    }
+  },
+};
+
+module.exports = tasksController;
+----- ./backend/src/controllers/profileController.js -----
+// backend/src/controllers/profileController.js
+
+const Profile = require('../models/profile');
+const { validationResult } = require('express-validator');
+
+const profileController = {
+  // Obtener el perfil
+  getProfile: async (req, res) => {
+    try {
+      const profile = await Profile.getProfile();
+      res.json(profile);
+    } catch (error) {
+      console.error('Error al obtener el perfil:', error);
+      res.status(500).json({ error: 'Error al obtener el perfil' });
+    }
+  },
+
+  // Actualizar el perfil
+  updateProfile: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const updatedProfile = await Profile.updateProfile(req.body);
+      res.json(updatedProfile);
+    } catch (error) {
+      console.error('Error al actualizar el perfil:', error);
+      res.status(500).json({ error: 'Error al actualizar el perfil' });
+    }
+  },
+};
+
+module.exports = profileController;
+
+----- ./backend/src/routes/profile.js -----
+// backend/src/routes/profile.js
+
+const express = require('express');
+const router = express.Router();
+const profileController = require('../controllers/profileController');
+const { body } = require('express-validator');
+
+// Obtener el perfil
+router.get('/', profileController.getProfile);
+
+// Actualizar el perfil con validaciones
+router.put(
+  '/',
+  [
+    body('name')
+      .isLength({ min: 1 })
+      .withMessage('El nombre es obligatorio.'),
+    body('email')
+      .isEmail()
+      .withMessage('Formato de email inválido.'),
+    body('bio').optional().isString(),
+    body('profile_picture_url')
+      .optional()
+      .isURL()
+      .withMessage('URL de imagen inválida.'),
+  ],
+  profileController.updateProfile
+);
+
+module.exports = router;
+
+----- ./backend/src/routes/upload.js -----
+// backend/src/routes/upload.js
+
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const dotenv = require('dotenv');
+
+dotenv.config();
+
+// Configuración de almacenamiento de multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); // Asegúrate de que la carpeta 'uploads' exista
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname)); // Nombre único para cada archivo
+  },
+});
+
+// Filtro de archivos para permitir solo imágenes
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif/;
+  const extname = allowedTypes.test(
+    path.extname(file.originalname).toLowerCase()
+  );
+  const mimetype = allowedTypes.test(file.mimetype);
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error('Solo se permiten imágenes (jpeg, jpg, png, gif)'));
+  }
+};
+
+// Configuración de multer
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Limitar a 5MB
+  fileFilter: fileFilter,
+});
+
+// Ruta para subir una imagen de perfil
+router.post('/profile-picture', upload.single('profilePicture'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No se subió ningún archivo' });
+  }
+  // Construir la URL completa de la imagen
+  const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+  const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
+  res.json({ imageUrl });
+});
+
+module.exports = router;
+
+----- ./backend/src/routes/tasks.js -----
+const express = require('express');
+const router = express.Router();
+const tasksController = require('../controllers/tasksController');
+const { body, param } = require('express-validator');
+
+// Obtener tareas archivadas primero para evitar conflictos con /:id
+router.get('/archived', tasksController.getArchivedTasks);
+
+// Obtener estadísticas de tareas
+router.get('/stats', tasksController.getStats);
+
+// Obtener todas las tareas no archivadas
+router.get('/', tasksController.getAllTasks);
+
+// Obtener una tarea por ID con validación
+router.get('/:id',
+  [
+    param('id').isInt().withMessage('ID de tarea debe ser un número entero.')
+  ],
+  tasksController.getTaskById
+);
+
+// Crear una nueva tarea con validaciones
+router.post('/',
+  [
+    body('name').isLength({ min: 1 }).withMessage('El nombre de la tarea es obligatorio.'),
+    body('description').optional().isString(),
+    body('priority').isIn(['Low', 'Medium', 'High']).withMessage('Prioridad inválida.'),
+    body('difficulty').isInt({ min: 1, max: 3 }).withMessage('Dificultad debe ser 1, 2 o 3.'),
+    body('status').isIn(['Pending', 'In Progress', 'Completed']).withMessage('Estado inválido.'),
+    body('estimated_time').optional().isFloat({ min: 0 }).withMessage('Tiempo estimado debe ser un número positivo.'),
+    body('actual_time').optional().isFloat({ min: 0 }).withMessage('Tiempo real debe ser un número positivo.')
+  ],
+  tasksController.createTask
+);
+
+// Completar una tarea con validación
+router.put('/:id/complete',
+  [
+    param('id').isInt().withMessage('ID de tarea debe ser un número entero.')
+  ],
+  tasksController.completeTask
+);
+
+// Archivar una tarea con validación
+router.put('/:id/archive',
+  [
+    param('id').isInt().withMessage('ID de tarea debe ser un número entero.')
+  ],
+  tasksController.archiveTask
+);
+
+// Desarchivar una tarea con validación
+router.put('/:id/unarchive',
+  [
+    param('id').isInt().withMessage('ID de tarea debe ser un número entero.')
+  ],
+  tasksController.unarchiveTask
+);
+
+// Actualizar una tarea existente con validaciones
+router.put('/:id',
+  [
+    param('id').isInt().withMessage('ID de tarea debe ser un número entero.'),
+    body('name').optional().isLength({ min: 1 }).withMessage('El nombre de la tarea no puede estar vacío.'),
+    body('description').optional().isString(),
+    body('priority').optional().isIn(['Low', 'Medium', 'High']).withMessage('Prioridad inválida.'),
+    body('difficulty').optional().isInt({ min: 1, max: 3 }).withMessage('Dificultad debe ser 1, 2 o 3.'),
+    body('status').optional().isIn(['Pending', 'In Progress', 'Completed', 'Archived']).withMessage('Estado inválido.'),
+    body('estimated_time').optional().isFloat({ min: 0 }).withMessage('Tiempo estimado debe ser un número positivo.'),
+    body('actual_time').optional().isFloat({ min: 0 }).withMessage('Tiempo real debe ser un número positivo.')
+  ],
+  tasksController.updateTask
+);
+
+// Eliminar una tarea con validación
+router.delete('/:id',
+  [
+    param('id').isInt().withMessage('ID de tarea debe ser un número entero.')
+  ],
+  tasksController.deleteTask
+);
+
+module.exports = router;

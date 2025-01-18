@@ -1,0 +1,76 @@
+/* frontend/src/components/EditProfileModal.css */
+
+.modal-body form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.modal-body form .form-group label {
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.modal-body form .form-control {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.modal-body form .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 5px rgba(74, 144, 226, 0.5);
+}
+
+.modal-footer button {
+    min-width: 100px;
+}
+
+@media (max-width: 576px) {
+    .modal-content {
+        padding: 10px;
+    }
+
+    .modal-header,
+    .modal-footer {
+        padding: 10px;
+    }
+}
+
+/* Estilos para el botón de Subir Imagen */
+#formImageUpload .form-control {
+    cursor: pointer;
+    padding: 10px;
+    border: 1px dashed var(--border-color);
+    border-radius: 4px;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+#formImageUpload .form-control:hover {
+    background-color: #f8f9fa;
+    border-color: var(--primary-color);
+}
+
+/* Estilos para la vista previa de la imagen */
+.img-preview {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-top: 10px;
+    border: 2px solid var(--primary-color);
+}
+
+/* Estilos para mensajes de error y éxito */
+.success-message {
+    color: var(--success-color);
+    text-align: center;
+    font-weight: bold;
+}
+
+.error-message {
+    color: var(--danger-color);
+    text-align: center;
+    font-weight: bold;
+}

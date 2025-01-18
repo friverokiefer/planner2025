@@ -1,0 +1,148 @@
+/* frontend/src/components/TaskForm.css */
+.task-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: #f8f9fa;
+  }
+  
+  .form-title {
+    text-align: center;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+  }
+  
+  .task-form .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .task-form label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    color: var(--text-color);
+    margin-bottom: 5px;
+  }
+  
+  .task-form label svg {
+    font-size: 1.2rem;
+  }
+  
+  .task-form input,
+  .task-form textarea,
+  .task-form select {
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  
+  .task-form input:focus,
+  .task-form textarea:focus,
+  .task-form select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 6px rgba(0, 123, 255, 0.5);
+    outline: none;
+  }
+  
+  .add-task-button {
+    background: linear-gradient(135deg, var(--success-color), var(--info-color));
+    color: white;
+    padding: 12px 20px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .add-task-button:hover {
+    background: linear-gradient(135deg, #218838, #138496);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .success {
+    color: var(--success-color);
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 15px;
+  }
+  
+  .error {
+    color: var(--danger-color);
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 15px;
+  }
+  
+  .task-form .form-control {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%23333' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px 8px;
+    padding-right: 30px; /* Espacio para la flecha del select */
+  }
+  
+  /* Estilos para los select en específico */
+  .task-form .priority-dropdown.priority-low,
+  .task-form .status-dropdown.status-pending {
+    background-color: #007bff; /* Azul */
+    color: white;
+  }
+  
+  .task-form .priority-dropdown.priority-medium,
+  .task-form .status-dropdown.status-in-progress {
+    background-color: #ffc107; /* Amarillo */
+    color: black;
+  }
+  
+  .task-form .priority-dropdown.priority-high {
+    background-color: #dc3545; /* Rojo */
+    color: white;
+  }
+  
+  .task-form .difficulty-dropdown.difficulty-1 {
+    background-color: #28a745; /* Verde */
+    color: white;
+  }
+  
+  .task-form .difficulty-dropdown.difficulty-2 {
+    background-color: #ffc107; /* Amarillo */
+    color: black;
+  }
+  
+  .task-form .difficulty-dropdown.difficulty-3 {
+    background-color: #dc3545; /* Rojo */
+    color: white;
+  }
+  
+  .task-form .status-dropdown.status-completed {
+    background-color: #28a745; /* Verde */
+    color: white;
+  }
+  
+  /* Mejorar distribución de elementos en pantallas pequeñas */
+  @media (max-width: 768px) {
+    .task-form label {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  
+    .task-form input,
+    .task-form textarea,
+    .task-form select {
+      width: 100%;
+    }
+  }
