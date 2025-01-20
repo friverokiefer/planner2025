@@ -17,6 +17,7 @@ import completeSound from '../assets/sounds/notification-1-269296.mp3';
 import deleteSound from '../assets/sounds/notification-2-269292.mp3';
 import editSound from '../assets/sounds/notification-sound-3-262896.mp3';
 import archiveSound from '../assets/sounds/intro-sound-2-269294.mp3';
+import authService from '../services/authService';
 
 function TaskItem({
   task,
@@ -35,21 +36,29 @@ function TaskItem({
   const playEditSound = useSound(editSound);
   const playArchiveSound = useSound(archiveSound);
 
-  // Validar que 'task' y 'task.id' existan antes de usarlos
+  // Verificar que 'task' e 'id' existan
   if (!task || typeof task.id === 'undefined') {
     console.error('El objeto "task" o "task.id" es indefinido:', task);
-    return null; // No renderizar nada si 'task' es inválido
+    return null;
   }
 
+  // Extraemos el token del usuario logueado (para todas las peticiones)
+  const user = authService.getCurrentUser();
+  const token = user?.token;
+
+  // Completar Tarea
   const handleComplete = async () => {
     setActionError('');
     try {
       const response = await fetch(`/api/tasks/${task.id}/complete`, {
         method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       if (response.ok) {
         const updatedTask = await response.json();
-        onComplete(updatedTask.id);
+        if (onComplete) onComplete(updatedTask.id);
         playCompleteSound();
       } else {
         const errorData = await response.json();
@@ -61,6 +70,7 @@ function TaskItem({
     }
   };
 
+  // "Continuar" (poner status = "In Progress")
   const handleContinue = async () => {
     setActionError('');
     try {
@@ -68,12 +78,13 @@ function TaskItem({
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status: 'In Progress' }),
       });
       if (response.ok) {
         const updatedTask = await response.json();
-        onEdit(task.id, updatedTask);
+        if (onEdit) onEdit(task.id, updatedTask);
         playCompleteSound();
       } else {
         const errorData = await response.json();
@@ -85,6 +96,7 @@ function TaskItem({
     }
   };
 
+  // Eliminar Tarea (confirma primero)
   const handleDelete = () => {
     setShowDeleteConfirm(true);
   };
@@ -94,9 +106,12 @@ function TaskItem({
     try {
       const response = await fetch(`/api/tasks/${task.id}`, {
         method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       if (response.ok) {
-        onDelete(task.id);
+        if (onDelete) onDelete(task.id);
         playDeleteSound();
         setShowDeleteConfirm(false);
       } else {
@@ -109,20 +124,25 @@ function TaskItem({
     }
   };
 
+  // Guardar cambios del modal de edición
   const handleEditSave = (updatedTask) => {
-    onEdit(task.id, updatedTask);
+    if (onEdit) onEdit(task.id, updatedTask);
     playEditSound();
     setShowEditModal(false);
   };
 
+  // Archivar
   const handleArchive = async () => {
     setActionError('');
     try {
       const response = await fetch(`/api/tasks/${task.id}/archive`, {
         method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       if (response.ok) {
-        onArchive(task.id);
+        if (onArchive) onArchive(task.id);
         playArchiveSound();
       } else {
         const errorData = await response.json();
@@ -134,15 +154,19 @@ function TaskItem({
     }
   };
 
+  // Desarchivar
   const handleUnarchive = async () => {
     setActionError('');
     try {
       const response = await fetch(`/api/tasks/${task.id}/unarchive`, {
         method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       if (response.ok) {
         const updatedTask = await response.json();
-        onUnarchive(updatedTask.id);
+        if (onUnarchive) onUnarchive(updatedTask.id);
       } else {
         const errorData = await response.json();
         setActionError(errorData.error || 'Error al desarchivar la tarea');
@@ -153,24 +177,25 @@ function TaskItem({
     }
   };
 
+  // Cambiar status via dropdown
   const handleStatusChange = async (newStatus) => {
     if (!newStatus) {
       console.error('Nuevo estado no proporcionado.');
       return;
     }
-
     setActionError('');
     try {
       const response = await fetch(`/api/tasks/${task.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status: newStatus }),
       });
       if (response.ok) {
         const updatedTask = await response.json();
-        onEdit(task.id, updatedTask);
+        if (onEdit) onEdit(task.id, updatedTask);
       } else {
         const errorData = await response.json();
         setActionError(errorData.error || 'Error al cambiar el estado de la tarea');
@@ -181,24 +206,25 @@ function TaskItem({
     }
   };
 
+  // Cambiar dificultad via dropdown
   const handleDifficultyChange = async (newDifficulty) => {
     if (!newDifficulty) {
       console.error('Nueva dificultad no proporcionada.');
       return;
     }
-
     setActionError('');
     try {
       const response = await fetch(`/api/tasks/${task.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ difficulty: parseInt(newDifficulty, 10) }),
       });
       if (response.ok) {
         const updatedTask = await response.json();
-        onEdit(task.id, updatedTask);
+        if (onEdit) onEdit(task.id, updatedTask);
       } else {
         const errorData = await response.json();
         setActionError(errorData.error || 'Error al cambiar la dificultad de la tarea');
@@ -209,7 +235,7 @@ function TaskItem({
     }
   };
 
-  // Función para obtener color basado en estado
+  // Color para estado
   const getStatusColor = (status) => {
     switch (status) {
       case 'Pending':
@@ -225,7 +251,7 @@ function TaskItem({
     }
   };
 
-  // Función para obtener color basado en dificultad
+  // Color para dificultad
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case 1:
@@ -235,24 +261,23 @@ function TaskItem({
       case 3:
         return '#dc3545'; // Rojo
       default:
-        return '#6c757d'; // Gris
+        return '#6c757d';
     }
   };
 
   return (
     <>
       <div
-        className={`task-item ${
-          task.status === 'Completed' ? 'completed' : ''
-        } ${task.status === 'Archived' ? 'archived' : ''}`}
+        className={`task-item ${task.status === 'Completed' ? 'completed' : ''} ${
+          task.status === 'Archived' ? 'archived' : ''
+        }`}
       >
-        {/* Dropdown en la esquina superior derecha */}
+        {/* Dropdown menú (3 puntos) */}
         <div className="dropdown-top-right">
           <Dropdown>
             <Dropdown.Toggle variant="secondary" id={`dropdown-${task.id}`}>
               <FaEllipsisV />
             </Dropdown.Toggle>
-
             <Dropdown.Menu>
               {task.status !== 'Archived' && (
                 <>
@@ -283,16 +308,16 @@ function TaskItem({
                   </Dropdown.Item>
                 </>
               )}
+
               {task.status === 'Archived' && (
-                <>
-                  <Dropdown.Item
-                    onClick={handleUnarchive}
-                    className="unarchive-dropdown-item"
-                  >
-                    <FaUndo /> Desarchivar
-                  </Dropdown.Item>
-                </>
+                <Dropdown.Item
+                  onClick={handleUnarchive}
+                  className="unarchive-dropdown-item"
+                >
+                  <FaUndo /> Desarchivar
+                </Dropdown.Item>
               )}
+
               <Dropdown.Divider />
               <Dropdown.Item
                 onClick={handleDelete}
@@ -307,9 +332,9 @@ function TaskItem({
         <h3>{task.name}</h3>
         <p>{task.description}</p>
 
+        {/* Dropdowns de estado/dificultad sólo si no está archivada */}
         {task.status !== 'Archived' && (
           <div className="status-difficulty">
-            {/* Dropdown de Estado */}
             <Dropdown className="status-dropdown">
               <Dropdown.Toggle
                 variant="light"
@@ -343,7 +368,6 @@ function TaskItem({
               </Dropdown.Menu>
             </Dropdown>
 
-            {/* Dropdown de Dificultad */}
             <Dropdown className="difficulty-dropdown">
               <Dropdown.Toggle
                 variant="light"
@@ -384,12 +408,10 @@ function TaskItem({
         )}
 
         <p>Fecha de Creación: {new Date(task.created_at).toLocaleString()}</p>
-        {task.estimated_time && (
-          <p>Tiempo Estimado: {task.estimated_time} horas</p>
-        )}
+        {task.estimated_time && <p>Tiempo Estimado: {task.estimated_time} horas</p>}
         {task.actual_time && <p>Tiempo Real: {task.actual_time} horas</p>}
 
-        {/* Botón Completar en la esquina inferior izquierda */}
+        {/* Botón "Completar" aparte si no está completada/archivada */}
         {task.status !== 'Archived' && task.status !== 'Completed' && (
           <Button
             variant="success"
@@ -401,6 +423,7 @@ function TaskItem({
           </Button>
         )}
 
+        {/* Botón "Desarchivar" si está archivada */}
         {task.status === 'Archived' && (
           <Button
             variant="info"
@@ -412,10 +435,11 @@ function TaskItem({
           </Button>
         )}
 
-        {/* Mostrar errores de acciones */}
+        {/* Mostramos errores */}
         {actionError && <Alert variant="danger">{actionError}</Alert>}
       </div>
 
+      {/* Modal de edición */}
       <EditTaskModal
         show={showEditModal}
         handleClose={() => setShowEditModal(false)}
@@ -423,6 +447,7 @@ function TaskItem({
         handleSave={handleEditSave}
       />
 
+      {/* Confirmación para eliminar */}
       <ConfirmModal
         show={showDeleteConfirm}
         handleClose={() => setShowDeleteConfirm(false)}

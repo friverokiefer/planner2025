@@ -43,6 +43,42 @@ def consolidate_code():
 if __name__ == "__main__":
     consolidate_code()
 
+----- ./find_large_files.py -----
+import os
+
+# Función para calcular el tamaño de un archivo en bytes
+def get_file_size(file_path):
+    return os.path.getsize(file_path)
+
+# Función para listar todos los archivos en un directorio y subdirectorios
+def list_all_files(directory):
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            yield os.path.join(root, file)
+
+# Lista para almacenar los archivos grandes
+large_files = []
+
+# Umbral de tamaño (en bytes) para considerar un archivo grande
+large_file_threshold = 100 * 1024 * 1024  # 100 MB
+
+# Recorrer todos los archivos en el repositorio
+for file_path in list_all_files(os.getcwd()):
+    # Obtener el tamaño del archivo
+    file_size = get_file_size(file_path)
+
+    # Si el tamaño del archivo supera el umbral, agregarlo a la lista
+    if file_size >= large_file_threshold:
+        large_files.append((file_path, file_size))
+
+# Ordenar los archivos grandes por tamaño de mayor a menor
+large_files.sort(key=lambda x: x[1], reverse=True)
+
+# Imprimir los archivos grandes en la terminal
+for file_path, file_size in large_files:
+    print(f"Ruta: {file_path}")
+    print(f"Tamaño: {file_size} bytes")
+    print("----------------------------------------")
 ----- ./frontend/public/index.html -----
 <!DOCTYPE html>
 <html lang="en">
@@ -64,196 +100,327 @@ if __name__ == "__main__":
 /* frontend/src/App.css */
 /* Estilos para el encabezado */
 .header {
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: #ffffff;
-    padding: 20px 40px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
-  
-  .header h1 {
-    margin: 0;
-    font-size: 2.5rem;
-    text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2);
-  }
-  
-  .header nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    gap: 30px;
-  }
-  
-  .header nav ul li a {
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 1.2rem;
-    transition: color 0.3s ease, transform 0.3s ease;
-    display: flex;
-    align-items: center;
-  }
-  
-  .header nav ul li a:hover {
-    color: #f0f0f0;
-    transform: translateY(-2px);
-  }
-  
-  .header nav ul li a svg {
-    margin-right: 8px;
-  }
-  
-  /* Estilos para el contenedor principal */
-  .main-container {
-    padding: 40px;
-    background-color: #f8f9fa;
-    min-height: 80vh;
-  }
-  
-  /* Estilos para el pie de página */
-  .footer {
-    background-color: #343a40;
-    color: #ffffff;
-    text-align: center;
-    padding: 20px;
-    position: relative;
-    bottom: 0;
-    width: 100%;
-  }
-  
-  /* Estilos para enlaces activos */
-  .header nav ul li .active {
-    font-weight: bold;
-    color: #f0f0f0; /* o el color que prefieras para el enlace activo */
-  }
-  
-  /* Estilos para el submenu */
-  .submenu {
-    position: relative;
-  }
-  
-  .submenu ul {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    padding: 10px;
-    border-radius: 4px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
-  
-  .submenu:hover ul {
-    display: block;
-  }
-  
-  .submenu ul li {
-    width: 100%;
-  }
-  
-  .submenu ul li a {
-    padding: 8px 16px;
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 1.1rem;
-    transition: background-color 0.3s ease;
-  }
-  
-  .submenu ul li a:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: #ffffff;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2);
+}
+
+.header nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 30px;
+}
+
+.header nav ul li a {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 1.2rem;
+  transition: color 0.3s ease, transform 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+
+.header nav ul li a:hover {
+  color: #f0f0f0;
+  transform: translateY(-2px);
+}
+
+.header nav ul li a svg {
+  margin-right: 8px;
+}
+
+/* Estilos para el contenedor principal */
+.main-container {
+  padding: 40px;
+  background-color: #f8f9fa;
+  min-height: 80vh;
+}
+
+/* Estilos para el pie de página */
+.footer {
+  background-color: #343a40;
+  color: #ffffff;
+  text-align: center;
+  padding: 20px;
+  position: relative;
+  bottom: 0;
+  width: 100%;
+}
+
+/* Estilos para enlaces activos */
+.header nav ul li .active {
+  font-weight: bold;
+  color: #f0f0f0; 
+}
+
+/* Estilos para el submenu */
+.submenu {
+  position: relative;
+}
+
+.submenu ul {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.submenu:hover ul {
+  display: block;
+}
+
+.submenu ul li {
+  width: 100%;
+}
+
+.submenu ul li a {
+  padding: 8px 16px;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 1.1rem;
+  transition: background-color 0.3s ease;
+}
+
+.submenu ul li a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Estilos para el enlace de Logout */
+.header nav ul li a[onClick] {
+  cursor: pointer; 
+}
 ----- ./frontend/src/index.js -----
 // frontend/src/index.js
 import React from 'react';
-import ReactDOM from 'react-dom';
+import ReactDOM from 'react-dom/client'; // Para usar React 18
 import App from './App';
 import 'bootstrap/dist/css/bootstrap.min.css'; // Importación correcta de Bootstrap
 
-ReactDOM.render(
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>,
-  document.getElementById('root')
+  </React.StrictMode>
 );
 
 ----- ./frontend/src/App.js -----
 // frontend/src/App.js
-import React from 'react';
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Link,
-  NavLink,
+import React, { useState, useEffect } from 'react';
+import { 
+  BrowserRouter as Router, 
+  Routes, 
+  Route, 
+  Link, 
+  NavLink, 
+  Navigate
 } from 'react-router-dom';
-import TaskPage from './pages/TaskPage';
-import ProfilePage from './pages/ProfilePage';
-import FinancePage from './pages/FinancePage';
-import ArchivedTasksPage from './pages/ArchivedTasksPage';
-import TaskMetricsPage from './pages/TaskMetricsPage'; // Importa la nueva página
-import './App.css';
-import {
-  FaTasks,
-  FaUser,
-  FaChartLine,
-  FaArchive,
-  FaChartPie,
-} from 'react-icons/fa';
+import TaskPage from './pages/TaskPage'; 
+import ProfilePage from './pages/ProfilePage'; 
+import FinancePage from './pages/FinancePage'; 
+import ArchivedTasksPage from './pages/ArchivedTasksPage'; 
+import TaskMetricsPage from './pages/TaskMetricsPage'; 
+import HomePage from './pages/HomePage'; 
+import LoginPage from './pages/LoginPage'; 
+import RegisterPage from './pages/RegisterPage'; 
+import AdminPage from './pages/AdminPage'; 
+import './App.css'; 
+import { 
+  FaTasks, 
+  FaUser, 
+  FaChartLine, 
+  FaArchive, 
+  FaChartPie, 
+  FaHome,
+  FaSignInAlt,
+  FaUserPlus,
+  FaUserShield
+} from 'react-icons/fa'; 
+import authService from './services/authService'; 
 
-function App() {
-  return (
-    <Router>
-      <header className="header">
-        <h1>Planner2025</h1>
-        <nav>
+function App() { 
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const currentUser = authService.getCurrentUser();
+    setUser(currentUser);
+  }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    setUser(null);
+  };
+
+  return ( 
+    <Router> 
+      <header className="header"> 
+        <h1>Planner2025</h1> 
+        <nav> 
           <ul>
             <li>
-              <NavLink to="/profile" activeClassName="active">
-                <FaUser color="#ffffff" /> Profile
+              <NavLink to="/" className={({ isActive }) => isActive ? 'active' : undefined}>
+                <FaHome color="#ffffff" /> Home
               </NavLink>
-            </li>
-            <li>
-              <NavLink to="/" exact activeClassName="active">
-                <FaTasks color="#ffffff" /> Tasks
-              </NavLink>
-            </li>
-            <li className="submenu">
-              <NavLink to="/archived" activeClassName="active">
-                <FaArchive color="#ffffff" /> Archived
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/metrics" activeClassName="active">
-                <FaChartPie color="#ffffff" /> Metrics
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/finance" activeClassName="active">
-                <FaChartLine color="#ffffff" /> Finance
-              </NavLink>
-            </li>
-          </ul>
-        </nav>
-      </header>
-      <div className="main-container">
+            </li> 
+            {user ? (
+              <>
+                <li> 
+                  <NavLink to="/profile" className={({ isActive }) => isActive ? 'active' : undefined}> 
+                    <FaUser color="#ffffff" /> Profile 
+                  </NavLink> 
+                </li> 
+                <li> 
+                  <NavLink to="/tasks" className={({ isActive }) => isActive ? 'active' : undefined}> 
+                    <FaTasks color="#ffffff" /> Tasks 
+                  </NavLink> 
+                </li> 
+                <li className="submenu"> 
+                  <NavLink to="/archived" className={({ isActive }) => isActive ? 'active' : undefined}> 
+                    <FaArchive color="#ffffff" /> Archived 
+                  </NavLink> 
+                </li> 
+                <li> 
+                  <NavLink to="/metrics" className={({ isActive }) => isActive ? 'active' : undefined}> 
+                    <FaChartPie color="#ffffff" /> Metrics 
+                  </NavLink> 
+                </li> 
+                <li> 
+                  <NavLink to="/finance" className={({ isActive }) => isActive ? 'active' : undefined}> 
+                    <FaChartLine color="#ffffff" /> Finance 
+                  </NavLink> 
+                </li>
+                {user.role === 'admin' && (
+                  <li>
+                    <NavLink to="/admin" className={({ isActive }) => isActive ? 'active' : undefined}>
+                      <FaUserShield color="#ffffff" /> Admin
+                    </NavLink>
+                  </li>
+                )}
+                <li>
+                  <button onClick={handleLogout} className="logout-button">
+                    Logout
+                  </button>
+                </li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <NavLink to="/login" className={({ isActive }) => isActive ? 'active' : undefined}>
+                    <FaSignInAlt color="#ffffff" /> Login
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to="/register" className={({ isActive }) => isActive ? 'active' : undefined}>
+                    <FaUserPlus color="#ffffff" /> Register
+                  </NavLink>
+                </li>
+              </>
+            )}
+          </ul> 
+        </nav> 
+      </header> 
+      <div className="main-container"> 
         <Routes>
-          <Route path="/" element={<TaskPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/finance" element={<FinancePage />} />
-          <Route path="/archived" element={<ArchivedTasksPage />} />
-          <Route path="/metrics" element={<TaskMetricsPage />} /> {/* Nueva ruta para métricas */}
-        </Routes>
-      </div>
-      <footer className="footer">
-        © 2025 Planner2025. Built with 💜 by Felipe.
-      </footer>
-    </Router>
+          <Route path="/" element={<HomePage />} /> 
+          <Route path="/tasks" element={user ? <TaskPage /> : <Navigate to="/login" />} /> 
+          <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} /> 
+          <Route path="/finance" element={user ? <FinancePage /> : <Navigate to="/login" />} /> 
+          <Route path="/archived" element={user ? <ArchivedTasksPage /> : <Navigate to="/login" />} /> 
+          <Route path="/metrics" element={user ? <TaskMetricsPage /> : <Navigate to="/login" />} /> 
+          <Route path="/login" element={<LoginPage onLogin={handleLogin} />} /> 
+          <Route path="/register" element={<RegisterPage onLogin={handleLogin} />} />
+          <Route path="/admin" element={user?.role === 'admin' ? <AdminPage /> : <Navigate to="/login" />} /> 
+          <Route path="*" element={<Navigate to="/" />} /> {/* Redirigir a la página principal si no se encuentra la ruta */}
+        </Routes> 
+      </div> 
+      <footer className="footer"> 
+        © 2025 Planner2025. Built with 💜 by Felipe. 
+      </footer> 
+    </Router> 
+  ); 
+} 
+
+export default App;
+
+----- ./frontend/src/components/RegisterForm.js -----
+// frontend/src/components/RegisterForm.js
+import React, { useState } from 'react';
+import { Form, Button } from 'react-bootstrap';
+import './RegisterForm.css'; // Asegúrate de tener este archivo CSS
+
+function RegisterForm({ onRegister }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    onRegister({ name, email, password });
+  };
+
+  return (
+    <Form onSubmit={handleSubmit} className="register-form">
+      <Form.Group controlId="formBasicName">
+        <Form.Label>Nombre</Form.Label>
+        <Form.Control
+          type="text"
+          placeholder="Ingrese su nombre"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+      </Form.Group>
+
+      <Form.Group controlId="formBasicEmail">
+        <Form.Label>Email</Form.Label>
+        <Form.Control
+          type="email"
+          placeholder="Ingrese su email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </Form.Group>
+
+      <Form.Group controlId="formBasicPassword">
+        <Form.Label>Contraseña</Form.Label>
+        <Form.Control
+          type="password"
+          placeholder="Ingrese su contraseña"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+      </Form.Group>
+
+      <Button variant="primary" type="submit">
+        Registrarse
+      </Button>
+    </Form>
   );
 }
 
-export default App;
+export default RegisterForm;
+
 ----- ./frontend/src/components/TaskList.css -----
 /* frontend/src/components/TaskList.css */
 
@@ -277,24 +444,21 @@ export default App;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 25px;
-    gap: 20px;
+    gap: 15px;
     flex-wrap: wrap;
     background-color: #f1f1f1;
-    padding: 20px;
+    padding: 15px;
     border-radius: 8px;
 }
 
 .filters .form-group {
     flex: 1;
-    min-width: 220px;
+    min-width: 200px;
 }
 
 .filters .form-group label {
     font-weight: bold;
     color: var(--text-color);
-    display: flex;
-    align-items: center;
-    gap: 5px;
 }
 
 .filters .form-check-input:checked {
@@ -313,18 +477,6 @@ export default App;
     background-color: #f0f8ff;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
     transform: rotate(2deg);
-}
-
-/* Mejorar distribución de filtros en pantallas pequeñas */
-@media (max-width: 768px) {
-    .filters {
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .filters .form-group {
-        min-width: 100%;
-    }
 }
 
 ----- ./frontend/src/components/ConfirmModal.css -----
@@ -596,6 +748,8 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
 
 export default EditTaskModal;
 
+----- ./frontend/src/components/UserList.js -----
+
 ----- ./frontend/src/components/EditTaskModal.css -----
 /* frontend/src/components/EditTaskModal.css */
 
@@ -632,6 +786,7 @@ export default EditTaskModal;
   }
   
 ----- ./frontend/src/components/TaskItem.js -----
+// frontend/src/components/TaskItem.js
 import React, { useState } from 'react';
 import './TaskItem.css';
 import {
@@ -668,9 +823,10 @@ function TaskItem({
   const playEditSound = useSound(editSound);
   const playArchiveSound = useSound(archiveSound);
 
+  // Validar que 'task' y 'task.id' existan antes de usarlos
   if (!task || typeof task.id === 'undefined') {
     console.error('El objeto "task" o "task.id" es indefinido:', task);
-    return null;
+    return null; // No renderizar nada si 'task' es inválido
   }
 
   const handleComplete = async () => {
@@ -841,31 +997,33 @@ function TaskItem({
     }
   };
 
+  // Función para obtener color basado en estado
   const getStatusColor = (status) => {
     switch (status) {
       case 'Pending':
-        return '#007bff';
+        return '#007bff'; // Azul
       case 'In Progress':
-        return '#ffc107';
+        return '#ffc107'; // Amarillo
       case 'Completed':
-        return '#28a745';
+        return '#28a745'; // Verde
       case 'Archived':
-        return '#6c757d';
+        return '#6c757d'; // Gris
       default:
         return '#6c757d';
     }
   };
 
+  // Función para obtener color basado en dificultad
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case 1:
-        return '#28a745';
+        return '#28a745'; // Verde
       case 2:
-        return '#ffc107';
+        return '#ffc107'; // Amarillo
       case 3:
-        return '#dc3545';
+        return '#dc3545'; // Rojo
       default:
-        return '#6c757d';
+        return '#6c757d'; // Gris
     }
   };
 
@@ -876,6 +1034,7 @@ function TaskItem({
           task.status === 'Completed' ? 'completed' : ''
         } ${task.status === 'Archived' ? 'archived' : ''}`}
       >
+        {/* Dropdown en la esquina superior derecha */}
         <div className="dropdown-top-right">
           <Dropdown>
             <Dropdown.Toggle variant="secondary" id={`dropdown-${task.id}`}>
@@ -938,6 +1097,7 @@ function TaskItem({
 
         {task.status !== 'Archived' && (
           <div className="status-difficulty">
+            {/* Dropdown de Estado */}
             <Dropdown className="status-dropdown">
               <Dropdown.Toggle
                 variant="light"
@@ -971,6 +1131,7 @@ function TaskItem({
               </Dropdown.Menu>
             </Dropdown>
 
+            {/* Dropdown de Dificultad */}
             <Dropdown className="difficulty-dropdown">
               <Dropdown.Toggle
                 variant="light"
@@ -1016,6 +1177,7 @@ function TaskItem({
         )}
         {task.actual_time && <p>Tiempo Real: {task.actual_time} horas</p>}
 
+        {/* Botón Completar en la esquina inferior izquierda */}
         {task.status !== 'Archived' && task.status !== 'Completed' && (
           <Button
             variant="success"
@@ -1038,6 +1200,7 @@ function TaskItem({
           </Button>
         )}
 
+        {/* Mostrar errores de acciones */}
         {actionError && <Alert variant="danger">{actionError}</Alert>}
       </div>
 
@@ -1060,19 +1223,23 @@ function TaskItem({
 }
 
 export default TaskItem;
+----- ./frontend/src/components/AdminPanel.js -----
+
 ----- ./frontend/src/components/TaskForm.js -----
 // frontend/src/components/TaskForm.js
 import React, { useState } from 'react';
 import './TaskForm.css';
 import useSound from '../hooks/useSound';
 import addTaskSound from '../assets/sounds/notification-1-269296.mp3';
+import { Form, Button } from 'react-bootstrap';
+import { FaEdit, FaClock, FaCalendar, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 
 function TaskForm({ onTaskAdded }) {
   const [task, setTask] = useState({
     name: '',
     description: '',
     priority: 'Low',
-    difficulty: 1, // Cambiado a número
+    difficulty: 1,
     status: 'Pending',
     estimated_time: '',
   });
@@ -1083,7 +1250,6 @@ function TaskForm({ onTaskAdded }) {
     const { name, value } = e.target;
     let newValue = value;
 
-    // Convertir campos numéricos a números
     if (name === 'difficulty') {
       newValue = parseInt(value, 10);
     } else if (name === 'estimated_time') {
@@ -1110,27 +1276,35 @@ function TaskForm({ onTaskAdded }) {
           name: '',
           description: '',
           priority: 'Low',
-          difficulty: 1, // Restablecido a número
+          difficulty: 1,
           status: 'Pending',
           estimated_time: '',
         });
         setMessage('¡Tarea agregada exitosamente!');
+        setTimeout(() => setMessage(''), 5000); // Limpiar mensaje después de 5 segundos
       } else {
-        setMessage('Fallo al agregar la tarea.');
+        const errorData = await response.json();
+        setMessage(errorData.error || 'Fallo al agregar la tarea.');
       }
     } catch (error) {
       console.error('Error al agregar tarea:', error);
-      setMessage('Ocurrió un error.');
+      setMessage('Ocurrió un error al agregar la tarea.');
     }
   };
 
   return (
-    <form className="task-form" onSubmit={handleSubmit}>
-      <h2>Agregar Nueva Tarea</h2>
-      {message && <p className={message.includes('exitosamente') ? 'success' : 'error'}>{message}</p>}
-      <label>
-        Nombre:
-        <input
+    <Form className="task-form" onSubmit={handleSubmit}>
+      <h2 className="form-title">
+        <FaEdit /> Agregar Nueva Tarea
+      </h2>
+      {message && (
+        <div className={`message ${message.includes('exitosamente') ? 'success' : 'error'}`}>
+          {message}
+        </div>
+      )}
+      <Form.Group>
+        <Form.Label><FaEdit /> Nombre:</Form.Label>
+        <Form.Control
           type="text"
           name="name"
           value={task.name}
@@ -1138,43 +1312,62 @@ function TaskForm({ onTaskAdded }) {
           required
           placeholder="Ingrese el nombre de la tarea"
         />
-      </label>
-      <label>
-        Descripción:
-        <textarea
+      </Form.Group>
+      <Form.Group>
+        <Form.Label><FaEdit /> Descripción:</Form.Label>
+        <Form.Control
+          as="textarea"
           name="description"
           value={task.description}
           onChange={handleChange}
           placeholder="Ingrese la descripción de la tarea"
-        ></textarea>
-      </label>
-      <label>
-        Prioridad:
-        <select name="priority" value={task.priority} onChange={handleChange}>
+        />
+      </Form.Group>
+      <Form.Group>
+        <Form.Label><FaExclamationCircle /> Prioridad:</Form.Label>
+        <Form.Control
+          as="select"
+          name="priority"
+          value={task.priority}
+          onChange={handleChange}
+          className={`priority-dropdown priority-${task.priority.toLowerCase()}`}
+        >
           <option value="Low">Baja</option>
           <option value="Medium">Media</option>
           <option value="High">Alta</option>
-        </select>
-      </label>
-      <label>
-        Dificultad:
-        <select name="difficulty" value={task.difficulty} onChange={handleChange}>
+        </Form.Control>
+      </Form.Group>
+      <Form.Group>
+        <Form.Label><FaExclamationCircle /> Dificultad:</Form.Label>
+        <Form.Control
+          as="select"
+          name="difficulty"
+          value={task.difficulty}
+          onChange={handleChange}
+          className={`difficulty-dropdown difficulty-${task.difficulty}`}
+        >
           <option value={1}>1 - Fácil</option>
           <option value={2}>2 - Medio</option>
           <option value={3}>3 - Difícil</option>
-        </select>
-      </label>
-      <label>
-        Estado:
-        <select name="status" value={task.status} onChange={handleChange}>
+        </Form.Control>
+      </Form.Group>
+      <Form.Group>
+        <Form.Label><FaCheckCircle /> Estado:</Form.Label>
+        <Form.Control
+          as="select"
+          name="status"
+          value={task.status}
+          onChange={handleChange}
+          className={`status-dropdown status-${task.status.toLowerCase().replace(' ', '-')}`}
+        >
           <option value="Pending">Pendiente</option>
           <option value="In Progress">En Progreso</option>
           <option value="Completed">Completado</option>
-        </select>
-      </label>
-      <label>
-        Tiempo Estimado (horas):
-        <input
+        </Form.Control>
+      </Form.Group>
+      <Form.Group>
+        <Form.Label><FaClock /> Tiempo Estimado (horas):</Form.Label>
+        <Form.Control
           type="number"
           name="estimated_time"
           value={task.estimated_time}
@@ -1183,82 +1376,218 @@ function TaskForm({ onTaskAdded }) {
           step="0.5"
           placeholder="Horas estimadas"
         />
-      </label>
-      <button type="submit" className="btn btn-success">Agregar Tarea</button>
-    </form>
+      </Form.Group>
+      <Button type="submit" variant="success" className="add-task-button">
+        Agregar Tarea
+      </Button>
+    </Form>
   );
 }
 
 export default TaskForm;
-
+----- ./frontend/src/components/RegisterForm.css -----
+.register-form {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+  }
+  
+  .register-form .form-group {
+    margin-bottom: 15px;
+  }
+  
+  .register-form .form-label {
+    font-weight: bold;
+  }
+  
+  .register-form .btn-primary {
+    background-color: #28a745;
+    border-color: #28a745;
+  }
+  
+  .register-form .btn-primary:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+  }
+----- ./frontend/src/components/LoginForm.css -----
+.login-form {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+  }
+  
+  .login-form .form-group {
+    margin-bottom: 15px;
+  }
+  
+  .login-form .form-label {
+    font-weight: bold;
+  }
+  
+  .login-form .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+  }
+  
+  .login-form .btn-primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+  }
 ----- ./frontend/src/components/TaskForm.css -----
 /* frontend/src/components/TaskForm.css */
-
 .task-form {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-}
-
-.task-form h2 {
+    gap: 20px;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: #f8f9fa;
+  }
+  
+  .form-title {
     text-align: center;
     color: var(--primary-color);
-    margin-bottom: 15px;
-}
-
-.task-form label {
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+  }
+  
+  .task-form .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .task-form label {
     display: flex;
-    flex-direction: column;
-    font-size: 16px;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
     color: var(--text-color);
-}
-
-.task-form input,
-.task-form textarea,
-.task-form select {
+    margin-bottom: 5px;
+  }
+  
+  .task-form label svg {
+    font-size: 1.2rem;
+  }
+  
+  .task-form input,
+  .task-form textarea,
+  .task-form select {
     padding: 10px;
-    font-size: 16px;
-    margin-top: 5px;
+    font-size: 1rem;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 5px;
     transition: border-color 0.3s, box-shadow 0.3s;
-}
-
-.task-form input:focus,
-.task-form textarea:focus,
-.task-form select:focus {
+  }
+  
+  .task-form input:focus,
+  .task-form textarea:focus,
+  .task-form select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 5px rgba(74, 144, 226, 0.5);
-}
-
-.task-form button {
-    background: linear-gradient(45deg, var(--success-color), var(--secondary-color));
+    box-shadow: 0 0 6px rgba(0, 123, 255, 0.5);
+    outline: none;
+  }
+  
+  .add-task-button {
+    background: linear-gradient(135deg, var(--success-color), var(--info-color));
     color: white;
-    padding: 12px;
-    font-size: 16px;
+    padding: 12px 20px;
+    font-size: 1.1rem;
     border: none;
-    border-radius: 6px;
+    border-radius: 5px;
     cursor: pointer;
-    transition: background 0.3s, transform 0.2s;
-}
-
-.task-form button:hover {
-    background: linear-gradient(45deg, #218838, #50c2a8);
+    transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .add-task-button:hover {
+    background: linear-gradient(135deg, #218838, #138496);
     transform: translateY(-2px);
-}
-
-.success {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .success {
     color: var(--success-color);
     text-align: center;
     font-weight: bold;
-}
-
-.error {
+    margin-bottom: 15px;
+  }
+  
+  .error {
     color: var(--danger-color);
     text-align: center;
     font-weight: bold;
-}
-
+    margin-bottom: 15px;
+  }
+  
+  .task-form .form-control {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%23333' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px 8px;
+    padding-right: 30px; /* Espacio para la flecha del select */
+  }
+  
+  /* Estilos para los select en específico */
+  .task-form .priority-dropdown.priority-low,
+  .task-form .status-dropdown.status-pending {
+    background-color: #007bff; /* Azul */
+    color: white;
+  }
+  
+  .task-form .priority-dropdown.priority-medium,
+  .task-form .status-dropdown.status-in-progress {
+    background-color: #ffc107; /* Amarillo */
+    color: black;
+  }
+  
+  .task-form .priority-dropdown.priority-high {
+    background-color: #dc3545; /* Rojo */
+    color: white;
+  }
+  
+  .task-form .difficulty-dropdown.difficulty-1 {
+    background-color: #28a745; /* Verde */
+    color: white;
+  }
+  
+  .task-form .difficulty-dropdown.difficulty-2 {
+    background-color: #ffc107; /* Amarillo */
+    color: black;
+  }
+  
+  .task-form .difficulty-dropdown.difficulty-3 {
+    background-color: #dc3545; /* Rojo */
+    color: white;
+  }
+  
+  .task-form .status-dropdown.status-completed {
+    background-color: #28a745; /* Verde */
+    color: white;
+  }
+  
+  /* Mejorar distribución de elementos en pantallas pequeñas */
+  @media (max-width: 768px) {
+    .task-form label {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  
+    .task-form input,
+    .task-form textarea,
+    .task-form select {
+      width: 100%;
+    }
+  }
 ----- ./frontend/src/components/EditProfileModal.css -----
 /* frontend/src/components/EditProfileModal.css */
 
@@ -1338,8 +1667,6 @@ export default TaskForm;
 }
 
 ----- ./frontend/src/components/EditProfileModal.js -----
-// frontend/src/components/EditProfileModal.js
-
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
 import './EditProfileModal.css';
@@ -1348,10 +1675,10 @@ import editProfileSound from '../assets/sounds/notification-1-269296.mp3';
 
 function EditProfileModal({ show, handleClose, profile, handleSave }) {
   const [updatedProfile, setUpdatedProfile] = useState({
-    name: profile.name || '',
-    email: profile.email || '',
-    bio: profile.bio || '',
-    profile_picture_url: profile.profile_picture_url || '',
+    name: '',
+    email: '',
+    bio: '',
+    profile_picture_url: '',
   });
   const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -1362,14 +1689,18 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
   const playEditProfileSound = useSound(editProfileSound);
 
   useEffect(() => {
-    setUpdatedProfile({
-      name: profile.name || '',
-      email: profile.email || '',
-      bio: profile.bio || '',
-      profile_picture_url: profile.profile_picture_url || '',
-    });
-    setFormError('');
-    setFormSuccess('');
+    if (show) {
+      setUpdatedProfile({
+        name: profile.name || '',
+        email: profile.email || '',
+        bio: profile.bio || '',
+        profile_picture_url: profile.profile_picture_url || '',
+      });
+      setImageFile(null);
+      setUploadError('');
+      setFormError('');
+      setFormSuccess('');
+    }
   }, [profile, show]);
 
   const handleChange = (e) => {
@@ -1380,6 +1711,10 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
   const handleImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setImageFile(e.target.files[0]);
+      setUpdatedProfile({
+        ...updatedProfile,
+        profile_picture_url: URL.createObjectURL(e.target.files[0])
+      });
     }
   };
 
@@ -1401,12 +1736,11 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
         return data.imageUrl;
       } else {
         const errorData = await response.json();
-        setUploadError(errorData.error || 'Error al subir la imagen');
-        return null;
+        throw new Error(errorData.error || 'Error al subir la imagen');
       }
     } catch (error) {
       console.error('Error al subir la imagen:', error);
-      setUploadError('Error al subir la imagen');
+      setUploadError(error.message);
       return null;
     } finally {
       setUploading(false);
@@ -1416,24 +1750,20 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
   const onSave = async () => {
     setFormError('');
     setFormSuccess('');
-    let imageUrl = updatedProfile.profile_picture_url;
 
-    if (imageFile) {
-      const uploadedUrl = await uploadImage();
-      if (uploadedUrl) {
-        imageUrl = uploadedUrl;
-      } else {
-        return;
-      }
-    }
-
-    // Validación básica en el frontend
     if (!updatedProfile.name.trim() || !updatedProfile.email.trim()) {
       setFormError('El nombre y el email son obligatorios.');
       return;
     }
 
-    // Actualizar el perfil en el backend
+    let imageUrl = updatedProfile.profile_picture_url;
+    if (imageFile) {
+      imageUrl = await uploadImage();
+      if (!imageUrl) {
+        return;
+      }
+    }
+
     try {
       const response = await fetch('/api/profile', {
         method: 'PUT',
@@ -1448,8 +1778,6 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
         handleSave(data);
         playEditProfileSound();
         setFormSuccess('Perfil actualizado exitosamente.');
-        setImageFile(null);
-        setUploadError('');
         setTimeout(() => {
           handleClose();
           setFormSuccess('');
@@ -1472,6 +1800,7 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
       <Modal.Body>
         {formError && <Alert variant="danger">{formError}</Alert>}
         {formSuccess && <Alert variant="success">{formSuccess}</Alert>}
+        {uploadError && <Alert variant="danger">{uploadError}</Alert>}
         <Form>
           <Form.Group controlId="formProfileName">
             <Form.Label>Nombre</Form.Label>
@@ -1516,7 +1845,6 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
               accept="image/*"
               onChange={handleImageChange}
             />
-            {uploadError && <p className="text-danger mt-2">{uploadError}</p>}
             {updatedProfile.profile_picture_url && (
               <div className="mt-3">
                 <img
@@ -1542,15 +1870,15 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
 }
 
 export default EditProfileModal;
-
 ----- ./frontend/src/components/TaskItem.css -----
 /* frontend/src/components/TaskItem.css */
 
 .task-item {
     padding: 20px;
     border: 1px solid #ccc;
-    border-radius: 8px;
+    border-radius: 10px; /* Bordes redondeados */
     background-color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra sutil */
     transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
     position: relative;
     margin-bottom: 20px;
@@ -1560,29 +1888,25 @@ export default EditProfileModal;
 }
 
 .task-item:hover {
-    transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-5px); /* Efecto de elevación al pasar el ratón */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .task-item.completed {
-    background-color: #d4edda; /* Verde claro */
-    border-color: #c3e6cb; /* Verde más oscuro */
+    background-color: #e6ffe6; /* Verde claro */
+    border-color: #c3e6cb;
 }
 
 .task-item.archived {
     background-color: #f8f9fa; /* Gris claro */
-    border-color: #dae0e5; /* Gris más oscuro */
-}
-
-.task-item.archived:hover {
-    background-color: #e2e6ea; /* Gris intermedio */
+    border-color: #dae0e5;
 }
 
 /* Dropdown en la esquina superior derecha */
 .dropdown-top-right {
     position: absolute;
-    top: 15px;
-    right: 15px;
+    top: 10px;
+    right: 10px;
 }
 
 /* Estilos para los Dropdowns de Estado y Dificultad */
@@ -1595,10 +1919,17 @@ export default EditProfileModal;
 .status-dropdown .dropdown-toggle,
 .difficulty-dropdown .dropdown-toggle {
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
     padding: 5px 10px;
     font-weight: bold;
     cursor: pointer;
+    transition: transform 0.2s ease-in-out; /* Transición suave al hacer hover */
+}
+
+/* Efecto hover para los botones de los dropdowns */
+.status-dropdown .dropdown-toggle:hover,
+.difficulty-dropdown .dropdown-toggle:hover {
+    transform: translateY(-2px); /* Ligero desplazamiento hacia arriba */
 }
 
 .status-dropdown .dropdown-menu,
@@ -1637,12 +1968,14 @@ export default EditProfileModal;
     color: white;
     border: none;
     padding: 8px 12px;
-    border-radius: 4px;
-    transition: background-color 0.3s;
+    border-radius: 5px;
+    transition: background-color 0.3s, transform 0.2s;
+    font-weight: bold; /* Texto en negrita */
 }
 
 .complete-button:hover {
     background-color: #218838;
+    transform: translateY(-2px); /* Ligero desplazamiento hacia arriba */
 }
 
 /* Botón Desarchivar en la esquina inferior izquierda */
@@ -1652,12 +1985,14 @@ export default EditProfileModal;
     color: white;
     border: none;
     padding: 8px 12px;
-    border-radius: 4px;
-    transition: background-color 0.3s;
+    border-radius: 5px;
+    transition: background-color 0.3s, transform 0.2s;
+    font-weight: bold; /* Texto en negrita */
 }
 
 .unarchive-button:hover {
     background-color: #138496;
+    transform: translateY(-2px); /* Ligero desplazamiento hacia arriba */
 }
 
 /* Estilos para los Dropdown Items con colores */
@@ -1698,6 +2033,65 @@ export default EditProfileModal;
     color: #a71d2a;
 }
 
+/* Estilos adicionales para mejorar la tipografía */
+h3 {
+    color: var(--primary-color);
+    font-size: 1.4rem;
+    margin-bottom: 5px;
+}
+
+p {
+    font-size: 1rem;
+    color: var(--text-color);
+    line-height: 1.5;
+}
+----- ./frontend/src/components/LoginForm.js -----
+// frontend/src/components/LoginForm.js
+import React, { useState } from 'react';
+import { Form, Button } from 'react-bootstrap';
+import './LoginForm.css'; // Asegúrate de tener este archivo CSS
+
+function LoginForm({ onLogin }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    onLogin({ email, password });
+  };
+
+  return (
+    <Form onSubmit={handleSubmit} className="login-form">
+      <Form.Group controlId="formBasicEmail">
+        <Form.Label>Email</Form.Label>
+        <Form.Control
+          type="email"
+          placeholder="Ingrese su email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </Form.Group>
+
+      <Form.Group controlId="formBasicPassword">
+        <Form.Label>Contraseña</Form.Label>
+        <Form.Control
+          type="password"
+          placeholder="Ingrese su contraseña"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+      </Form.Group>
+
+      <Button variant="primary" type="submit">
+        Iniciar Sesión
+      </Button>
+    </Form>
+  );
+}
+
+export default LoginForm;
 ----- ./frontend/src/components/ConfirmModal.js -----
 // frontend/src/components/ConfirmModal.js
 import React from 'react';
@@ -1938,6 +2332,8 @@ function TaskList({ tasks, setTasks }) {
 
 export default TaskList;
 
+----- ./frontend/src/components/UserItem.js -----
+
 ----- ./frontend/src/hooks/useSound.js -----
 // frontend/src/hooks/useSound.js
 import { useCallback } from 'react';
@@ -1954,6 +2350,57 @@ const useSound = (url) => {
 };
 
 export default useSound;
+
+----- ./frontend/src/pages/AdminPage.js -----
+// frontend/src/pages/AdminPage.js
+import React from 'react';
+
+function AdminPage() {
+  return (
+    <div>
+      <h1>Panel de Administración</h1>
+      {/* Aquí puedes agregar el contenido del panel de administración */}
+    </div>
+  );
+}
+
+export default AdminPage;
+----- ./frontend/src/pages/LoginPage.js -----
+// frontend/src/pages/LoginPage.js
+import React, { useState } from 'react';
+import LoginForm from '../components/LoginForm';
+import authService from '../services/authService'; 
+import { useNavigate } from 'react-router-dom';
+import { Alert } from 'react-bootstrap';
+
+function LoginPage({ onLogin }) {
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  const handleLogin = async (credentials) => {
+    try {
+      const user = await authService.login(credentials);
+      if (user) {
+        onLogin(user); 
+        setError(null);
+        navigate('/'); // Redirige a la página principal o a donde desees
+      }
+    } catch (error) {
+      // Manejar errores específicos si el backend envía mensajes
+      setError(error.response?.data?.msg || error.message);
+    }
+  };
+
+  return (
+    <div>
+      <h1>Iniciar Sesión</h1>
+      {error && <Alert variant="danger">{error}</Alert>}
+      <LoginForm onLogin={handleLogin} />
+    </div>
+  );
+}
+
+export default LoginPage;
 
 ----- ./frontend/src/pages/ArchivedTasksPage.js -----
 // frontend/src/pages/ArchivedTasksPage.js
@@ -2331,19 +2778,22 @@ function TaskMetricsPage() {
     { name: 'En Progreso', value: stats.inProgress },
   ];
 
-  const priorityData = Object.entries(stats.priorityDistribution).map(
-    ([priority, value]) => ({
-      priority,
-      value,
-    })
-  );
+  // Usar Object.entries() de forma segura
+  const priorityData = stats.priorityDistribution ?
+    Object.entries(stats.priorityDistribution).map(
+      ([priority, value]) => ({
+        priority,
+        value,
+      })
+    ) : [];
 
-  const difficultyData = Object.entries(stats.difficultyDistribution).map(
-    ([difficulty, value]) => ({
-      difficulty,
-      value,
-    })
-  );
+  const difficultyData = stats.difficultyDistribution ?
+    Object.entries(stats.difficultyDistribution).map(
+      ([difficulty, value]) => ({
+        difficulty,
+        value,
+      })
+    ) : [];
 
   return (
     <div className="profile-dashboard">
@@ -2512,13 +2962,28 @@ export default FinancePage;
     color: var(--danger-color);
 }
 
+----- ./frontend/src/pages/HomePage.js -----
+// frontend/src/pages/HomePage.js
+import React from 'react';
+
+function HomePage() {
+  return (
+    <div>
+      <h1>Bienvenido a Planner2025</h1>
+      <p>Esta es la página principal de la aplicación.</p>
+    </div>
+  );
+}
+
+export default HomePage;
 ----- ./frontend/src/pages/TaskPage.js -----
-// ./frontend/src/pages/TaskPage.js
+// frontend/src/pages/TaskPage.js
 import React, { useState, useEffect } from 'react';
 import TaskForm from '../components/TaskForm';
 import TaskList from '../components/TaskList';
 import './TaskPage.css';
 import { Alert } from 'react-bootstrap';
+import authService from '../services/authService';
 
 function TaskPage() {
   const [tasks, setTasks] = useState([]);
@@ -2527,7 +2992,12 @@ function TaskPage() {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch('/api/tasks'); // URL relativa gracias al proxy
+      const user = authService.getCurrentUser();
+      const response = await fetch('/api/tasks', {
+        headers: {
+          'Authorization': `Bearer ${user?.token || ''}`,
+        },
+      });
       if (!response.ok) {
         throw new Error('Error al obtener las tareas');
       }
@@ -2574,6 +3044,7 @@ import EditProfileModal from '../components/EditProfileModal';
 import useSound from '../hooks/useSound';
 import editProfileSound from '../assets/sounds/intro-sound-1-269293.mp3';
 import { Alert } from 'react-bootstrap';
+import authService from '../services/authService';
 
 function ProfilePage() {
   const [profile, setProfile] = useState({
@@ -2589,7 +3060,12 @@ function ProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch('/api/profile');
+        const user = authService.getCurrentUser();
+        const response = await fetch('/api/profile', {
+          headers: {
+            'Authorization': `Bearer ${user?.token || ''}`,
+          },
+        });
         if (!response.ok) {
           throw new Error('Error al obtener el perfil');
         }
@@ -2609,11 +3085,12 @@ function ProfilePage() {
     playEditProfileSound();
 
     try {
+      const user = authService.getCurrentUser();
       const response = await fetch('/api/profile', {
-        // Endpoint corregido
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token || ''}`,
         },
         body: JSON.stringify(updatedProfile),
       });
@@ -2623,10 +3100,12 @@ function ProfilePage() {
         setProfile(data);
         playEditProfileSound();
       } else {
-        console.error('Error al actualizar el perfil');
+        const errorData = await response.json();
+        setError(errorData.error || 'Error al actualizar el perfil');
       }
     } catch (error) {
       console.error('Error al actualizar el perfil:', error);
+      setError('Error al actualizar el perfil');
     }
   };
 
@@ -2639,7 +3118,7 @@ function ProfilePage() {
               src={profile.profile_picture_url}
               alt="Profile"
               className="profile-picture"
-              onClick={() => setShowEditModal(true)} // Permitir editar al hacer clic
+              onClick={() => setShowEditModal(true)}
               title="Editar Perfil"
             />
           ) : (
@@ -2661,11 +3140,13 @@ function ProfilePage() {
         profile={profile}
         handleSave={handleSaveProfile}
       />
+      {error && <Alert variant="danger">{error}</Alert>}
     </div>
   );
 }
 
 export default ProfilePage;
+
 ----- ./frontend/src/pages/FinancePage.css -----
 /* frontend/src/pages/FinancePage.css */
 
@@ -2779,6 +3260,117 @@ export default ProfilePage;
     min-width: 300px;
 }
 
+----- ./frontend/src/pages/RegisterPage.js -----
+// frontend/src/pages/RegisterPage.js
+import React, { useState } from 'react';
+import RegisterForm from '../components/RegisterForm';
+import authService from '../services/authService'; 
+import { useNavigate } from 'react-router-dom';
+import { Alert } from 'react-bootstrap';
+
+function RegisterPage({ onLogin }) {
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const navigate = useNavigate();
+
+  const handleRegister = async (userData) => {
+    try {
+      const user = await authService.register(userData);
+      onLogin(user); // Autenticación automática después del registro
+      setSuccess('Usuario registrado y autenticado con éxito.');
+      setError(null);
+      navigate('/'); // Redirige a la página principal o a donde desees
+    } catch (error) {
+      // Manejar errores específicos si el backend envía mensajes
+      setError(error.response?.data?.msg || error.message);
+      setSuccess(null);
+    }
+  };
+
+  return (
+    <div>
+      <h1>Registrarse</h1>
+      {error && <Alert variant="danger">{error}</Alert>}
+      {success && <Alert variant="success">{success}</Alert>}
+      <RegisterForm onRegister={handleRegister} />
+    </div>
+  );
+}
+
+export default RegisterPage;
+
+----- ./frontend/src/services/authService.js -----
+// frontend/src/services/authService.js
+import axios from 'axios';
+import { jwtDecode } from 'jwt-decode'; // Importación con nombre
+
+const API_URL = '/api/auth/';
+
+const register = async (userData) => {
+  try {
+    const response = await axios.post(API_URL + 'register', userData);
+    if (response.data.token) {
+      const decoded = jwtDecode(response.data.token);
+      const user = {
+        token: response.data.token,
+        id: decoded.user.id,
+        role: decoded.user.role,
+      };
+      localStorage.setItem('user', JSON.stringify(user));
+      return user;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error en el registro:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+const login = async (credentials) => {
+  try {
+    const response = await axios.post(API_URL + 'login', credentials);
+    if (response.data.token) {
+      const decoded = jwtDecode(response.data.token);
+      const user = {
+        token: response.data.token,
+        id: decoded.user.id,
+        role: decoded.user.role,
+      };
+      localStorage.setItem('user', JSON.stringify(user));
+      return user;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error en el login:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+const logout = () => {
+  localStorage.removeItem('user');
+};
+
+const getCurrentUser = () => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return null;
+  try {
+    const user = JSON.parse(userStr);
+    return user;
+  } catch (error) {
+    console.error('Error al parsear el usuario de localStorage:', error);
+    return null;
+  }
+};
+
+const authService = {
+  register,
+  login,
+  logout,
+  getCurrentUser,
+};
+
+export default authService;
+
 ----- ./backend/index.js -----
 // backend/index.js
 
@@ -2787,29 +3379,28 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const tasksRoutes = require('./src/routes/tasks');
 const uploadRoutes = require('./src/routes/upload');
-const profileRoutes = require('./src/routes/profile'); // Importar las rutas del perfil
-const morgan = require('morgan'); // Para logging de solicitudes
-const helmet = require('helmet'); // Para mejorar la seguridad
-const rateLimit = require('express-rate-limit'); // Para limitar el número de solicitudes
+const profileRoutes = require('./src/routes/profile'); 
+const authRoutes = require('./src/routes/auth'); 
+const usersRoutes = require('./src/routes/users'); 
+const authMiddleware = require('./src/middleware/authMiddleware');
+const morgan = require('morgan'); 
+const helmet = require('helmet'); 
+const rateLimit = require('express-rate-limit'); 
 const path = require('path');
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000; // Usando el valor simulado de PORT
 
-// Configurar 'trust proxy' si se está detrás de un proxy (como en producción)
-app.set('trust proxy', 1); // Ajusta según tu configuración de despliegue
+app.set('trust proxy', 1); 
 
-// Middleware de seguridad
 app.use(helmet());
 
-// Configuración de CORS
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000']; // Añadimos 'http://localhost:5000'
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000']; 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Permitir solicitudes sin origen (ej., herramientas como Postman)
       if (!origin) return callback(null, true);
       if (allowedOrigins.indexOf(origin) === -1) {
         const msg = `La política de CORS no permite el acceso desde el origen ${origin}.`;
@@ -2820,52 +3411,64 @@ app.use(
   })
 );
 
-// Middleware para limitar las solicitudes
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // límite de 100 solicitudes por IP
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
   message:
     'Demasiadas solicitudes desde esta IP, por favor intenta de nuevo más tarde.',
 });
 app.use(limiter);
 
-// Middleware para parsear JSON
 app.use(express.json());
 
-// Middleware para logging de solicitudes HTTP en desarrollo
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Servir archivos estáticos desde 'uploads'
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Rutas
 app.use('/api/tasks', tasksRoutes);
-app.use('/api/upload', uploadRoutes); // Utilizar la nueva ruta de subida
-app.use('/api/profile', profileRoutes); // Utilizar las rutas del perfil
+app.use('/api/upload', uploadRoutes); 
+app.use('/api/profile', profileRoutes); 
+app.use('/api/auth', authRoutes);
+app.use('/api/users', authMiddleware, usersRoutes); 
 
-// Ruta raíz
 app.get('/', (req, res) => {
   res.send('API Planner2025');
 });
 
-// Middleware de manejo de errores 404
 app.use((req, res, next) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
 });
 
-// Middleware de manejo de errores generales
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: err.message || 'Error interno del servidor' });
 });
 
-// Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`Servidor backend corriendo en el puerto ${PORT}`);
 });
+----- ./backend/src/middleware/authMiddleware.js -----
+// backend/src/middleware/authMiddleware.js
+const jwt = require('jsonwebtoken');
 
+module.exports = function (req, res, next) {
+  const token = req.header('Authorization');
+
+  if (!token) {
+    return res.status(401).json({ msg: 'No hay token, autorización denegada' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || '123456'); // Usando el valor simulado de JWT_SECRET
+    req.user = decoded.user;
+    next();
+  } catch (err) {
+    res.status(401).json({ msg: 'Token no válido' });
+  }
+};
 ----- ./backend/src/config/db.js -----
 // backend/src/config/db.js
 
@@ -2887,38 +3490,86 @@ pool.on('connect', () => {
 });
 
 module.exports = pool;
-
 ----- ./backend/src/models/profile.js -----
 // backend/src/models/profile.js
-
 const pool = require('../config/db');
 
 const Profile = {
-  // Obtener el perfil (asumiendo un solo perfil)
   getProfile: async () => {
-    const res = await pool.query('SELECT * FROM profiles LIMIT 1');
-    return res.rows[0];
+    const { rows } = await pool.query('SELECT * FROM profiles LIMIT 1');
+    return rows.length > 0 ? rows[0] : null;
   },
 
-  // Actualizar el perfil
   updateProfile: async (profile) => {
     const { name, email, bio, profile_picture_url } = profile;
-    const res = await pool.query(
-      `UPDATE profiles
-       SET name = $1,
-           email = $2,
-           bio = $3,
-           profile_picture_url = $4,
-           updated_at = NOW()
-       WHERE id = (SELECT id FROM profiles LIMIT 1)
-       RETURNING *`,
+    const { rows } = await pool.query(
+      `UPDATE profiles SET name = $1, email = $2, bio = $3, profile_picture_url = $4, updated_at = NOW()
+       WHERE id = (SELECT id FROM profiles LIMIT 1) RETURNING *`,
       [name, email, bio, profile_picture_url]
     );
-    return res.rows[0];
+    return rows[0];
   },
 };
 
 module.exports = Profile;
+----- ./backend/src/models/User.js -----
+// backend/src/models/User.js
+const pool = require('../config/db');
+
+const User = {
+    create: async (userData) => {
+        const { name, email, password, role } = userData;
+        const userRole = role || 'user'; // Asigna 'user' por defecto si no se proporciona rol
+        const result = await pool.query(
+            'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
+            [name, email, password, userRole]
+        );
+        return result.rows[0];
+    },
+
+    findByEmail: async (email) => {
+        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        return result.rows[0];
+    },
+
+    findById: async (id) => {
+        const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+        return result.rows[0];
+    },
+
+    getAll: async () => {
+        const result = await pool.query('SELECT id, name, email, role FROM users');
+        return result.rows;
+    },
+
+    update: async (id, userData) => {
+        const { name, email, password, role } = userData;
+        const userRole = role || 'user'; // Asigna 'user' por defecto si no se proporciona rol
+
+        let query = 'UPDATE users SET name = $1, email = $2, role = $3';
+        const values = [name, email, userRole];
+        let count = 4;
+
+        if (password) {
+            query += ', password = $4';
+            values.push(password);
+            count++;
+        }
+
+        query += ` WHERE id = $${count} RETURNING id, name, email, role`;
+        values.push(id);
+
+        const result = await pool.query(query, values);
+        return result.rows[0];
+    },
+
+    delete: async (id) => {
+        const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id, name, email, role', [id]);
+        return result.rows[0];
+    },
+};
+
+module.exports = User;
 
 ----- ./backend/src/models/task.js -----
 // backend/src/models/task.js
@@ -3070,6 +3721,62 @@ const Task = {
 };
 
 module.exports = Task;
+----- ./backend/src/controllers/userController.js -----
+// backend/src/controllers/userController.js
+const User = require('../models/User');
+
+const userController = {
+  getAllUsers: async (req, res) => {
+    try {
+      const users = await User.getAll();
+      res.json(users);
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send('Error del servidor');
+    }
+  },
+
+  getUserById: async (req, res) => {
+    try {
+      const user = await User.findById(req.params.id);
+      if (!user) {
+        return res.status(404).json({ msg: 'Usuario no encontrado' });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send('Error del servidor');
+    }
+  },
+
+  updateUser: async (req, res) => {
+    try {
+      const updatedUser = await User.update(req.params.id, req.body);
+      if (!updatedUser) {
+        return res.status(404).json({ msg: 'Usuario no encontrado' });
+      }
+      res.json(updatedUser);
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send('Error del servidor');
+    }
+  },
+
+  deleteUser: async (req, res) => {
+    try {
+      const deletedUser = await User.delete(req.params.id);
+      if (!deletedUser) {
+        return res.status(404).json({ msg: 'Usuario no encontrado' });
+      }
+      res.json({ msg: 'Usuario eliminado' });
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send('Error del servidor');
+    }
+  },
+};
+
+module.exports = userController;
 ----- ./backend/src/controllers/tasksController.js -----
 // backend/src/controllers/tasksController.js
 const Task = require('../models/task');
@@ -3093,6 +3800,7 @@ const tasksController = {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
+
     try {
       const task = await Task.getById(req.params.id);
       if (task) {
@@ -3112,6 +3820,7 @@ const tasksController = {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
+
     try {
       const newTask = await Task.create(req.body);
       res.status(201).json(newTask);
@@ -3127,6 +3836,7 @@ const tasksController = {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
+
     try {
       const updatedTask = await Task.complete(req.params.id);
       if (updatedTask) {
@@ -3146,6 +3856,7 @@ const tasksController = {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
+
     try {
       const updatedTask = await Task.archive(req.params.id);
       if (updatedTask) {
@@ -3165,6 +3876,7 @@ const tasksController = {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
+
     try {
       const updatedTask = await Task.unarchive(req.params.id);
       if (updatedTask) {
@@ -3183,16 +3895,6 @@ const tasksController = {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
-    }
-    const { status, difficulty } = req.body;
-    const validStatuses = ['Pending', 'In Progress', 'Completed', 'Archived'];
-    const validDifficulties = [1, 2, 3];
-
-    if (status && !validStatuses.includes(status)) {
-      return res.status(400).json({ error: 'Estado no válido' });
-    }
-    if (difficulty && !validDifficulties.includes(difficulty)) {
-      return res.status(400).json({ error: 'Dificultad no válida' });
     }
 
     try {
@@ -3214,6 +3916,7 @@ const tasksController = {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
+
     try {
       await Task.delete(req.params.id);
       res.json({ message: 'Tarea eliminada' });
@@ -3230,7 +3933,8 @@ const tasksController = {
       const completed = await Task.countByStatus('Completed');
       const pending = await Task.countByStatus('Pending');
       const inProgress = await Task.countByStatus('In Progress');
-      const priorityDistribution = await Task.getDifficultyByPriority();
+      const priorityDistribution = await Task.getDifficultyByPriority(); // Llama a la función correcta
+
       res.json({
         totalTasks,
         completed,
@@ -3259,15 +3963,16 @@ const tasksController = {
 module.exports = tasksController;
 ----- ./backend/src/controllers/profileController.js -----
 // backend/src/controllers/profileController.js
-
 const Profile = require('../models/profile');
 const { validationResult } = require('express-validator');
 
 const profileController = {
-  // Obtener el perfil
   getProfile: async (req, res) => {
     try {
       const profile = await Profile.getProfile();
+      if (!profile) {
+        return res.status(404).json({ error: 'Perfil no encontrado' });
+      }
       res.json(profile);
     } catch (error) {
       console.error('Error al obtener el perfil:', error);
@@ -3275,7 +3980,6 @@ const profileController = {
     }
   },
 
-  // Actualizar el perfil
   updateProfile: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -3283,7 +3987,15 @@ const profileController = {
     }
 
     try {
-      const updatedProfile = await Profile.updateProfile(req.body);
+      const profileData = {
+        ...req.body,
+        profile_picture_url: req.body.profile_picture_url,
+      };
+
+      const updatedProfile = await Profile.updateProfile(profileData);
+      if (!updatedProfile) {
+        return res.status(404).json({ error: 'Perfil no encontrado' });
+      }
       res.json(updatedProfile);
     } catch (error) {
       console.error('Error al actualizar el perfil:', error);
@@ -3293,10 +4005,107 @@ const profileController = {
 };
 
 module.exports = profileController;
+----- ./backend/src/controllers/authController.js -----
+// backend/src/controllers/authController.js
+
+const User = require('../models/User');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator');
+
+const authController = {
+    register: async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { name, email, password } = req.body; // Eliminamos 'role' aquí
+
+        try {
+            let user = await User.findByEmail(email);
+            if (user) {
+                return res.status(400).json({ msg: 'El usuario ya existe' });
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+
+            user = await User.create({
+                name,
+                email,
+                password: hashedPassword,
+                role: 'user' // Asigna 'user' por defecto
+            });
+
+            const payload = {
+                user: {
+                    id: user.id,
+                    role: user.role
+                },
+            };
+
+            jwt.sign(
+                payload,
+                process.env.JWT_SECRET || '123456', // Asegúrate de tener una variable de entorno para JWT_SECRET
+                { expiresIn: '1h' },
+                (err, token) => {
+                    if (err) throw err;
+                    res.json({ token });
+                }
+            );
+        } catch (error) {
+            console.error(error.message);
+            res.status(500).send('Error del servidor');
+        }
+    },
+
+    login: async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { email, password } = req.body;
+
+        try {
+            let user = await User.findByEmail(email);
+            if (!user) {
+                return res.status(400).json({ msg: 'Credenciales inválidas' });
+            }
+
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (!isMatch) {
+                return res.status(400).json({ msg: 'Credenciales inválidas' });
+            }
+
+            const payload = {
+                user: {
+                    id: user.id,
+                    role: user.role
+                },
+            };
+
+            jwt.sign(
+                payload,
+                process.env.JWT_SECRET || '123456', // Asegúrate de tener una variable de entorno para JWT_SECRET
+                { expiresIn: '1h' },
+                (err, token) => {
+                    if (err) throw err;
+                    res.json({ token });
+                }
+            );
+        } catch (error) {
+            console.error(error.message);
+            res.status(500).send('Error del servidor');
+        }
+    },
+};
+
+module.exports = authController;
 
 ----- ./backend/src/routes/profile.js -----
 // backend/src/routes/profile.js
-
 const express = require('express');
 const router = express.Router();
 const profileController = require('../controllers/profileController');
@@ -3305,7 +4114,7 @@ const { body } = require('express-validator');
 // Obtener el perfil
 router.get('/', profileController.getProfile);
 
-// Actualizar el perfil con validaciones
+// Actualizar el perfil con validaciones SIMPLIFICADAS TEMPORALMENTE
 router.put(
   '/',
   [
@@ -3316,19 +4125,65 @@ router.put(
       .isEmail()
       .withMessage('Formato de email inválido.'),
     body('bio').optional().isString(),
-    body('profile_picture_url')
-      .optional()
-      .isURL()
-      .withMessage('URL de imagen inválida.'),
+    // Eliminamos la validación custom temporalmente
+    // body('profile_picture_url').optional().isString(),
   ],
   profileController.updateProfile
 );
 
 module.exports = router;
+----- ./backend/src/routes/auth.js -----
+// backend/src/routes/auth.js
+const express = require('express');
+const router = express.Router();
+const authController = require('../controllers/authController');
+const { body } = require('express-validator');
 
+// Registro de usuario
+router.post(
+  '/register',
+  [
+    body('name', 'Por favor, introduce un nombre').not().isEmpty(),
+    body('email', 'Por favor, introduce un email válido').isEmail(),
+    body('password', 'La contraseña debe tener al menos 6 caracteres').isLength({
+      min: 6,
+    }),
+  ],
+  authController.register
+);
+
+// Inicio de sesión
+router.post(
+  '/login',
+  [
+    body('email', 'Por favor, introduce un email válido').isEmail(),
+    body('password', 'La contraseña es obligatoria').exists(),
+  ],
+  authController.login
+);
+
+module.exports = router;
+----- ./backend/src/routes/users.js -----
+// backend/src/routes/users.js
+const express = require('express');
+const router = express.Router();
+const userController = require('../controllers/userController');
+const authMiddleware = require('../middleware/authMiddleware');
+
+// Obtener todos los usuarios (protegida, solo para administradores)
+router.get('/', authMiddleware, userController.getAllUsers);
+
+// Obtener un usuario por ID (protegida, solo para administradores)
+router.get('/:id', authMiddleware, userController.getUserById);
+
+// Actualizar un usuario (protegida, solo para administradores)
+router.put('/:id', authMiddleware, userController.updateUser);
+
+// Eliminar un usuario (protegida, solo para administradores)
+router.delete('/:id', authMiddleware, userController.deleteUser);
+
+module.exports = router;
 ----- ./backend/src/routes/upload.js -----
-// backend/src/routes/upload.js
-
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -3340,7 +4195,7 @@ dotenv.config();
 // Configuración de almacenamiento de multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Asegúrate de que la carpeta 'uploads' exista
+    cb(null, 'uploads/'); // Asegúrate de que la carpeta 'uploads' exista en la raíz de tu proyecto
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + path.extname(file.originalname)); // Nombre único para cada archivo
@@ -3380,7 +4235,6 @@ router.post('/profile-picture', upload.single('profilePicture'), (req, res) => {
 });
 
 module.exports = router;
-
 ----- ./backend/src/routes/tasks.js -----
 const express = require('express');
 const router = express.Router();

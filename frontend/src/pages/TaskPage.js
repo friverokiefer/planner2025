@@ -1,9 +1,10 @@
-// ./frontend/src/pages/TaskPage.js
+// --- frontend/src/pages/TaskPage.js ---
 import React, { useState, useEffect } from 'react';
 import TaskForm from '../components/TaskForm';
 import TaskList from '../components/TaskList';
 import './TaskPage.css';
 import { Alert } from 'react-bootstrap';
+import authService from '../services/authService';
 
 function TaskPage() {
   const [tasks, setTasks] = useState([]);
@@ -12,7 +13,15 @@ function TaskPage() {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch('/api/tasks'); // URL relativa gracias al proxy
+      const user = authService.getCurrentUser();
+      if (!user) {
+        setError('No hay usuario autenticado');
+        return;
+      }
+      // Llamada al backend con Bearer Token
+      const response = await fetch('/api/tasks', {
+        headers: { 'Authorization': `Bearer ${user.token}` },
+      });
       if (!response.ok) {
         throw new Error('Error al obtener las tareas');
       }
@@ -33,13 +42,17 @@ function TaskPage() {
       <h2>Gestor de Tareas</h2>
       {error && <Alert variant="danger">{error}</Alert>}
       {message && <Alert variant="success">{message}</Alert>}
+
       <div className="task-layout">
         <div className="task-form-column">
-          <TaskForm onTaskAdded={(newTask) => {
-            setTasks((prev) => [newTask, ...prev]);
-            setMessage('¡Tarea agregada exitosamente!');
-            setTimeout(() => setMessage(''), 3000);
-          }} />
+          {/* onTaskAdded actualiza estado global de tasks */}
+          <TaskForm
+            onTaskAdded={(newTask) => {
+              setTasks((prev) => [newTask, ...prev]);
+              setMessage('¡Tarea agregada exitosamente!');
+              setTimeout(() => setMessage(''), 3000);
+            }}
+          />
         </div>
         <div className="task-list-column">
           <TaskList tasks={tasks} setTasks={setTasks} />

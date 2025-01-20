@@ -1,12 +1,12 @@
 // frontend/src/index.js
 import React from 'react';
-import ReactDOM from 'react-dom';
+import ReactDOM from 'react-dom/client'; // Para usar React 18
 import App from './App';
-import 'bootstrap/dist/css/bootstrap.min.css'; // Importación correcta de Bootstrap
+import 'bootstrap/dist/css/bootstrap.min.css'; // Importación de Bootstrap
 
-ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('root')
+const root = ReactDOM.createRoot(document.getElementById('root'));
+
+// Eliminamos <React.StrictMode> para evitar problemas con react-beautiful-dnd en desarrollo
+root.render(
+  <App />
 );

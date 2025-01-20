@@ -1,20 +1,41 @@
-// backend/src/controllers/tasksController.js
+// --- backend/src/controllers/tasksController.js ---
 const Task = require('../models/task');
 const { validationResult } = require('express-validator');
 
 const tasksController = {
-  // Obtener todas las tareas no archivadas
+  // Obtener todas las tareas (no archivadas) del usuario o de todos (si es admin)
   getAllTasks: async (req, res) => {
     try {
-      const tasks = await Task.getAll();
+      let tasks;
+      if (req.user.role === 'admin') {
+        tasks = await Task.getAll(); // Todas
+      } else {
+        tasks = await Task.getAllByUserId(req.user.id); // Solo del user
+      }
       res.json(tasks);
     } catch (error) {
-      console.error('Error al obtener las tareas:', error);
+      console.error('Error al obtener tareas:', error);
       res.status(500).json({ error: 'Error al obtener las tareas' });
     }
   },
 
-  // Obtener una tarea por ID
+  // Obtener tareas archivadas del usuario o de todos (si es admin)
+  getArchivedTasks: async (req, res) => {
+    try {
+      let tasks;
+      if (req.user.role === 'admin') {
+        tasks = await Task.getArchivedTasks();
+      } else {
+        tasks = await Task.getArchivedTasksByUserId(req.user.id);
+      }
+      res.json(tasks);
+    } catch (error) {
+      console.error('Error al obtener tareas archivadas:', error);
+      res.status(500).json({ error: 'Error al obtener tareas archivadas' });
+    }
+  },
+
+  // Obtener una tarea concreta
   getTaskById: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -22,19 +43,24 @@ const tasksController = {
     }
 
     try {
-      const task = await Task.getById(req.params.id);
-      if (task) {
-        res.json(task);
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
       } else {
-        res.status(404).json({ error: 'Tarea no encontrada' });
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
       }
+
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+      res.json(task);
     } catch (error) {
       console.error('Error al obtener la tarea:', error);
       res.status(500).json({ error: 'Error al obtener la tarea' });
     }
   },
 
-  // Crear una nueva tarea
+  // Crear una nueva tarea para el usuario logueado
   createTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -42,15 +68,20 @@ const tasksController = {
     }
 
     try {
-      const newTask = await Task.create(req.body);
-      res.status(201).json(newTask);
+      // Forzamos la asignación a user_id
+      const taskData = {
+        ...req.body,
+        user_id: req.user.id
+      };
+      const newTask = await Task.create(taskData);
+      return res.status(201).json(newTask);
     } catch (error) {
       console.error('Error al crear la tarea:', error);
       res.status(500).json({ error: 'Error al crear la tarea' });
     }
   },
 
-  // Completar una tarea
+  // Completar una tarea (aseguramos que es del user o admin)
   completeTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -58,12 +89,20 @@ const tasksController = {
     }
 
     try {
-      const updatedTask = await Task.complete(req.params.id);
-      if (updatedTask) {
-        res.json(updatedTask);
+      // Verificar que exista y que sea del usuario
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
       } else {
-        res.status(404).json({ error: 'Tarea no encontrada' });
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
       }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+
+      // Marcar como "Completed"
+      const updatedTask = await Task.complete(req.params.id);
+      res.json(updatedTask);
     } catch (error) {
       console.error('Error al completar la tarea:', error);
       res.status(500).json({ error: 'Error al completar la tarea' });
@@ -78,12 +117,18 @@ const tasksController = {
     }
 
     try {
-      const updatedTask = await Task.archive(req.params.id);
-      if (updatedTask) {
-        res.json(updatedTask);
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
       } else {
-        res.status(404).json({ error: 'Tarea no encontrada para archivar' });
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
       }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+
+      const updatedTask = await Task.archive(req.params.id);
+      res.json(updatedTask);
     } catch (error) {
       console.error('Error al archivar la tarea:', error);
       res.status(500).json({ error: 'Error al archivar la tarea' });
@@ -98,19 +143,25 @@ const tasksController = {
     }
 
     try {
-      const updatedTask = await Task.unarchive(req.params.id);
-      if (updatedTask) {
-        res.json(updatedTask);
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
       } else {
-        res.status(404).json({ error: 'Tarea no encontrada para desarchivar' });
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
       }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+
+      const updatedTask = await Task.unarchive(req.params.id);
+      res.json(updatedTask);
     } catch (error) {
       console.error('Error al desarchivar la tarea:', error);
       res.status(500).json({ error: 'Error al desarchivar la tarea' });
     }
   },
 
-  // Actualizar una tarea existente
+  // Actualizar una tarea
   updateTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -118,19 +169,25 @@ const tasksController = {
     }
 
     try {
-      const updatedTask = await Task.update(req.params.id, req.body);
-      if (updatedTask) {
-        res.json(updatedTask);
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
       } else {
-        res.status(404).json({ error: 'Tarea no encontrada' });
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
       }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+
+      const updatedTask = await Task.update(req.params.id, req.body);
+      res.json(updatedTask);
     } catch (error) {
       console.error('Error al actualizar la tarea:', error);
       res.status(500).json({ error: 'Error al actualizar la tarea' });
     }
   },
 
-  // Eliminar una tarea
+  // Eliminar tarea
   deleteTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -138,6 +195,16 @@ const tasksController = {
     }
 
     try {
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
+      } else {
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
+      }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+
       await Task.delete(req.params.id);
       res.json({ message: 'Tarea eliminada' });
     } catch (error) {
@@ -146,36 +213,34 @@ const tasksController = {
     }
   },
 
-  // Obtener estadísticas de tareas
+  // Estadísticas: si es admin, estadísticas de todos, si no, sólo del user
   getStats: async (req, res) => {
     try {
-      const totalTasks = await Task.countAll();
-      const completed = await Task.countByStatus('Completed');
-      const pending = await Task.countByStatus('Pending');
-      const inProgress = await Task.countByStatus('In Progress');
-      const priorityDistribution = await Task.getDifficultyByPriority(); // Llama a la función correcta
+      let totalTasks, completed, pending, inProgress;
+
+      if (req.user.role === 'admin') {
+        totalTasks = await Task.countAll();
+        completed = await Task.countByStatus('Completed');
+        pending = await Task.countByStatus('Pending');
+        inProgress = await Task.countByStatus('In Progress');
+      } else {
+        totalTasks = await Task.countAllForUser(req.user.id);
+        completed = await Task.countByStatusForUser('Completed', req.user.id);
+        pending = await Task.countByStatusForUser('Pending', req.user.id);
+        inProgress = await Task.countByStatusForUser('In Progress', req.user.id);
+      }
+
+      // Podrías añadir distribuciones por prioridad/dificultad si quieres.
 
       res.json({
         totalTasks,
         completed,
         pending,
         inProgress,
-        priorityDistribution,
       });
     } catch (error) {
       console.error('Error al obtener estadísticas:', error);
       res.status(500).json({ error: 'Error al obtener estadísticas' });
-    }
-  },
-
-  // Obtener tareas archivadas
-  getArchivedTasks: async (req, res) => {
-    try {
-      const archivedTasks = await Task.getArchivedTasks();
-      res.json(archivedTasks);
-    } catch (error) {
-      console.error('Error al obtener tareas archivadas:', error);
-      res.status(500).json({ error: 'Error al obtener tareas archivadas' });
     }
   },
 };

@@ -5,6 +5,7 @@ import EditProfileModal from '../components/EditProfileModal';
 import useSound from '../hooks/useSound';
 import editProfileSound from '../assets/sounds/intro-sound-1-269293.mp3';
 import { Alert } from 'react-bootstrap';
+import authService from '../services/authService';
 
 function ProfilePage() {
   const [profile, setProfile] = useState({
@@ -20,7 +21,12 @@ function ProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch('/api/profile');
+        const user = authService.getCurrentUser();
+        const response = await fetch('/api/profile', {
+          headers: {
+            'Authorization': `Bearer ${user?.token || ''}`,
+          },
+        });
         if (!response.ok) {
           throw new Error('Error al obtener el perfil');
         }
@@ -40,10 +46,12 @@ function ProfilePage() {
     playEditProfileSound();
 
     try {
+      const user = authService.getCurrentUser();
       const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token || ''}`,
         },
         body: JSON.stringify(updatedProfile),
       });
@@ -53,10 +61,12 @@ function ProfilePage() {
         setProfile(data);
         playEditProfileSound();
       } else {
-        console.error('Error al actualizar el perfil');
+        const errorData = await response.json();
+        setError(errorData.error || 'Error al actualizar el perfil');
       }
     } catch (error) {
       console.error('Error al actualizar el perfil:', error);
+      setError('Error al actualizar el perfil');
     }
   };
 
@@ -91,6 +101,7 @@ function ProfilePage() {
         profile={profile}
         handleSave={handleSaveProfile}
       />
+      {error && <Alert variant="danger">{error}</Alert>}
     </div>
   );
 }

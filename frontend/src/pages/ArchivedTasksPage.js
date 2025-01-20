@@ -1,24 +1,31 @@
 // frontend/src/pages/ArchivedTasksPage.js
-
 import React, { useState, useEffect } from 'react';
 import TaskItem from '../components/TaskItem';
 import ConfirmModal from '../components/ConfirmModal';
 import './ArchivedTasksPage.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Alert } from 'react-bootstrap';
+import authService from '../services/authService';
 
 function ArchivedTasksPage() {
   const [archivedTasks, setArchivedTasks] = useState([]);
   const [error, setError] = useState(null);
+  const [actionError, setActionError] = useState('');
 
-  // Para confirmar eliminación
+  // Eliminar
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [actionError, setActionError] = useState('');
 
   const fetchArchivedTasks = async () => {
     try {
-      const response = await fetch('/api/tasks/archived');
+      const user = authService.getCurrentUser();
+      if (!user) {
+        setError('No hay usuario autenticado');
+        return;
+      }
+      const response = await fetch('/api/tasks/archived', {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
       if (!response.ok) {
         throw new Error('Error al obtener las tareas archivadas');
       }
@@ -34,15 +41,20 @@ function ArchivedTasksPage() {
     fetchArchivedTasks();
   }, []);
 
+  // Desarchivar
   const handleUnarchive = async (id) => {
     setActionError('');
     try {
+      const user = authService.getCurrentUser();
       const response = await fetch(`/api/tasks/${id}/unarchive`, {
         method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
       });
       if (response.ok) {
-        const updatedTask = await response.json();
-        setArchivedTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+        // Quitar la tarea del array
+        setArchivedTasks((prev) => prev.filter((t) => t.id !== id));
       } else {
         const errorData = await response.json();
         setActionError(errorData.error || 'Error al desarchivar la tarea');
@@ -53,19 +65,22 @@ function ArchivedTasksPage() {
     }
   };
 
+  // Editar Tarea archivada
   const handleEdit = async (id, updatedTask) => {
     setActionError('');
     try {
+      const user = authService.getCurrentUser();
       const response = await fetch(`/api/tasks/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
         },
         body: JSON.stringify(updatedTask),
       });
       if (response.ok) {
         const data = await response.json();
-        setArchivedTasks((prevTasks) => prevTasks.map(task => task.id === id ? data : task));
+        setArchivedTasks((prev) => prev.map((t) => (t.id === id ? data : t)));
       } else {
         const errorData = await response.json();
         setActionError(errorData.error || 'Error al editar la tarea archivada');
@@ -76,6 +91,7 @@ function ArchivedTasksPage() {
     }
   };
 
+  // Eliminar Tarea archivada
   const handleDelete = (task) => {
     setTaskToDelete(task);
     setShowDeleteConfirm(true);
@@ -84,11 +100,13 @@ function ArchivedTasksPage() {
   const confirmDelete = async () => {
     setActionError('');
     try {
+      const user = authService.getCurrentUser();
       const response = await fetch(`/api/tasks/${taskToDelete.id}`, {
         method: 'DELETE',
+        headers: { Authorization: `Bearer ${user.token}` },
       });
       if (response.ok) {
-        setArchivedTasks((prevTasks) => prevTasks.filter(task => task.id !== taskToDelete.id));
+        setArchivedTasks((prev) => prev.filter((t) => t.id !== taskToDelete.id));
         setShowDeleteConfirm(false);
         setTaskToDelete(null);
       } else {
@@ -106,16 +124,14 @@ function ArchivedTasksPage() {
     setTaskToDelete(null);
   };
 
+  // Drag & Drop archivadas
   const handleOnDragEnd = (result) => {
     if (!result.destination) return;
-
     const items = Array.from(archivedTasks);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-
     setArchivedTasks(items);
-
-    // Opcional: Actualizar el orden en el backend si es necesario
+    // Opcional: actualizar orden en backend
   };
 
   return (
@@ -123,13 +139,22 @@ function ArchivedTasksPage() {
       <h2>Tareas Archivadas</h2>
       {error && <Alert variant="danger">{error}</Alert>}
       {actionError && <Alert variant="danger">{actionError}</Alert>}
+
       <DragDropContext onDragEnd={handleOnDragEnd}>
         <Droppable droppableId="archivedTasks">
           {(provided) => (
-            <div className="task-container" {...provided.droppableProps} ref={provided.innerRef}>
+            <div
+              className="task-container"
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+            >
               {archivedTasks.length > 0 ? (
                 archivedTasks.map((task, index) => (
-                  <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
+                  <Draggable
+                    key={task.id}
+                    draggableId={task.id.toString()}
+                    index={index}
+                  >
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
@@ -142,7 +167,6 @@ function ArchivedTasksPage() {
                           onUnarchive={handleUnarchive}
                           onEdit={handleEdit}
                           onDelete={handleDelete}
-                          // No es necesario pasar onComplete y onArchive ya que las tareas están archivadas
                         />
                       </div>
                     )}

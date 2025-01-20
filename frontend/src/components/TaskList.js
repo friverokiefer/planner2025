@@ -12,7 +12,6 @@ function TaskList({ tasks, setTasks }) {
     difficulty: [],
     status: [],
   });
-
   const [filteredTasks, setFilteredTasks] = useState(tasks);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -23,7 +22,8 @@ function TaskList({ tasks, setTasks }) {
 
   const handleFilterChange = (category, value) => {
     setFilters((prevFilters) => {
-      const newCategory = prevFilters[category].includes(value)
+      const alreadySelected = prevFilters[category].includes(value);
+      const newCategory = alreadySelected
         ? prevFilters[category].filter((item) => item !== value)
         : [...prevFilters[category], value];
       return { ...prevFilters, [category]: newCategory };
@@ -32,22 +32,20 @@ function TaskList({ tasks, setTasks }) {
 
   const applyFilters = () => {
     let filtered = [...tasks];
-
-    // Filtros de Prioridad
+    // Filtro Prioridad
     if (filters.priority.length > 0) {
-      filtered = filtered.filter(task => filters.priority.includes(task.priority));
+      filtered = filtered.filter((task) => filters.priority.includes(task.priority));
     }
-
-    // Filtros de Dificultad
+    // Filtro Dificultad
     if (filters.difficulty.length > 0) {
-      filtered = filtered.filter(task => filters.difficulty.includes(task.difficulty.toString()));
+      filtered = filtered.filter((task) =>
+        filters.difficulty.includes(task.difficulty.toString())
+      );
     }
-
-    // Filtros de Estado
+    // Filtro Estado
     if (filters.status.length > 0) {
-      filtered = filtered.filter(task => filters.status.includes(task.status));
+      filtered = filtered.filter((task) => filters.status.includes(task.status));
     }
-
     setFilteredTasks(filtered);
   };
 
@@ -59,23 +57,26 @@ function TaskList({ tasks, setTasks }) {
     });
   };
 
+  // Lógica drag & drop
   const handleOnDragEnd = (result) => {
     if (!result.destination) return;
-
     const items = Array.from(filteredTasks);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-
     setFilteredTasks(items);
-
-    // Opcional: Actualizar el orden en el backend si es necesario
+    // Opcional: Actualizar orden en el backend si es necesario
   };
 
   return (
     <div className="task-list">
-      {/* Botón para Mostrar/Ocultar Filtros */}
-      <Button variant="outline-primary" className="filter-toggle" onClick={() => setShowFilters(!showFilters)}>
-        {showFilters ? <FaTimes /> : <FaFilter />} {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+      {/* Botón para Filtros */}
+      <Button
+        variant="outline-primary"
+        className="filter-toggle"
+        onClick={() => setShowFilters(!showFilters)}
+      >
+        {showFilters ? <FaTimes /> : <FaFilter />}{' '}
+        {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
       </Button>
 
       {showFilters && (
@@ -184,11 +185,27 @@ function TaskList({ tasks, setTasks }) {
                       >
                         <TaskItem
                           task={task}
-                          onComplete={(id) => setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'Completed' } : t))}
-                          onDelete={(id) => setTasks(prev => prev.filter(t => t.id !== id))}
-                          onEdit={(id, updatedTask) => setTasks(prev => prev.map(t => t.id === id ? updatedTask : t))}
-                          onArchive={(id) => setTasks(prev => prev.filter(t => t.id !== id))}
-                          onUnarchive={(id) => setTasks(prev => [...prev, { ...task, status: 'Pending' }])}
+                          onComplete={(id) =>
+                            setTasks((prev) =>
+                              prev.map((t) =>
+                                t.id === id ? { ...t, status: 'Completed' } : t
+                              )
+                            )
+                          }
+                          onDelete={(id) =>
+                            setTasks((prev) => prev.filter((t) => t.id !== id))
+                          }
+                          onEdit={(id, updatedTask) =>
+                            setTasks((prev) =>
+                              prev.map((t) => (t.id === id ? updatedTask : t))
+                            )
+                          }
+                          onArchive={(id) =>
+                            setTasks((prev) => prev.filter((t) => t.id !== id))
+                          }
+                          onUnarchive={(id) =>
+                            setTasks((prev) => [...prev, { ...task, status: 'Pending' }])
+                          }
                         />
                       </div>
                     )}

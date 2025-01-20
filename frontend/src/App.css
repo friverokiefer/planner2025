@@ -1,103 +1,108 @@
 /* frontend/src/App.css */
 /* Estilos para el encabezado */
 .header {
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: #ffffff;
-    padding: 20px 40px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
-  
-  .header h1 {
-    margin: 0;
-    font-size: 2.5rem;
-    text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2);
-  }
-  
-  .header nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    gap: 30px;
-  }
-  
-  .header nav ul li a {
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 1.2rem;
-    transition: color 0.3s ease, transform 0.3s ease;
-    display: flex;
-    align-items: center;
-  }
-  
-  .header nav ul li a:hover {
-    color: #f0f0f0;
-    transform: translateY(-2px);
-  }
-  
-  .header nav ul li a svg {
-    margin-right: 8px;
-  }
-  
-  /* Estilos para el contenedor principal */
-  .main-container {
-    padding: 40px;
-    background-color: #f8f9fa;
-    min-height: 80vh;
-  }
-  
-  /* Estilos para el pie de página */
-  .footer {
-    background-color: #343a40;
-    color: #ffffff;
-    text-align: center;
-    padding: 20px;
-    position: relative;
-    bottom: 0;
-    width: 100%;
-  }
-  
-  /* Estilos para enlaces activos */
-  .header nav ul li .active {
-    font-weight: bold;
-    color: #f0f0f0; /* o el color que prefieras para el enlace activo */
-  }
-  
-  /* Estilos para el submenu */
-  .submenu {
-    position: relative;
-  }
-  
-  .submenu ul {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    padding: 10px;
-    border-radius: 4px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
-  
-  .submenu:hover ul {
-    display: block;
-  }
-  
-  .submenu ul li {
-    width: 100%;
-  }
-  
-  .submenu ul li a {
-    padding: 8px 16px;
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 1.1rem;
-    transition: background-color 0.3s ease;
-  }
-  
-  .submenu ul li a:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: #ffffff;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2);
+}
+
+.header nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 30px;
+}
+
+.header nav ul li a {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 1.2rem;
+  transition: color 0.3s ease, transform 0.3s ease;
+  display: flex;
+  align-items: center;
+}
+
+.header nav ul li a:hover {
+  color: #f0f0f0;
+  transform: translateY(-2px);
+}
+
+.header nav ul li a svg {
+  margin-right: 8px;
+}
+
+/* Estilos para el contenedor principal */
+.main-container {
+  padding: 40px;
+  background-color: #f8f9fa;
+  min-height: 80vh;
+}
+
+/* Estilos para el pie de página */
+.footer {
+  background-color: #343a40;
+  color: #ffffff;
+  text-align: center;
+  padding: 20px;
+  position: relative;
+  bottom: 0;
+  width: 100%;
+}
+
+/* Estilos para enlaces activos */
+.header nav ul li .active {
+  font-weight: bold;
+  color: #f0f0f0; 
+}
+
+/* Estilos para el submenu */
+.submenu {
+  position: relative;
+}
+
+.submenu ul {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.submenu:hover ul {
+  display: block;
+}
+
+.submenu ul li {
+  width: 100%;
+}
+
+.submenu ul li a {
+  padding: 8px 16px;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 1.1rem;
+  transition: background-color 0.3s ease;
+}
+
+.submenu ul li a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Estilos para el enlace de Logout */
+.header nav ul li a[onClick] {
+  cursor: pointer; 
+}

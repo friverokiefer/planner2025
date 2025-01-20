@@ -4,7 +4,8 @@ import './TaskForm.css';
 import useSound from '../hooks/useSound';
 import addTaskSound from '../assets/sounds/notification-1-269296.mp3';
 import { Form, Button } from 'react-bootstrap';
-import { FaEdit, FaClock, FaCalendar, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+import { FaEdit, FaClock, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+import authService from '../services/authService';
 
 function TaskForm({ onTaskAdded }) {
   const [task, setTask] = useState({
@@ -27,16 +28,27 @@ function TaskForm({ onTaskAdded }) {
     } else if (name === 'estimated_time') {
       newValue = value === '' ? '' : parseFloat(value);
     }
-
     setTask({ ...task, [name]: newValue });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Tomamos el token del usuario logueado
+    const user = authService.getCurrentUser();
+    if (!user || !user.token) {
+      setMessage('No hay usuario autenticado para crear tareas.');
+      return;
+    }
+
     try {
       const response = await fetch('/api/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Lo importante:
+          'Authorization': `Bearer ${user.token}`,
+        },
         body: JSON.stringify(task),
       });
 
@@ -44,6 +56,8 @@ function TaskForm({ onTaskAdded }) {
         const newTask = await response.json();
         onTaskAdded(newTask);
         playAddSound();
+
+        // Limpiar formulario y mostrar éxito
         setTask({
           name: '',
           description: '',
@@ -53,7 +67,8 @@ function TaskForm({ onTaskAdded }) {
           estimated_time: '',
         });
         setMessage('¡Tarea agregada exitosamente!');
-        setTimeout(() => setMessage(''), 5000); // Limpiar mensaje después de 5 segundos
+
+        setTimeout(() => setMessage(''), 5000); 
       } else {
         const errorData = await response.json();
         setMessage(errorData.error || 'Fallo al agregar la tarea.');
@@ -69,11 +84,14 @@ function TaskForm({ onTaskAdded }) {
       <h2 className="form-title">
         <FaEdit /> Agregar Nueva Tarea
       </h2>
+      
       {message && (
         <div className={`message ${message.includes('exitosamente') ? 'success' : 'error'}`}>
           {message}
         </div>
       )}
+
+      {/* Campo Nombre */}
       <Form.Group>
         <Form.Label><FaEdit /> Nombre:</Form.Label>
         <Form.Control
@@ -85,6 +103,8 @@ function TaskForm({ onTaskAdded }) {
           placeholder="Ingrese el nombre de la tarea"
         />
       </Form.Group>
+
+      {/* Campo Descripción */}
       <Form.Group>
         <Form.Label><FaEdit /> Descripción:</Form.Label>
         <Form.Control
@@ -95,6 +115,8 @@ function TaskForm({ onTaskAdded }) {
           placeholder="Ingrese la descripción de la tarea"
         />
       </Form.Group>
+
+      {/* Prioridad */}
       <Form.Group>
         <Form.Label><FaExclamationCircle /> Prioridad:</Form.Label>
         <Form.Control
@@ -109,6 +131,8 @@ function TaskForm({ onTaskAdded }) {
           <option value="High">Alta</option>
         </Form.Control>
       </Form.Group>
+
+      {/* Dificultad */}
       <Form.Group>
         <Form.Label><FaExclamationCircle /> Dificultad:</Form.Label>
         <Form.Control
@@ -123,6 +147,8 @@ function TaskForm({ onTaskAdded }) {
           <option value={3}>3 - Difícil</option>
         </Form.Control>
       </Form.Group>
+
+      {/* Estado */}
       <Form.Group>
         <Form.Label><FaCheckCircle /> Estado:</Form.Label>
         <Form.Control
@@ -137,6 +163,8 @@ function TaskForm({ onTaskAdded }) {
           <option value="Completed">Completado</option>
         </Form.Control>
       </Form.Group>
+
+      {/* Tiempo Estimado */}
       <Form.Group>
         <Form.Label><FaClock /> Tiempo Estimado (horas):</Form.Label>
         <Form.Control
@@ -149,6 +177,7 @@ function TaskForm({ onTaskAdded }) {
           placeholder="Horas estimadas"
         />
       </Form.Group>
+
       <Button type="submit" variant="success" className="add-task-button">
         Agregar Tarea
       </Button>
