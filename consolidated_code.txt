@@ -9,7 +9,7 @@ OUTPUT_FILE = "consolidated_code.txt"
 EXCLUDED_DIRS = {"node_modules", ".git", "__pycache__", "venv", "user_data"}
 
 # Extensiones de archivo a incluir
-INCLUDED_EXTENSIONS = {".js", ".css", ".html", ".py"}
+INCLUDED_EXTENSIONS = {".js", ".html", ".py"}
 
 def consolidate_code():
     """
@@ -96,268 +96,266 @@ for file_path, file_size in large_files:
     <div id="root"></div>
   </body>
 </html>
------ ./frontend/src/App.css -----
-/* frontend/src/App.css */
-/* Estilos para el encabezado */
-.header {
-  background: linear-gradient(135deg, #007bff, #0056b3);
-  color: #ffffff;
-  padding: 20px 40px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.header h1 {
-  margin: 0;
-  font-size: 2.5rem;
-  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2);
-}
-
-.header nav ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  gap: 30px;
-}
-
-.header nav ul li a {
-  color: #ffffff;
-  text-decoration: none;
-  font-size: 1.2rem;
-  transition: color 0.3s ease, transform 0.3s ease;
-  display: flex;
-  align-items: center;
-}
-
-.header nav ul li a:hover {
-  color: #f0f0f0;
-  transform: translateY(-2px);
-}
-
-.header nav ul li a svg {
-  margin-right: 8px;
-}
-
-/* Estilos para el contenedor principal */
-.main-container {
-  padding: 40px;
-  background-color: #f8f9fa;
-  min-height: 80vh;
-}
-
-/* Estilos para el pie de página */
-.footer {
-  background-color: #343a40;
-  color: #ffffff;
-  text-align: center;
-  padding: 20px;
-  position: relative;
-  bottom: 0;
-  width: 100%;
-}
-
-/* Estilos para enlaces activos */
-.header nav ul li .active {
-  font-weight: bold;
-  color: #f0f0f0; 
-}
-
-/* Estilos para el submenu */
-.submenu {
-  position: relative;
-}
-
-.submenu ul {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: linear-gradient(135deg, #007bff, #0056b3);
-  padding: 10px;
-  border-radius: 4px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.submenu:hover ul {
-  display: block;
-}
-
-.submenu ul li {
-  width: 100%;
-}
-
-.submenu ul li a {
-  padding: 8px 16px;
-  color: #ffffff;
-  text-decoration: none;
-  font-size: 1.1rem;
-  transition: background-color 0.3s ease;
-}
-
-.submenu ul li a:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Estilos para el enlace de Logout */
-.header nav ul li a[onClick] {
-  cursor: pointer; 
-}
 ----- ./frontend/src/index.js -----
 // frontend/src/index.js
 import React from 'react';
-import ReactDOM from 'react-dom/client'; // Para usar React 18
+import ReactDOM from 'react-dom/client'; // React 18
 import App from './App';
-import 'bootstrap/dist/css/bootstrap.min.css'; // Importación correcta de Bootstrap
+import 'bootstrap/dist/css/bootstrap.min.css';
 
+// Eliminamos <React.StrictMode> para evitar problemas con react-beautiful-dnd en desarrollo
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+  <App />
 );
 
 ----- ./frontend/src/App.js -----
 // frontend/src/App.js
 import React, { useState, useEffect } from 'react';
-import { 
-  BrowserRouter as Router, 
-  Routes, 
-  Route, 
-  Link, 
-  NavLink, 
-  Navigate
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  NavLink,
+  Navigate,
 } from 'react-router-dom';
-import TaskPage from './pages/TaskPage'; 
-import ProfilePage from './pages/ProfilePage'; 
-import FinancePage from './pages/FinancePage'; 
-import ArchivedTasksPage from './pages/ArchivedTasksPage'; 
-import TaskMetricsPage from './pages/TaskMetricsPage'; 
-import HomePage from './pages/HomePage'; 
-import LoginPage from './pages/LoginPage'; 
-import RegisterPage from './pages/RegisterPage'; 
-import AdminPage from './pages/AdminPage'; 
-import './App.css'; 
-import { 
-  FaTasks, 
-  FaUser, 
-  FaChartLine, 
-  FaArchive, 
-  FaChartPie, 
+
+import TaskPage from './pages/TaskPage';
+import ProfilePage from './pages/ProfilePage';
+import ArchivedTasksPage from './pages/ArchivedTasksPage';
+import TaskMetricsPage from './pages/TaskMetricsPage';
+import FriendsPage from './pages/FriendsPage';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import AdminPage from './pages/AdminPage';
+import './App.css';
+
+import {
+  FaTasks,
+  FaUser,
+  FaArchive,
+  FaChartPie,
   FaHome,
   FaSignInAlt,
   FaUserPlus,
-  FaUserShield
-} from 'react-icons/fa'; 
-import authService from './services/authService'; 
+  FaUserShield,
+} from 'react-icons/fa';
 
-function App() { 
-  const [user, setUser] = useState(null);
+import authService from './services/authService';
 
+function App() {
+  const [user, setUser] = useState(undefined);
+  const [theme, setTheme] = useState('default');
+  const [profilePicUrl, setProfilePicUrl] = useState(null);
+
+  // Cargar user y foto
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
-    setUser(currentUser);
+    if (!currentUser) {
+      setUser(null);
+    } else {
+      setUser(currentUser);
+      fetchProfilePic(currentUser.token);
+    }
   }, []);
+
+  const fetchProfilePic = async (token) => {
+    try {
+      const res = await fetch('/api/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.profile_picture_url) {
+          setProfilePicUrl(data.profile_picture_url);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetchProfilePic:', err);
+    }
+  };
 
   const handleLogin = (userData) => {
     setUser(userData);
+    fetchProfilePic(userData.token);
   };
 
   const handleLogout = () => {
     authService.logout();
     setUser(null);
+    setProfilePicUrl(null);
   };
 
-  return ( 
-    <Router> 
-      <header className="header"> 
-        <h1>Planner2025</h1> 
-        <nav> 
-          <ul>
-            <li>
-              <NavLink to="/" className={({ isActive }) => isActive ? 'active' : undefined}>
-                <FaHome color="#ffffff" /> Home
-              </NavLink>
-            </li> 
-            {user ? (
-              <>
-                <li> 
-                  <NavLink to="/profile" className={({ isActive }) => isActive ? 'active' : undefined}> 
-                    <FaUser color="#ffffff" /> Profile 
-                  </NavLink> 
-                </li> 
-                <li> 
-                  <NavLink to="/tasks" className={({ isActive }) => isActive ? 'active' : undefined}> 
-                    <FaTasks color="#ffffff" /> Tasks 
-                  </NavLink> 
-                </li> 
-                <li className="submenu"> 
-                  <NavLink to="/archived" className={({ isActive }) => isActive ? 'active' : undefined}> 
-                    <FaArchive color="#ffffff" /> Archived 
-                  </NavLink> 
-                </li> 
-                <li> 
-                  <NavLink to="/metrics" className={({ isActive }) => isActive ? 'active' : undefined}> 
-                    <FaChartPie color="#ffffff" /> Metrics 
-                  </NavLink> 
-                </li> 
-                <li> 
-                  <NavLink to="/finance" className={({ isActive }) => isActive ? 'active' : undefined}> 
-                    <FaChartLine color="#ffffff" /> Finance 
-                  </NavLink> 
-                </li>
-                {user.role === 'admin' && (
+  if (user === undefined) {
+    return <div>Cargando sesión...</div>;
+  }
+
+  return (
+    <div className={`app-container theme-${theme}`}>
+      <Router>
+        <header className="header">
+          <h1>Planner2025{user ? ` — ¡Bienvenido, ${user.id}!` : ''}</h1>
+
+          {/* Foto de perfil en el header (si existe) */}
+          {profilePicUrl && (
+            <img
+              src={profilePicUrl}
+              alt="Mi Perfil"
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                marginRight: '10px',
+              }}
+            />
+          )}
+
+          {/* Selector de tema */}
+          <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+            <option value="default">Tema Default</option>
+            <option value="dark">Tema Oscuro</option>
+            <option value="pink">Tema Rosa</option>
+          </select>
+
+          <nav>
+            <ul>
+              <li>
+                <NavLink
+                  to="/"
+                  className={({ isActive }) => (isActive ? 'active' : undefined)}
+                >
+                  <FaHome color="#ffffff" /> Home
+                </NavLink>
+              </li>
+
+              {user ? (
+                <>
                   <li>
-                    <NavLink to="/admin" className={({ isActive }) => isActive ? 'active' : undefined}>
-                      <FaUserShield color="#ffffff" /> Admin
+                    <NavLink
+                      to="/profile"
+                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                    >
+                      <FaUser color="#ffffff" /> Profile
                     </NavLink>
                   </li>
-                )}
-                <li>
-                  <button onClick={handleLogout} className="logout-button">
-                    Logout
-                  </button>
-                </li>
-              </>
-            ) : (
-              <>
-                <li>
-                  <NavLink to="/login" className={({ isActive }) => isActive ? 'active' : undefined}>
-                    <FaSignInAlt color="#ffffff" /> Login
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/register" className={({ isActive }) => isActive ? 'active' : undefined}>
-                    <FaUserPlus color="#ffffff" /> Register
-                  </NavLink>
-                </li>
-              </>
-            )}
-          </ul> 
-        </nav> 
-      </header> 
-      <div className="main-container"> 
-        <Routes>
-          <Route path="/" element={<HomePage />} /> 
-          <Route path="/tasks" element={user ? <TaskPage /> : <Navigate to="/login" />} /> 
-          <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} /> 
-          <Route path="/finance" element={user ? <FinancePage /> : <Navigate to="/login" />} /> 
-          <Route path="/archived" element={user ? <ArchivedTasksPage /> : <Navigate to="/login" />} /> 
-          <Route path="/metrics" element={user ? <TaskMetricsPage /> : <Navigate to="/login" />} /> 
-          <Route path="/login" element={<LoginPage onLogin={handleLogin} />} /> 
-          <Route path="/register" element={<RegisterPage onLogin={handleLogin} />} />
-          <Route path="/admin" element={user?.role === 'admin' ? <AdminPage /> : <Navigate to="/login" />} /> 
-          <Route path="*" element={<Navigate to="/" />} /> {/* Redirigir a la página principal si no se encuentra la ruta */}
-        </Routes> 
-      </div> 
-      <footer className="footer"> 
-        © 2025 Planner2025. Built with 💜 by Felipe. 
-      </footer> 
-    </Router> 
-  ); 
-} 
+                  <li>
+                    <NavLink
+                      to="/tasks"
+                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                    >
+                      <FaTasks color="#ffffff" /> Tasks
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/archived"
+                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                    >
+                      <FaArchive color="#ffffff" /> Archived
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/metrics"
+                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                    >
+                      <FaChartPie color="#ffffff" /> Metrics
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/friends"
+                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                    >
+                      Amigos
+                    </NavLink>
+                  </li>
+                  {user.role === 'admin' && (
+                    <li>
+                      <NavLink
+                        to="/admin"
+                        className={({ isActive }) => (isActive ? 'active' : undefined)}
+                      >
+                        <FaUserShield color="#ffffff" /> Admin
+                      </NavLink>
+                    </li>
+                  )}
+                  <li>
+                    <button onClick={handleLogout} className="logout-button">
+                      Logout
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <NavLink
+                      to="/login"
+                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                    >
+                      <FaSignInAlt color="#ffffff" /> Login
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/register"
+                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                    >
+                      <FaUserPlus color="#ffffff" /> Register
+                    </NavLink>
+                  </li>
+                </>
+              )}
+            </ul>
+          </nav>
+        </header>
+
+        <div className="main-container">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route
+              path="/tasks"
+              element={user ? <TaskPage /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/profile"
+              element={user ? <ProfilePage /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/archived"
+              element={user ? <ArchivedTasksPage /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/metrics"
+              element={user ? <TaskMetricsPage /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/friends"
+              element={user ? <FriendsPage /> : <Navigate to="/login" />}
+            />
+
+            <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+            <Route
+              path="/register"
+              element={<RegisterPage onLogin={handleLogin} />}
+            />
+
+            <Route
+              path="/admin"
+              element={
+                user?.role === 'admin' ? <AdminPage /> : <Navigate to="/login" />
+              }
+            />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </div>
+
+        <footer className="footer">© 2025 Planner2025. Built with 💜</footer>
+      </Router>
+    </div>
+  );
+}
 
 export default App;
 
@@ -420,110 +418,6 @@ function RegisterForm({ onRegister }) {
 }
 
 export default RegisterForm;
-
------ ./frontend/src/components/TaskList.css -----
-/* frontend/src/components/TaskList.css */
-
-.task-list {
-    background-color: #ffffff;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    position: relative;
-}
-
-.filter-toggle {
-    position: absolute;
-    top: -15px;
-    right: 0;
-    z-index: 1;
-}
-
-.filters {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 25px;
-    gap: 15px;
-    flex-wrap: wrap;
-    background-color: #f1f1f1;
-    padding: 15px;
-    border-radius: 8px;
-}
-
-.filters .form-group {
-    flex: 1;
-    min-width: 200px;
-}
-
-.filters .form-group label {
-    font-weight: bold;
-    color: var(--text-color);
-}
-
-.filters .form-check-input:checked {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.task-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-/* Estilo para el efecto de arrastre */
-.dragging {
-    background-color: #f0f8ff;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    transform: rotate(2deg);
-}
-
------ ./frontend/src/components/ConfirmModal.css -----
-/* ConfirmModal.css */
-
-.modal-body p {
-    font-size: 16px;
-    color: var(--text-color);
-}
-
-.modal-footer button {
-    min-width: 100px;
-}
-
-@media (max-width: 576px) {
-    .modal-content {
-        padding: 10px;
-    }
-
-    .modal-header,
-    .modal-footer {
-        padding: 10px;
-    }
-}
-
-/* Estilos para los botones del modal */
-.btn-secondary {
-    background-color: #6c757d;
-    border: none;
-    color: white;
-    transition: background-color 0.3s;
-}
-
-.btn-secondary:hover {
-    background-color: #5a6268;
-}
-
-.btn-danger {
-    background-color: #dc3545;
-    border: none;
-    color: white;
-    transition: background-color 0.3s;
-}
-
-.btn-danger:hover {
-    background-color: #c82333;
-}
 
 ----- ./frontend/src/components/EditTaskModal.js -----
 // frontend/src/components/EditTaskModal.js
@@ -750,41 +644,6 @@ export default EditTaskModal;
 
 ----- ./frontend/src/components/UserList.js -----
 
------ ./frontend/src/components/EditTaskModal.css -----
-/* frontend/src/components/EditTaskModal.css */
-
-.modal-body form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .modal-body form .form-group label {
-    font-weight: bold;
-    color: var(--text-color);
-  }
-  
-  .modal-body form .form-control {
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-  }
-  
-  .modal-footer button {
-    min-width: 100px;
-  }
-  
-  @media (max-width: 576px) {
-    .modal-content {
-      padding: 10px;
-    }
-  
-    .modal-header,
-    .modal-footer {
-      padding: 10px;
-    }
-  }
-  
 ----- ./frontend/src/components/TaskItem.js -----
 // frontend/src/components/TaskItem.js
 import React, { useState } from 'react';
@@ -805,6 +664,7 @@ import completeSound from '../assets/sounds/notification-1-269296.mp3';
 import deleteSound from '../assets/sounds/notification-2-269292.mp3';
 import editSound from '../assets/sounds/notification-sound-3-262896.mp3';
 import archiveSound from '../assets/sounds/intro-sound-2-269294.mp3';
+import authService from '../services/authService';
 
 function TaskItem({
   task,
@@ -823,21 +683,29 @@ function TaskItem({
   const playEditSound = useSound(editSound);
   const playArchiveSound = useSound(archiveSound);
 
-  // Validar que 'task' y 'task.id' existan antes de usarlos
+  // Verificar que 'task' e 'id' existan
   if (!task || typeof task.id === 'undefined') {
     console.error('El objeto "task" o "task.id" es indefinido:', task);
-    return null; // No renderizar nada si 'task' es inválido
+    return null;
   }
 
+  // Extraemos el token del usuario logueado (para todas las peticiones)
+  const user = authService.getCurrentUser();
+  const token = user?.token;
+
+  // Completar Tarea
   const handleComplete = async () => {
     setActionError('');
     try {
       const response = await fetch(`/api/tasks/${task.id}/complete`, {
         method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       if (response.ok) {
         const updatedTask = await response.json();
-        onComplete(updatedTask.id);
+        if (onComplete) onComplete(updatedTask.id);
         playCompleteSound();
       } else {
         const errorData = await response.json();
@@ -849,6 +717,7 @@ function TaskItem({
     }
   };
 
+  // "Continuar" (poner status = "In Progress")
   const handleContinue = async () => {
     setActionError('');
     try {
@@ -856,12 +725,13 @@ function TaskItem({
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status: 'In Progress' }),
       });
       if (response.ok) {
         const updatedTask = await response.json();
-        onEdit(task.id, updatedTask);
+        if (onEdit) onEdit(task.id, updatedTask);
         playCompleteSound();
       } else {
         const errorData = await response.json();
@@ -873,6 +743,7 @@ function TaskItem({
     }
   };
 
+  // Eliminar Tarea (confirma primero)
   const handleDelete = () => {
     setShowDeleteConfirm(true);
   };
@@ -882,9 +753,12 @@ function TaskItem({
     try {
       const response = await fetch(`/api/tasks/${task.id}`, {
         method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       if (response.ok) {
-        onDelete(task.id);
+        if (onDelete) onDelete(task.id);
         playDeleteSound();
         setShowDeleteConfirm(false);
       } else {
@@ -897,20 +771,25 @@ function TaskItem({
     }
   };
 
+  // Guardar cambios del modal de edición
   const handleEditSave = (updatedTask) => {
-    onEdit(task.id, updatedTask);
+    if (onEdit) onEdit(task.id, updatedTask);
     playEditSound();
     setShowEditModal(false);
   };
 
+  // Archivar
   const handleArchive = async () => {
     setActionError('');
     try {
       const response = await fetch(`/api/tasks/${task.id}/archive`, {
         method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       if (response.ok) {
-        onArchive(task.id);
+        if (onArchive) onArchive(task.id);
         playArchiveSound();
       } else {
         const errorData = await response.json();
@@ -922,15 +801,19 @@ function TaskItem({
     }
   };
 
+  // Desarchivar
   const handleUnarchive = async () => {
     setActionError('');
     try {
       const response = await fetch(`/api/tasks/${task.id}/unarchive`, {
         method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       if (response.ok) {
         const updatedTask = await response.json();
-        onUnarchive(updatedTask.id);
+        if (onUnarchive) onUnarchive(updatedTask.id);
       } else {
         const errorData = await response.json();
         setActionError(errorData.error || 'Error al desarchivar la tarea');
@@ -941,24 +824,25 @@ function TaskItem({
     }
   };
 
+  // Cambiar status via dropdown
   const handleStatusChange = async (newStatus) => {
     if (!newStatus) {
       console.error('Nuevo estado no proporcionado.');
       return;
     }
-
     setActionError('');
     try {
       const response = await fetch(`/api/tasks/${task.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status: newStatus }),
       });
       if (response.ok) {
         const updatedTask = await response.json();
-        onEdit(task.id, updatedTask);
+        if (onEdit) onEdit(task.id, updatedTask);
       } else {
         const errorData = await response.json();
         setActionError(errorData.error || 'Error al cambiar el estado de la tarea');
@@ -969,24 +853,25 @@ function TaskItem({
     }
   };
 
+  // Cambiar dificultad via dropdown
   const handleDifficultyChange = async (newDifficulty) => {
     if (!newDifficulty) {
       console.error('Nueva dificultad no proporcionada.');
       return;
     }
-
     setActionError('');
     try {
       const response = await fetch(`/api/tasks/${task.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ difficulty: parseInt(newDifficulty, 10) }),
       });
       if (response.ok) {
         const updatedTask = await response.json();
-        onEdit(task.id, updatedTask);
+        if (onEdit) onEdit(task.id, updatedTask);
       } else {
         const errorData = await response.json();
         setActionError(errorData.error || 'Error al cambiar la dificultad de la tarea');
@@ -997,7 +882,7 @@ function TaskItem({
     }
   };
 
-  // Función para obtener color basado en estado
+  // Color para estado
   const getStatusColor = (status) => {
     switch (status) {
       case 'Pending':
@@ -1013,7 +898,7 @@ function TaskItem({
     }
   };
 
-  // Función para obtener color basado en dificultad
+  // Color para dificultad
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case 1:
@@ -1023,24 +908,23 @@ function TaskItem({
       case 3:
         return '#dc3545'; // Rojo
       default:
-        return '#6c757d'; // Gris
+        return '#6c757d';
     }
   };
 
   return (
     <>
       <div
-        className={`task-item ${
-          task.status === 'Completed' ? 'completed' : ''
-        } ${task.status === 'Archived' ? 'archived' : ''}`}
+        className={`task-item ${task.status === 'Completed' ? 'completed' : ''} ${
+          task.status === 'Archived' ? 'archived' : ''
+        }`}
       >
-        {/* Dropdown en la esquina superior derecha */}
+        {/* Dropdown menú (3 puntos) */}
         <div className="dropdown-top-right">
           <Dropdown>
             <Dropdown.Toggle variant="secondary" id={`dropdown-${task.id}`}>
               <FaEllipsisV />
             </Dropdown.Toggle>
-
             <Dropdown.Menu>
               {task.status !== 'Archived' && (
                 <>
@@ -1071,16 +955,16 @@ function TaskItem({
                   </Dropdown.Item>
                 </>
               )}
+
               {task.status === 'Archived' && (
-                <>
-                  <Dropdown.Item
-                    onClick={handleUnarchive}
-                    className="unarchive-dropdown-item"
-                  >
-                    <FaUndo /> Desarchivar
-                  </Dropdown.Item>
-                </>
+                <Dropdown.Item
+                  onClick={handleUnarchive}
+                  className="unarchive-dropdown-item"
+                >
+                  <FaUndo /> Desarchivar
+                </Dropdown.Item>
               )}
+
               <Dropdown.Divider />
               <Dropdown.Item
                 onClick={handleDelete}
@@ -1095,9 +979,9 @@ function TaskItem({
         <h3>{task.name}</h3>
         <p>{task.description}</p>
 
+        {/* Dropdowns de estado/dificultad sólo si no está archivada */}
         {task.status !== 'Archived' && (
           <div className="status-difficulty">
-            {/* Dropdown de Estado */}
             <Dropdown className="status-dropdown">
               <Dropdown.Toggle
                 variant="light"
@@ -1131,7 +1015,6 @@ function TaskItem({
               </Dropdown.Menu>
             </Dropdown>
 
-            {/* Dropdown de Dificultad */}
             <Dropdown className="difficulty-dropdown">
               <Dropdown.Toggle
                 variant="light"
@@ -1172,12 +1055,10 @@ function TaskItem({
         )}
 
         <p>Fecha de Creación: {new Date(task.created_at).toLocaleString()}</p>
-        {task.estimated_time && (
-          <p>Tiempo Estimado: {task.estimated_time} horas</p>
-        )}
+        {task.estimated_time && <p>Tiempo Estimado: {task.estimated_time} horas</p>}
         {task.actual_time && <p>Tiempo Real: {task.actual_time} horas</p>}
 
-        {/* Botón Completar en la esquina inferior izquierda */}
+        {/* Botón "Completar" aparte si no está completada/archivada */}
         {task.status !== 'Archived' && task.status !== 'Completed' && (
           <Button
             variant="success"
@@ -1189,6 +1070,7 @@ function TaskItem({
           </Button>
         )}
 
+        {/* Botón "Desarchivar" si está archivada */}
         {task.status === 'Archived' && (
           <Button
             variant="info"
@@ -1200,10 +1082,11 @@ function TaskItem({
           </Button>
         )}
 
-        {/* Mostrar errores de acciones */}
+        {/* Mostramos errores */}
         {actionError && <Alert variant="danger">{actionError}</Alert>}
       </div>
 
+      {/* Modal de edición */}
       <EditTaskModal
         show={showEditModal}
         handleClose={() => setShowEditModal(false)}
@@ -1211,6 +1094,7 @@ function TaskItem({
         handleSave={handleEditSave}
       />
 
+      {/* Confirmación para eliminar */}
       <ConfirmModal
         show={showDeleteConfirm}
         handleClose={() => setShowDeleteConfirm(false)}
@@ -1223,6 +1107,7 @@ function TaskItem({
 }
 
 export default TaskItem;
+
 ----- ./frontend/src/components/AdminPanel.js -----
 
 ----- ./frontend/src/components/TaskForm.js -----
@@ -1232,7 +1117,8 @@ import './TaskForm.css';
 import useSound from '../hooks/useSound';
 import addTaskSound from '../assets/sounds/notification-1-269296.mp3';
 import { Form, Button } from 'react-bootstrap';
-import { FaEdit, FaClock, FaCalendar, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+import { FaEdit, FaClock, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+import authService from '../services/authService';
 
 function TaskForm({ onTaskAdded }) {
   const [task, setTask] = useState({
@@ -1255,16 +1141,27 @@ function TaskForm({ onTaskAdded }) {
     } else if (name === 'estimated_time') {
       newValue = value === '' ? '' : parseFloat(value);
     }
-
     setTask({ ...task, [name]: newValue });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Tomamos el token del usuario logueado
+    const user = authService.getCurrentUser();
+    if (!user || !user.token) {
+      setMessage('No hay usuario autenticado para crear tareas.');
+      return;
+    }
+
     try {
       const response = await fetch('/api/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Lo importante:
+          'Authorization': `Bearer ${user.token}`,
+        },
         body: JSON.stringify(task),
       });
 
@@ -1272,6 +1169,8 @@ function TaskForm({ onTaskAdded }) {
         const newTask = await response.json();
         onTaskAdded(newTask);
         playAddSound();
+
+        // Limpiar formulario y mostrar éxito
         setTask({
           name: '',
           description: '',
@@ -1281,7 +1180,8 @@ function TaskForm({ onTaskAdded }) {
           estimated_time: '',
         });
         setMessage('¡Tarea agregada exitosamente!');
-        setTimeout(() => setMessage(''), 5000); // Limpiar mensaje después de 5 segundos
+
+        setTimeout(() => setMessage(''), 5000); 
       } else {
         const errorData = await response.json();
         setMessage(errorData.error || 'Fallo al agregar la tarea.');
@@ -1297,11 +1197,14 @@ function TaskForm({ onTaskAdded }) {
       <h2 className="form-title">
         <FaEdit /> Agregar Nueva Tarea
       </h2>
+      
       {message && (
         <div className={`message ${message.includes('exitosamente') ? 'success' : 'error'}`}>
           {message}
         </div>
       )}
+
+      {/* Campo Nombre */}
       <Form.Group>
         <Form.Label><FaEdit /> Nombre:</Form.Label>
         <Form.Control
@@ -1313,6 +1216,8 @@ function TaskForm({ onTaskAdded }) {
           placeholder="Ingrese el nombre de la tarea"
         />
       </Form.Group>
+
+      {/* Campo Descripción */}
       <Form.Group>
         <Form.Label><FaEdit /> Descripción:</Form.Label>
         <Form.Control
@@ -1323,6 +1228,8 @@ function TaskForm({ onTaskAdded }) {
           placeholder="Ingrese la descripción de la tarea"
         />
       </Form.Group>
+
+      {/* Prioridad */}
       <Form.Group>
         <Form.Label><FaExclamationCircle /> Prioridad:</Form.Label>
         <Form.Control
@@ -1337,6 +1244,8 @@ function TaskForm({ onTaskAdded }) {
           <option value="High">Alta</option>
         </Form.Control>
       </Form.Group>
+
+      {/* Dificultad */}
       <Form.Group>
         <Form.Label><FaExclamationCircle /> Dificultad:</Form.Label>
         <Form.Control
@@ -1351,6 +1260,8 @@ function TaskForm({ onTaskAdded }) {
           <option value={3}>3 - Difícil</option>
         </Form.Control>
       </Form.Group>
+
+      {/* Estado */}
       <Form.Group>
         <Form.Label><FaCheckCircle /> Estado:</Form.Label>
         <Form.Control
@@ -1365,6 +1276,8 @@ function TaskForm({ onTaskAdded }) {
           <option value="Completed">Completado</option>
         </Form.Control>
       </Form.Group>
+
+      {/* Tiempo Estimado */}
       <Form.Group>
         <Form.Label><FaClock /> Tiempo Estimado (horas):</Form.Label>
         <Form.Control
@@ -1377,6 +1290,7 @@ function TaskForm({ onTaskAdded }) {
           placeholder="Horas estimadas"
         />
       </Form.Group>
+
       <Button type="submit" variant="success" className="add-task-button">
         Agregar Tarea
       </Button>
@@ -1385,298 +1299,85 @@ function TaskForm({ onTaskAdded }) {
 }
 
 export default TaskForm;
------ ./frontend/src/components/RegisterForm.css -----
-.register-form {
-    width: 100%;
-    max-width: 500px;
-    margin: 0 auto;
-    padding: 20px;
-    border: 1px solid #ced4da;
-    border-radius: 5px;
-  }
-  
-  .register-form .form-group {
-    margin-bottom: 15px;
-  }
-  
-  .register-form .form-label {
-    font-weight: bold;
-  }
-  
-  .register-form .btn-primary {
-    background-color: #28a745;
-    border-color: #28a745;
-  }
-  
-  .register-form .btn-primary:hover {
-    background-color: #218838;
-    border-color: #1e7e34;
-  }
------ ./frontend/src/components/LoginForm.css -----
-.login-form {
-    width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
-    padding: 20px;
-    border: 1px solid #ced4da;
-    border-radius: 5px;
-  }
-  
-  .login-form .form-group {
-    margin-bottom: 15px;
-  }
-  
-  .login-form .form-label {
-    font-weight: bold;
-  }
-  
-  .login-form .btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
-  }
-  
-  .login-form .btn-primary:hover {
-    background-color: #0069d9;
-    border-color: #0062cc;
-  }
------ ./frontend/src/components/TaskForm.css -----
-/* frontend/src/components/TaskForm.css */
-.task-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    background-color: #f8f9fa;
-  }
-  
-  .form-title {
-    text-align: center;
-    color: var(--primary-color);
-    margin-bottom: 20px;
-    font-size: 1.8rem;
-  }
-  
-  .task-form .form-group {
-    margin-bottom: 20px;
-  }
-  
-  .task-form label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 1rem;
-    color: var(--text-color);
-    margin-bottom: 5px;
-  }
-  
-  .task-form label svg {
-    font-size: 1.2rem;
-  }
-  
-  .task-form input,
-  .task-form textarea,
-  .task-form select {
-    padding: 10px;
-    font-size: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    transition: border-color 0.3s, box-shadow 0.3s;
-  }
-  
-  .task-form input:focus,
-  .task-form textarea:focus,
-  .task-form select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 6px rgba(0, 123, 255, 0.5);
-    outline: none;
-  }
-  
-  .add-task-button {
-    background: linear-gradient(135deg, var(--success-color), var(--info-color));
-    color: white;
-    padding: 12px 20px;
-    font-size: 1.1rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
-    font-weight: 600;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .add-task-button:hover {
-    background: linear-gradient(135deg, #218838, #138496);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  }
-  
-  .success {
-    color: var(--success-color);
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 15px;
-  }
-  
-  .error {
-    color: var(--danger-color);
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 15px;
-  }
-  
-  .task-form .form-control {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%23333' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 12px 8px;
-    padding-right: 30px; /* Espacio para la flecha del select */
-  }
-  
-  /* Estilos para los select en específico */
-  .task-form .priority-dropdown.priority-low,
-  .task-form .status-dropdown.status-pending {
-    background-color: #007bff; /* Azul */
-    color: white;
-  }
-  
-  .task-form .priority-dropdown.priority-medium,
-  .task-form .status-dropdown.status-in-progress {
-    background-color: #ffc107; /* Amarillo */
-    color: black;
-  }
-  
-  .task-form .priority-dropdown.priority-high {
-    background-color: #dc3545; /* Rojo */
-    color: white;
-  }
-  
-  .task-form .difficulty-dropdown.difficulty-1 {
-    background-color: #28a745; /* Verde */
-    color: white;
-  }
-  
-  .task-form .difficulty-dropdown.difficulty-2 {
-    background-color: #ffc107; /* Amarillo */
-    color: black;
-  }
-  
-  .task-form .difficulty-dropdown.difficulty-3 {
-    background-color: #dc3545; /* Rojo */
-    color: white;
-  }
-  
-  .task-form .status-dropdown.status-completed {
-    background-color: #28a745; /* Verde */
-    color: white;
-  }
-  
-  /* Mejorar distribución de elementos en pantallas pequeñas */
-  @media (max-width: 768px) {
-    .task-form label {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  
-    .task-form input,
-    .task-form textarea,
-    .task-form select {
-      width: 100%;
-    }
-  }
------ ./frontend/src/components/EditProfileModal.css -----
-/* frontend/src/components/EditProfileModal.css */
 
-.modal-body form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+----- ./frontend/src/components/Header.js -----
+// frontend/src/components/Header.js
+import React, { useState } from 'react';
+import authService from '../services/authService';
+import { Navbar, Nav, Form } from 'react-bootstrap'; // Ejemplo usando react-bootstrap
+
+const colorThemes = [
+  { label: 'Claro', background: '#f8f9fa', text: '#000' },
+  { label: 'Oscuro', background: '#343a40', text: '#fff' },
+  { label: 'Azul', background: '#007bff', text: '#fff' },
+  { label: 'Verde', background: '#28a745', text: '#fff' },
+];
+
+function Header() {
+  const user = authService.getCurrentUser();
+
+  // Estado para tema
+  const [theme, setTheme] = useState(colorThemes[0]); // por defecto 'Claro'
+
+  const handleThemeChange = (e) => {
+    const index = e.target.value;
+    setTheme(colorThemes[index]);
+  };
+
+  const headerStyle = {
+    backgroundColor: theme.background,
+    color: theme.text,
+    transition: 'background-color 0.3s, color 0.3s',
+  };
+
+  return (
+    <Navbar style={headerStyle} expand="lg">
+      <Navbar.Brand style={{ color: theme.text }}>Mi App</Navbar.Brand>
+      <Navbar.Toggle aria-controls="basic-navbar-nav" style={{ backgroundColor: theme.text }} />
+      <Navbar.Collapse id="basic-navbar-nav">
+        <Nav className="mr-auto">
+          {user ? (
+            <Nav.Item style={{ color: theme.text, marginRight: '1rem' }}>
+              Bienvenido, {user.name}
+            </Nav.Item>
+          ) : (
+            <Nav.Item style={{ color: theme.text, marginRight: '1rem' }}>
+              No logueado
+            </Nav.Item>
+          )}
+        </Nav>
+        <Form inline>
+          <Form.Control
+            as="select"
+            onChange={handleThemeChange}
+            style={{ marginRight: '10px' }}
+          >
+            {colorThemes.map((ct, idx) => (
+              <option value={idx} key={idx}>
+                {ct.label}
+              </option>
+            ))}
+          </Form.Control>
+        </Form>
+      </Navbar.Collapse>
+    </Navbar>
+  );
 }
 
-.modal-body form .form-group label {
-    font-weight: bold;
-    color: var(--text-color);
-}
-
-.modal-body form .form-control {
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    transition: border-color 0.3s, box-shadow 0.3s;
-}
-
-.modal-body form .form-control:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 5px rgba(74, 144, 226, 0.5);
-}
-
-.modal-footer button {
-    min-width: 100px;
-}
-
-@media (max-width: 576px) {
-    .modal-content {
-        padding: 10px;
-    }
-
-    .modal-header,
-    .modal-footer {
-        padding: 10px;
-    }
-}
-
-/* Estilos para el botón de Subir Imagen */
-#formImageUpload .form-control {
-    cursor: pointer;
-    padding: 10px;
-    border: 1px dashed var(--border-color);
-    border-radius: 4px;
-    transition: background-color 0.3s, border-color 0.3s;
-}
-
-#formImageUpload .form-control:hover {
-    background-color: #f8f9fa;
-    border-color: var(--primary-color);
-}
-
-/* Estilos para la vista previa de la imagen */
-.img-preview {
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin-top: 10px;
-    border: 2px solid var(--primary-color);
-}
-
-/* Estilos para mensajes de error y éxito */
-.success-message {
-    color: var(--success-color);
-    text-align: center;
-    font-weight: bold;
-}
-
-.error-message {
-    color: var(--danger-color);
-    text-align: center;
-    font-weight: bold;
-}
+export default Header;
 
 ----- ./frontend/src/components/EditProfileModal.js -----
+// frontend/src/components/EditProfileModal.js
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
 import './EditProfileModal.css';
 import useSound from '../hooks/useSound';
 import editProfileSound from '../assets/sounds/notification-1-269296.mp3';
+import authService from '../services/authService';
 
 function EditProfileModal({ show, handleClose, profile, handleSave }) {
   const [updatedProfile, setUpdatedProfile] = useState({
     name: '',
-    email: '',
     bio: '',
     profile_picture_url: '',
   });
@@ -1686,13 +1387,14 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
 
+  // Sonido al editar
   const playEditProfileSound = useSound(editProfileSound);
 
+  // Al abrir el modal, llenar estado con los datos actuales
   useEffect(() => {
     if (show) {
       setUpdatedProfile({
         name: profile.name || '',
-        email: profile.email || '',
         bio: profile.bio || '',
         profile_picture_url: profile.profile_picture_url || '',
       });
@@ -1703,23 +1405,27 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
     }
   }, [profile, show]);
 
+  // Cambios en inputs de texto
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setUpdatedProfile({ ...updatedProfile, [name]: value });
+    setUpdatedProfile((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Al elegir un archivo
   const handleImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setImageFile(e.target.files[0]);
-      setUpdatedProfile({
-        ...updatedProfile,
-        profile_picture_url: URL.createObjectURL(e.target.files[0])
-      });
+      // Aquí podríamos mostrar un preview local con objectURL si queremos
+      setUpdatedProfile((prev) => ({
+        ...prev,
+        profile_picture_url: URL.createObjectURL(e.target.files[0]),
+      }));
     }
   };
 
+  // Subir la imagen al backend
   const uploadImage = async () => {
-    if (!imageFile) return null;
+    if (!imageFile) return null; // no se seleccionó archivo nuevo
 
     const formData = new FormData();
     formData.append('profilePicture', imageFile);
@@ -1730,14 +1436,12 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
         method: 'POST',
         body: formData,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.imageUrl;
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Error al subir la imagen');
       }
+      const data = await response.json(); // { imageUrl: 'http://localhost:5000/uploads/...' }
+      return data.imageUrl;
     } catch (error) {
       console.error('Error al subir la imagen:', error);
       setUploadError(error.message);
@@ -1747,45 +1451,67 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
     }
   };
 
+  // Guardar los cambios del perfil
   const onSave = async () => {
     setFormError('');
     setFormSuccess('');
 
-    if (!updatedProfile.name.trim() || !updatedProfile.email.trim()) {
-      setFormError('El nombre y el email son obligatorios.');
+    // Validación básica: nombre obligatorio
+    if (!updatedProfile.name.trim()) {
+      setFormError('El nombre es obligatorio.');
       return;
     }
 
-    let imageUrl = updatedProfile.profile_picture_url;
+    // Subir imagen si hay una nueva
+    let finalImageUrl = updatedProfile.profile_picture_url;
     if (imageFile) {
-      imageUrl = await uploadImage();
-      if (!imageUrl) {
+      const uploadedUrl = await uploadImage();
+      if (!uploadedUrl) {
+        // Falló subida
         return;
       }
+      finalImageUrl = uploadedUrl; // URL final devuelta por el backend
+    }
+
+    // Tomar token del usuario
+    const user = authService.getCurrentUser();
+    if (!user || !user.token) {
+      setFormError('No hay usuario autenticado.');
+      return;
     }
 
     try {
+      // PUT /api/profile con Bearer Token
       const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
         },
-        body: JSON.stringify({ ...updatedProfile, profile_picture_url: imageUrl }),
+        body: JSON.stringify({
+          name: updatedProfile.name,
+          bio: updatedProfile.bio,
+          profile_picture_url: finalImageUrl,
+        }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        handleSave(data);
-        playEditProfileSound();
-        setFormSuccess('Perfil actualizado exitosamente.');
-        setTimeout(() => {
-          handleClose();
-          setFormSuccess('');
-        }, 2000);
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
         setFormError(errorData.error || 'Error al actualizar el perfil');
+        return;
       }
+
+      const data = await response.json(); // Perfil actualizado
+      // Llamamos a handleSave para actualizar el state en ProfilePage
+      handleSave(data);
+      playEditProfileSound();
+      setFormSuccess('Perfil actualizado exitosamente.');
+
+      // Cerrar modal un poco después
+      setTimeout(() => {
+        handleClose();
+        setFormSuccess('');
+      }, 1500);
     } catch (error) {
       console.error('Error al actualizar el perfil:', error);
       setFormError('Error al actualizar el perfil');
@@ -1793,7 +1519,16 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
   };
 
   return (
-    <Modal show={show} onHide={() => { handleClose(); setUploadError(''); setFormError(''); setFormSuccess(''); }} centered>
+    <Modal
+      show={show}
+      onHide={() => {
+        handleClose();
+        setUploadError('');
+        setFormError('');
+        setFormSuccess('');
+      }}
+      centered
+    >
       <Modal.Header closeButton>
         <Modal.Title>Editar Perfil</Modal.Title>
       </Modal.Header>
@@ -1801,6 +1536,7 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
         {formError && <Alert variant="danger">{formError}</Alert>}
         {formSuccess && <Alert variant="success">{formSuccess}</Alert>}
         {uploadError && <Alert variant="danger">{uploadError}</Alert>}
+
         <Form>
           <Form.Group controlId="formProfileName">
             <Form.Label>Nombre</Form.Label>
@@ -1810,18 +1546,6 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
               value={updatedProfile.name}
               onChange={handleChange}
               placeholder="Ingrese su nombre"
-              required
-            />
-          </Form.Group>
-
-          <Form.Group controlId="formProfileEmail" className="mt-3">
-            <Form.Label>Email</Form.Label>
-            <Form.Control
-              type="email"
-              name="email"
-              value={updatedProfile.email}
-              onChange={handleChange}
-              placeholder="Ingrese su email"
               required
             />
           </Form.Group>
@@ -1847,9 +1571,10 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
             />
             {updatedProfile.profile_picture_url && (
               <div className="mt-3">
+                {/* Preview local o imagen actual */}
                 <img
                   src={updatedProfile.profile_picture_url}
-                  alt="Profile Preview"
+                  alt="Preview"
                   className="img-preview"
                 />
               </div>
@@ -1858,11 +1583,32 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
         </Form>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={() => { handleClose(); setUploadError(''); setFormError(''); setFormSuccess(''); }}>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            handleClose();
+            setUploadError('');
+            setFormError('');
+            setFormSuccess('');
+          }}
+        >
           Cancelar
         </Button>
         <Button variant="primary" onClick={onSave} disabled={uploading}>
-          {uploading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> : 'Guardar Cambios'}
+          {uploading ? (
+            <>
+              <Spinner
+                as="span"
+                animation="border"
+                size="sm"
+                role="status"
+                aria-hidden="true"
+              />{' '}
+              Guardando...
+            </>
+          ) : (
+            'Guardar Cambios'
+          )}
         </Button>
       </Modal.Footer>
     </Modal>
@@ -1870,181 +1616,7 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
 }
 
 export default EditProfileModal;
------ ./frontend/src/components/TaskItem.css -----
-/* frontend/src/components/TaskItem.css */
 
-.task-item {
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 10px; /* Bordes redondeados */
-    background-color: #ffffff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra sutil */
-    transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
-    position: relative;
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.task-item:hover {
-    transform: translateY(-5px); /* Efecto de elevación al pasar el ratón */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-}
-
-.task-item.completed {
-    background-color: #e6ffe6; /* Verde claro */
-    border-color: #c3e6cb;
-}
-
-.task-item.archived {
-    background-color: #f8f9fa; /* Gris claro */
-    border-color: #dae0e5;
-}
-
-/* Dropdown en la esquina superior derecha */
-.dropdown-top-right {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-}
-
-/* Estilos para los Dropdowns de Estado y Dificultad */
-.status-difficulty {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-.status-dropdown .dropdown-toggle,
-.difficulty-dropdown .dropdown-toggle {
-    border: none;
-    border-radius: 5px;
-    padding: 5px 10px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.2s ease-in-out; /* Transición suave al hacer hover */
-}
-
-/* Efecto hover para los botones de los dropdowns */
-.status-dropdown .dropdown-toggle:hover,
-.difficulty-dropdown .dropdown-toggle:hover {
-    transform: translateY(-2px); /* Ligero desplazamiento hacia arriba */
-}
-
-.status-dropdown .dropdown-menu,
-.difficulty-dropdown .dropdown-menu {
-    min-width: 150px;
-}
-
-.status-dropdown .dropdown-item.status-pending {
-    color: #007bff; /* Azul */
-}
-
-.status-dropdown .dropdown-item.status-in-progress {
-    color: #ffc107; /* Amarillo */
-}
-
-.status-dropdown .dropdown-item.status-completed {
-    color: #28a745; /* Verde */
-}
-
-.difficulty-dropdown .dropdown-item.difficulty-1 {
-    color: #28a745; /* Verde */
-}
-
-.difficulty-dropdown .dropdown-item.difficulty-2 {
-    color: #ffc107; /* Amarillo */
-}
-
-.difficulty-dropdown .dropdown-item.difficulty-3 {
-    color: #dc3545; /* Rojo */
-}
-
-/* Botón Completar en la esquina inferior izquierda */
-.complete-button {
-    align-self: flex-start;
-    background-color: #28a745; /* Verde */
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    transition: background-color 0.3s, transform 0.2s;
-    font-weight: bold; /* Texto en negrita */
-}
-
-.complete-button:hover {
-    background-color: #218838;
-    transform: translateY(-2px); /* Ligero desplazamiento hacia arriba */
-}
-
-/* Botón Desarchivar en la esquina inferior izquierda */
-.unarchive-button {
-    align-self: flex-start;
-    background-color: #17a2b8; /* Azul */
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    transition: background-color 0.3s, transform 0.2s;
-    font-weight: bold; /* Texto en negrita */
-}
-
-.unarchive-button:hover {
-    background-color: #138496;
-    transform: translateY(-2px); /* Ligero desplazamiento hacia arriba */
-}
-
-/* Estilos para los Dropdown Items con colores */
-.complete-dropdown-item {
-    color: #28a745; /* Verde */
-}
-
-.continue-dropdown-item {
-    color: #ffc107; /* Amarillo */
-}
-
-.archive-dropdown-item {
-    color: #6c757d; /* Gris */
-}
-
-.unarchive-dropdown-item {
-    color: #17a2b8; /* Azul */
-}
-
-.delete-dropdown-item {
-    color: #dc3545; /* Rojo */
-}
-
-/* Botón de Eliminar en la esquina inferior derecha */
-.delete-button {
-    background-color: transparent;
-    color: #dc3545; /* Rojo */
-    border: none;
-    font-size: 18px;
-    cursor: pointer;
-    position: absolute;
-    bottom: 15px;
-    right: 15px;
-    transition: color 0.3s;
-}
-
-.delete-button:hover {
-    color: #a71d2a;
-}
-
-/* Estilos adicionales para mejorar la tipografía */
-h3 {
-    color: var(--primary-color);
-    font-size: 1.4rem;
-    margin-bottom: 5px;
-}
-
-p {
-    font-size: 1rem;
-    color: var(--text-color);
-    line-height: 1.5;
-}
 ----- ./frontend/src/components/LoginForm.js -----
 // frontend/src/components/LoginForm.js
 import React, { useState } from 'react';
@@ -2136,7 +1708,6 @@ function TaskList({ tasks, setTasks }) {
     difficulty: [],
     status: [],
   });
-
   const [filteredTasks, setFilteredTasks] = useState(tasks);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -2147,7 +1718,8 @@ function TaskList({ tasks, setTasks }) {
 
   const handleFilterChange = (category, value) => {
     setFilters((prevFilters) => {
-      const newCategory = prevFilters[category].includes(value)
+      const alreadySelected = prevFilters[category].includes(value);
+      const newCategory = alreadySelected
         ? prevFilters[category].filter((item) => item !== value)
         : [...prevFilters[category], value];
       return { ...prevFilters, [category]: newCategory };
@@ -2156,22 +1728,20 @@ function TaskList({ tasks, setTasks }) {
 
   const applyFilters = () => {
     let filtered = [...tasks];
-
-    // Filtros de Prioridad
+    // Filtro Prioridad
     if (filters.priority.length > 0) {
-      filtered = filtered.filter(task => filters.priority.includes(task.priority));
+      filtered = filtered.filter((task) => filters.priority.includes(task.priority));
     }
-
-    // Filtros de Dificultad
+    // Filtro Dificultad
     if (filters.difficulty.length > 0) {
-      filtered = filtered.filter(task => filters.difficulty.includes(task.difficulty.toString()));
+      filtered = filtered.filter((task) =>
+        filters.difficulty.includes(task.difficulty.toString())
+      );
     }
-
-    // Filtros de Estado
+    // Filtro Estado
     if (filters.status.length > 0) {
-      filtered = filtered.filter(task => filters.status.includes(task.status));
+      filtered = filtered.filter((task) => filters.status.includes(task.status));
     }
-
     setFilteredTasks(filtered);
   };
 
@@ -2183,23 +1753,26 @@ function TaskList({ tasks, setTasks }) {
     });
   };
 
+  // Lógica drag & drop
   const handleOnDragEnd = (result) => {
     if (!result.destination) return;
-
     const items = Array.from(filteredTasks);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-
     setFilteredTasks(items);
-
-    // Opcional: Actualizar el orden en el backend si es necesario
+    // Opcional: Actualizar orden en el backend si es necesario
   };
 
   return (
     <div className="task-list">
-      {/* Botón para Mostrar/Ocultar Filtros */}
-      <Button variant="outline-primary" className="filter-toggle" onClick={() => setShowFilters(!showFilters)}>
-        {showFilters ? <FaTimes /> : <FaFilter />} {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+      {/* Botón para Filtros */}
+      <Button
+        variant="outline-primary"
+        className="filter-toggle"
+        onClick={() => setShowFilters(!showFilters)}
+      >
+        {showFilters ? <FaTimes /> : <FaFilter />}{' '}
+        {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
       </Button>
 
       {showFilters && (
@@ -2308,11 +1881,27 @@ function TaskList({ tasks, setTasks }) {
                       >
                         <TaskItem
                           task={task}
-                          onComplete={(id) => setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'Completed' } : t))}
-                          onDelete={(id) => setTasks(prev => prev.filter(t => t.id !== id))}
-                          onEdit={(id, updatedTask) => setTasks(prev => prev.map(t => t.id === id ? updatedTask : t))}
-                          onArchive={(id) => setTasks(prev => prev.filter(t => t.id !== id))}
-                          onUnarchive={(id) => setTasks(prev => [...prev, { ...task, status: 'Pending' }])}
+                          onComplete={(id) =>
+                            setTasks((prev) =>
+                              prev.map((t) =>
+                                t.id === id ? { ...t, status: 'Completed' } : t
+                              )
+                            )
+                          }
+                          onDelete={(id) =>
+                            setTasks((prev) => prev.filter((t) => t.id !== id))
+                          }
+                          onEdit={(id, updatedTask) =>
+                            setTasks((prev) =>
+                              prev.map((t) => (t.id === id ? updatedTask : t))
+                            )
+                          }
+                          onArchive={(id) =>
+                            setTasks((prev) => prev.filter((t) => t.id !== id))
+                          }
+                          onUnarchive={(id) =>
+                            setTasks((prev) => [...prev, { ...task, status: 'Pending' }])
+                          }
                         />
                       </div>
                     )}
@@ -2404,26 +1993,33 @@ export default LoginPage;
 
 ----- ./frontend/src/pages/ArchivedTasksPage.js -----
 // frontend/src/pages/ArchivedTasksPage.js
-
 import React, { useState, useEffect } from 'react';
 import TaskItem from '../components/TaskItem';
 import ConfirmModal from '../components/ConfirmModal';
 import './ArchivedTasksPage.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Alert } from 'react-bootstrap';
+import authService from '../services/authService';
 
 function ArchivedTasksPage() {
   const [archivedTasks, setArchivedTasks] = useState([]);
   const [error, setError] = useState(null);
+  const [actionError, setActionError] = useState('');
 
-  // Para confirmar eliminación
+  // Eliminar
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [actionError, setActionError] = useState('');
 
   const fetchArchivedTasks = async () => {
     try {
-      const response = await fetch('/api/tasks/archived');
+      const user = authService.getCurrentUser();
+      if (!user) {
+        setError('No hay usuario autenticado');
+        return;
+      }
+      const response = await fetch('/api/tasks/archived', {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
       if (!response.ok) {
         throw new Error('Error al obtener las tareas archivadas');
       }
@@ -2439,15 +2035,20 @@ function ArchivedTasksPage() {
     fetchArchivedTasks();
   }, []);
 
+  // Desarchivar
   const handleUnarchive = async (id) => {
     setActionError('');
     try {
+      const user = authService.getCurrentUser();
       const response = await fetch(`/api/tasks/${id}/unarchive`, {
         method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
       });
       if (response.ok) {
-        const updatedTask = await response.json();
-        setArchivedTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+        // Quitar la tarea del array
+        setArchivedTasks((prev) => prev.filter((t) => t.id !== id));
       } else {
         const errorData = await response.json();
         setActionError(errorData.error || 'Error al desarchivar la tarea');
@@ -2458,19 +2059,22 @@ function ArchivedTasksPage() {
     }
   };
 
+  // Editar Tarea archivada
   const handleEdit = async (id, updatedTask) => {
     setActionError('');
     try {
+      const user = authService.getCurrentUser();
       const response = await fetch(`/api/tasks/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
         },
         body: JSON.stringify(updatedTask),
       });
       if (response.ok) {
         const data = await response.json();
-        setArchivedTasks((prevTasks) => prevTasks.map(task => task.id === id ? data : task));
+        setArchivedTasks((prev) => prev.map((t) => (t.id === id ? data : t)));
       } else {
         const errorData = await response.json();
         setActionError(errorData.error || 'Error al editar la tarea archivada');
@@ -2481,6 +2085,7 @@ function ArchivedTasksPage() {
     }
   };
 
+  // Eliminar Tarea archivada
   const handleDelete = (task) => {
     setTaskToDelete(task);
     setShowDeleteConfirm(true);
@@ -2489,11 +2094,13 @@ function ArchivedTasksPage() {
   const confirmDelete = async () => {
     setActionError('');
     try {
+      const user = authService.getCurrentUser();
       const response = await fetch(`/api/tasks/${taskToDelete.id}`, {
         method: 'DELETE',
+        headers: { Authorization: `Bearer ${user.token}` },
       });
       if (response.ok) {
-        setArchivedTasks((prevTasks) => prevTasks.filter(task => task.id !== taskToDelete.id));
+        setArchivedTasks((prev) => prev.filter((t) => t.id !== taskToDelete.id));
         setShowDeleteConfirm(false);
         setTaskToDelete(null);
       } else {
@@ -2511,16 +2118,14 @@ function ArchivedTasksPage() {
     setTaskToDelete(null);
   };
 
+  // Drag & Drop archivadas
   const handleOnDragEnd = (result) => {
     if (!result.destination) return;
-
     const items = Array.from(archivedTasks);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-
     setArchivedTasks(items);
-
-    // Opcional: Actualizar el orden en el backend si es necesario
+    // Opcional: actualizar orden en backend
   };
 
   return (
@@ -2528,13 +2133,22 @@ function ArchivedTasksPage() {
       <h2>Tareas Archivadas</h2>
       {error && <Alert variant="danger">{error}</Alert>}
       {actionError && <Alert variant="danger">{actionError}</Alert>}
+
       <DragDropContext onDragEnd={handleOnDragEnd}>
         <Droppable droppableId="archivedTasks">
           {(provided) => (
-            <div className="task-container" {...provided.droppableProps} ref={provided.innerRef}>
+            <div
+              className="task-container"
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+            >
               {archivedTasks.length > 0 ? (
                 archivedTasks.map((task, index) => (
-                  <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
+                  <Draggable
+                    key={task.id}
+                    draggableId={task.id.toString()}
+                    index={index}
+                  >
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
@@ -2547,7 +2161,6 @@ function ArchivedTasksPage() {
                           onUnarchive={handleUnarchive}
                           onEdit={handleEdit}
                           onDelete={handleDelete}
-                          // No es necesario pasar onComplete y onArchive ya que las tareas están archivadas
                         />
                       </div>
                     )}
@@ -2577,152 +2190,6 @@ function ArchivedTasksPage() {
 
 export default ArchivedTasksPage;
 
------ ./frontend/src/pages/ProfilePage.css -----
-/* frontend/src/pages/ProfilePage.css */
-
-.profile-layout {
-    display: flex;
-    gap: 40px;
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: 30px;
-}
-
-.profile-sidebar {
-    width: 350px;
-    background-color: #ffffff;
-    padding: 35px;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.profile-sidebar:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
-}
-
-.profile-picture-container {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 25px;
-}
-
-.profile-picture {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 4px solid var(--primary-color);
-    cursor: pointer;
-    transition: transform 0.3s, border-color 0.3s;
-}
-
-.profile-picture:hover {
-    transform: scale(1.05);
-    border-color: var(--secondary-color);
-}
-
-.profile-placeholder {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    background-color: var(--secondary-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s, transform 0.3s;
-}
-
-.profile-placeholder:hover {
-    background-color: var(--primary-color);
-    transform: scale(1.05);
-}
-
-.profile-sidebar h3 {
-    margin-bottom: 15px;
-    color: var(--text-color);
-    font-size: 24px;
-}
-
-.profile-sidebar p {
-    margin-bottom: 8px;
-    color: var(--text-color);
-    font-size: 16px;
-}
-
-.btn-info {
-    background: linear-gradient(45deg, var(--info-color), var(--secondary-color));
-    border: none;
-    transition: background 0.3s;
-}
-
-.btn-info:hover {
-    background: linear-gradient(45deg, #138496, var(--primary-color));
-}
-
-.profile-dashboard {
-    flex: 2;
-    min-width: 300px;
-    background-color: #ffffff;
-    padding: 35px;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.profile-dashboard:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
-}
-
-.profile-dashboard h2 {
-    margin-bottom: 30px;
-    color: var(--primary-color);
-    text-align: center;
-}
-
-.charts-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 50px;
-    justify-content: center;
-}
-
-.chart-item {
-    flex: 1;
-    min-width: 350px;
-    background-color: #f9f9f9;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.additional-stats {
-    margin-top: 40px;
-    background-color: #f1f1f1;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.additional-stats p {
-    font-size: 18px;
-    margin: 12px 0;
-    color: var(--text-color);
-}
-
-@media (max-width: 768px) {
-    .charts-container {
-        flex-direction: column;
-        align-items: center;
-    }
-}
-
 ----- ./frontend/src/pages/TaskMetricsPage.js -----
 // frontend/src/pages/TaskMetricsPage.js
 import React, { useState, useEffect } from 'react';
@@ -2740,6 +2207,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Alert } from 'react-bootstrap';
+import authService from '../services/authService'; // Para enviar el token
 
 function TaskMetricsPage() {
   const [stats, setStats] = useState({
@@ -2747,15 +2215,28 @@ function TaskMetricsPage() {
     completed: 0,
     pending: 0,
     inProgress: 0,
-    priorityDistribution: {},
-    difficultyDistribution: {},
+    stackedData: [], // priority/difficulty
   });
   const [error, setError] = useState(null);
+
+  const pieColors = ['#28a745', '#ffc107', '#007bff'];
+  const difficultyColors = ['#6f42c1', '#20c997', '#fd7e14', '#dc3545', '#17a2b8'];
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/tasks/stats');
+        // Obtener user/token
+        const user = authService.getCurrentUser();
+        if (!user || !user.token) {
+          throw new Error('No hay usuario logueado o token no disponible');
+        }
+
+        // Llamar al backend con Bearer token
+        const response = await fetch('/api/tasks/stats', {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
         if (!response.ok) {
           throw new Error('Error al obtener estadísticas');
         }
@@ -2766,42 +2247,39 @@ function TaskMetricsPage() {
         setError('Error al obtener estadísticas');
       }
     };
-
     fetchStats();
   }, []);
 
-  const COLORS = ['#28a745', '#ffc107', '#dc3545', '#007bff'];
-
+  // Pie chart
   const pieData = [
     { name: 'Completadas', value: stats.completed },
     { name: 'Pendientes', value: stats.pending },
     { name: 'En Progreso', value: stats.inProgress },
   ];
 
-  // Usar Object.entries() de forma segura
-  const priorityData = stats.priorityDistribution ?
-    Object.entries(stats.priorityDistribution).map(
-      ([priority, value]) => ({
-        priority,
-        value,
-      })
-    ) : [];
+  // Evitar error forEach => fallback a []
+  const safeStackedData = stats.stackedData || [];
 
-  const difficultyData = stats.difficultyDistribution ?
-    Object.entries(stats.difficultyDistribution).map(
-      ([difficulty, value]) => ({
-        difficulty,
-        value,
-      })
-    ) : [];
+  // Analizar keys difficulty_1, difficulty_2, ...
+  const allKeys = new Set();
+  safeStackedData.forEach((item) => {
+    Object.keys(item).forEach((k) => {
+      if (k.startsWith('difficulty_')) {
+        allKeys.add(k);
+      }
+    });
+  });
+  const difficultyKeys = Array.from(allKeys).sort();
 
   return (
-    <div className="profile-dashboard">
-      <h2>Task Metrics Dashboard</h2>
+    <div className="container my-4">
+      <h2 className="text-center">Task Metrics Dashboard</h2>
       {error && <Alert variant="danger">{error}</Alert>}
-      <div className="charts-container">
-        <div className="chart-item">
-          <h4>Estado de Tareas</h4>
+
+      <div className="row">
+        {/* Pie chart */}
+        <div className="col-md-6">
+          <h4 className="text-center">Estado de Tareas</h4>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -2810,14 +2288,13 @@ function TaskMetricsPage() {
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                outerRadius={100}
-                fill="#8884d8"
+                outerRadius={90}
                 label
               >
                 {pieData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
+                    fill={pieColors[index % pieColors.length]}
                   />
                 ))}
               </Pie>
@@ -2826,158 +2303,421 @@ function TaskMetricsPage() {
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="chart-item">
-          <h4>Distribución por Prioridad</h4>
+
+        {/* Stacked Bar Chart */}
+        <div className="col-md-6">
+          <h4 className="text-center">Prioridad (Barras apiladas por Dificultad)</h4>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart
-              data={priorityData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              data={safeStackedData}
+              margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="priority" />
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="value" fill="#8884d8" name="Cantidad" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="chart-item">
-          <h4>Distribución por Dificultad</h4>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={difficultyData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="difficulty" />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="value" fill="#8884d8" name="Cantidad" />
+              {difficultyKeys.map((diffKey, idx) => (
+                <Bar
+                  key={diffKey}
+                  dataKey={diffKey}
+                  stackId="stack"
+                  fill={difficultyColors[idx % difficultyColors.length]}
+                  name={diffKey}
+                />
+              ))}
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
-      <div className="additional-stats">
-        <p>Total de Tareas: {stats.totalTasks}</p>
-        <p>Completadas: {stats.completed}</p>
-        <p>Pendientes: {stats.pending}</p>
-        <p>En Progreso: {stats.inProgress}</p>
+
+      <div className="mt-4 p-3 bg-light">
+        <p><strong>Total de Tareas:</strong> {stats.totalTasks}</p>
+        <p><strong>Completadas:</strong> {stats.completed}</p>
+        <p><strong>Pendientes:</strong> {stats.pending}</p>
+        <p><strong>En Progreso:</strong> {stats.inProgress}</p>
       </div>
     </div>
   );
 }
 
 export default TaskMetricsPage;
------ ./frontend/src/pages/FinancePage.js -----
-// frontend/src/pages/FinancePage.js
-import React, { useState } from 'react';
-import { Modal, Button, Form } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
-import './FinancePage.css';
 
-function FinancePage() {
-  const [showModal, setShowModal] = useState(true);
-  const [password, setPassword] = useState('');
-  const [authenticated, setAuthenticated] = useState(false);
+----- ./frontend/src/pages/FriendsPage.js -----
+// frontend/src/pages/FriendsPage.js
+import React, { useState, useEffect } from 'react';
+import authService from '../services/authService';
+import useSound from '../hooks/useSound';
+import { Alert, Button, Form, Card, Row, Col } from 'react-bootstrap';
+
+// Sonidos
+import friendRequestSound from '../assets/sounds/intro-sound-4-270301.mp3';
+import acceptSound from '../assets/sounds/level-up-191997.mp3';
+import errorSound from '../assets/sounds/ui-sound-off-270300.mp3';
+
+function FriendsPage() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [friends, setFriends] = useState([]);
+  const [requests, setRequests] = useState([]);
   const [error, setError] = useState('');
 
-  const handlePasswordSubmit = (e) => {
-    e.preventDefault();
-    if (password === '1234') { // Considera utilizar variables de entorno para la contraseña
-      setAuthenticated(true);
-      setShowModal(false);
-      setError('');
-    } else {
-      setError('Contraseña incorrecta. Inténtalo de nuevo.');
+  const playRequestSound = useSound(friendRequestSound);
+  const playAcceptSound = useSound(acceptSound);
+  const playErrorSound = useSound(errorSound);
+
+  const user = authService.getCurrentUser();
+
+  const fetchFriends = async () => {
+    try {
+      const res = await fetch('/api/friends/list', {
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFriends(data);
+      } else {
+        playErrorSound();
+        setError('Error al obtener amigos');
+      }
+    } catch (err) {
+      playErrorSound();
+      setError('Error al obtener amigos');
     }
   };
 
+  const fetchRequests = async () => {
+    try {
+      const res = await fetch('/api/friends/requests', {
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRequests(data);
+      } else {
+        playErrorSound();
+        setError('Error al obtener solicitudes');
+      }
+    } catch (err) {
+      playErrorSound();
+      setError('Error al obtener solicitudes');
+    }
+  };
+
+  useEffect(() => {
+    fetchFriends();
+    fetchRequests();
+    // eslint-disable-next-line
+  }, []);
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setError('');
+    try {
+      const res = await fetch(`/api/friends/search?query=${searchQuery}`, {
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSearchResults(data);
+      } else {
+        playErrorSound();
+        setError('Error al buscar usuarios');
+      }
+    } catch (err) {
+      playErrorSound();
+      setError('Error al buscar usuarios');
+    }
+  };
+
+  const handleSendRequest = async (to_user_id) => {
+    setError('');
+    try {
+      const res = await fetch('/api/friends/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user?.token}`,
+        },
+        body: JSON.stringify({ to_user_id }),
+      });
+      if (res.ok) {
+        playRequestSound();
+        alert(`Solicitud de amistad enviada a user_id=${to_user_id}`);
+      } else {
+        const errorData = await res.json();
+        playErrorSound();
+        setError(errorData.error || 'Error al enviar solicitud');
+      }
+    } catch (err) {
+      playErrorSound();
+      setError('Error al enviar solicitud');
+    }
+  };
+
+  const handleAccept = async (requestId) => {
+    setError('');
+    try {
+      const res = await fetch(`/api/friends/${requestId}/accept`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${user?.token}` },
+      });
+      if (res.ok) {
+        // Eliminar la request de la lista
+        setRequests((prev) => prev.filter((r) => r.id !== requestId));
+        fetchFriends();
+        playAcceptSound();
+      } else {
+        playErrorSound();
+        setError('Error al aceptar solicitud');
+      }
+    } catch (err) {
+      playErrorSound();
+      setError('Error al aceptar solicitud');
+    }
+  };
+
+  const handleReject = async (requestId) => {
+    setError('');
+    try {
+      const res = await fetch(`/api/friends/${requestId}/reject`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${user?.token}` },
+      });
+      if (res.ok) {
+        // Quitar la request
+        setRequests((prev) => prev.filter((r) => r.id !== requestId));
+      } else {
+        playErrorSound();
+        setError('Error al rechazar solicitud');
+      }
+    } catch (err) {
+      playErrorSound();
+      setError('Error al rechazar solicitud');
+    }
+  };
+
+  /**
+   * Si la foto del usuario (req.from_photo, etc.) está vacía,
+   * usamos /default_silueta.jpeg como fallback.
+   */
+  const getPhotoOrDefault = (url) => {
+    if (url && url.trim() !== '') {
+      return url;
+    }
+    return '/default_silueta.jpeg'; // <-- Ajuste principal
+  };
+
   return (
-    <div className="finance-page">
-      <h1>Finance Page</h1>
-      {!authenticated ? (
-        <Modal show={showModal} onHide={() => {}} backdrop="static" keyboard={false} centered>
-          <Modal.Header>
-            <Modal.Title>Sección Protegida</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Form onSubmit={handlePasswordSubmit}>
-              <Form.Group controlId="formPassword">
-                <Form.Label>Ingresa la contraseña para acceder:</Form.Label>
-                <Form.Control
-                  type="password"
-                  placeholder="Contraseña"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </Form.Group>
-              {error && <p className="text-danger mt-2">{error}</p>}
-              <Button variant="primary" type="submit" className="mt-3">
-                Ingresar
-              </Button>
-              {/* Botón para Volver a Tareas */}
-              <Link to="/">
-                <Button variant="secondary" className="mt-3 ms-2">
-                  Volver a Tareas
-                </Button>
-              </Link>
-            </Form>
-          </Modal.Body>
-        </Modal>
-      ) : (
-        <div className="finance-content">
-          <h2>Sección de Finanzas</h2>
-          <p>Esta es una sección sensible. ¡Bienvenido!</p>
-          {/* Aquí puedes agregar el contenido de finanzas */}
+    <div className="container my-4">
+      <h2>Amigos & Solicitudes</h2>
+      {error && <Alert variant="danger">{error}</Alert>}
+
+      {/* Sección de búsqueda */}
+      <Form onSubmit={handleSearch} className="mb-4">
+        <Form.Group>
+          <Form.Label>Buscar usuario por email o ID</Form.Label>
+          <Form.Control
+            type="text"
+            placeholder="user@example.com o 123"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </Form.Group>
+        <Button variant="primary" type="submit" className="mt-2">
+          Buscar
+        </Button>
+      </Form>
+
+      {/* Resultados de búsqueda */}
+      {searchResults.length > 0 && (
+        <div className="mb-4">
+          <h4>Resultados de la búsqueda:</h4>
+          <Row>
+            {searchResults.map((u) => (
+              <Col key={u.id} xs={12} md={6} lg={4} className="mb-3">
+                <Card>
+                  <Card.Body className="d-flex align-items-center">
+                    <img
+                      src={getPhotoOrDefault(u.profile_picture_url)}
+                      alt="avatar"
+                      style={{
+                        width: 50,
+                        height: 50,
+                        borderRadius: '50%',
+                        marginRight: 10,
+                      }}
+                    />
+                    <div>
+                      <div>
+                        <strong>ID:</strong> {u.id}
+                      </div>
+                      <div>
+                        <strong>{u.name}</strong> <small>({u.email})</small>
+                      </div>
+                    </div>
+                    <Button
+                      variant="info"
+                      size="sm"
+                      onClick={() => handleSendRequest(u.id)}
+                      className="ml-auto"
+                    >
+                      Enviar Solicitud
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
         </div>
+      )}
+
+      {/* Solicitudes pendientes */}
+      <div className="mb-4">
+        <h4>Solicitudes Recibidas</h4>
+        {requests.length === 0 ? (
+          <p>No tienes solicitudes pendientes.</p>
+        ) : (
+          <Row>
+            {requests.map((req) => (
+              <Col key={req.id} xs={12} md={6} lg={4} className="mb-3">
+                <Card>
+                  <Card.Body className="d-flex align-items-center">
+                    <img
+                      src={getPhotoOrDefault(req.from_photo)}
+                      alt="avatar"
+                      style={{
+                        width: 50,
+                        height: 50,
+                        borderRadius: '50%',
+                        marginRight: 10,
+                      }}
+                    />
+                    <div>
+                      <div>
+                        <strong>De:</strong> {req.from_name} (ID: {req.from_user_id})
+                      </div>
+                    </div>
+                    <div className="ml-auto">
+                      <Button
+                        variant="success"
+                        size="sm"
+                        onClick={() => handleAccept(req.id)}
+                        style={{ marginRight: '5px' }}
+                      >
+                        Aceptar
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleReject(req.id)}
+                      >
+                        Rechazar
+                      </Button>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
+      </div>
+
+      {/* Amigos aceptados */}
+      <div>
+        <h4>Mis Amigos</h4>
+        {friends.length === 0 ? (
+          <p>Aún no tienes amigos aceptados.</p>
+        ) : (
+          <Row>
+            {friends.map((f) => {
+              const isFromMe = f.from_user_id === user?.id;
+              const friendId = isFromMe ? f.to_user_id : f.from_user_id;
+              const friendName = isFromMe ? f.to_name : f.from_name;
+              const friendPhoto = isFromMe ? f.to_photo : f.from_photo;
+
+              return (
+                <Col key={f.id} xs={12} md={6} lg={4} className="mb-3">
+                  <Card>
+                    <Card.Body className="d-flex align-items-center">
+                      <img
+                        src={getPhotoOrDefault(friendPhoto)}
+                        alt="avatar"
+                        style={{
+                          width: 50,
+                          height: 50,
+                          borderRadius: '50%',
+                          marginRight: 10,
+                        }}
+                      />
+                      <div>
+                        <div>
+                          <strong>ID:</strong> {friendId}
+                        </div>
+                        <div>
+                          <strong>{friendName}</strong> (status: {f.status})
+                        </div>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              );
+            })}
+          </Row>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default FriendsPage;
+
+----- ./frontend/src/pages/HomePage.js -----
+// frontend/src/pages/HomePage.js
+import React, { useEffect, useState } from 'react';
+import authService from '../services/authService';
+
+function HomePage() {
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    if (!user) return;
+    fetch('/api/profile', {
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => setProfile(data))
+      .catch((err) => console.error(err));
+  }, []);
+
+  return (
+    <div>
+      <h1>Bienvenido a Planner2025</h1>
+      <p>Página principal de la aplicación.</p>
+      {profile?.profile_picture_url && (
+        <img
+          src={profile.profile_picture_url}
+          alt="Mi Foto"
+          style={{ width: '100px', height: '100px', borderRadius: '50%' }}
+        />
       )}
     </div>
   );
 }
 
-export default FinancePage;
-
------ ./frontend/src/pages/ArchivedTasksPage.css -----
-/* frontend/src/pages/ArchivedTasksPage.css */
-
-.archived-tasks-page {
-    padding: 20px;
-}
-
-.archived-tasks-page h2 {
-    margin-bottom: 20px;
-    color: #333;
-}
-
-.task-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.error {
-    color: var(--danger-color);
-}
-
------ ./frontend/src/pages/HomePage.js -----
-// frontend/src/pages/HomePage.js
-import React from 'react';
-
-function HomePage() {
-  return (
-    <div>
-      <h1>Bienvenido a Planner2025</h1>
-      <p>Esta es la página principal de la aplicación.</p>
-    </div>
-  );
-}
-
 export default HomePage;
+
 ----- ./frontend/src/pages/TaskPage.js -----
-// frontend/src/pages/TaskPage.js
+// --- frontend/src/pages/TaskPage.js ---
 import React, { useState, useEffect } from 'react';
 import TaskForm from '../components/TaskForm';
 import TaskList from '../components/TaskList';
@@ -2993,10 +2733,13 @@ function TaskPage() {
   const fetchTasks = async () => {
     try {
       const user = authService.getCurrentUser();
+      if (!user) {
+        setError('No hay usuario autenticado');
+        return;
+      }
+      // Llamada al backend con Bearer Token
       const response = await fetch('/api/tasks', {
-        headers: {
-          'Authorization': `Bearer ${user?.token || ''}`,
-        },
+        headers: { 'Authorization': `Bearer ${user.token}` },
       });
       if (!response.ok) {
         throw new Error('Error al obtener las tareas');
@@ -3018,13 +2761,17 @@ function TaskPage() {
       <h2>Gestor de Tareas</h2>
       {error && <Alert variant="danger">{error}</Alert>}
       {message && <Alert variant="success">{message}</Alert>}
+
       <div className="task-layout">
         <div className="task-form-column">
-          <TaskForm onTaskAdded={(newTask) => {
-            setTasks((prev) => [newTask, ...prev]);
-            setMessage('¡Tarea agregada exitosamente!');
-            setTimeout(() => setMessage(''), 3000);
-          }} />
+          {/* onTaskAdded actualiza estado global de tasks */}
+          <TaskForm
+            onTaskAdded={(newTask) => {
+              setTasks((prev) => [newTask, ...prev]);
+              setMessage('¡Tarea agregada exitosamente!');
+              setTimeout(() => setMessage(''), 3000);
+            }}
+          />
         </div>
         <div className="task-list-column">
           <TaskList tasks={tasks} setTasks={setTasks} />
@@ -3055,15 +2802,21 @@ function ProfilePage() {
   });
   const [showEditModal, setShowEditModal] = useState(false);
   const [error, setError] = useState(null);
+
   const playEditProfileSound = useSound(editProfileSound);
 
+  // Al montar, obtenemos el perfil del backend
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const user = authService.getCurrentUser();
+        if (!user || !user.token) {
+          setError('No hay usuario logueado.');
+          return;
+        }
         const response = await fetch('/api/profile', {
           headers: {
-            'Authorization': `Bearer ${user?.token || ''}`,
+            Authorization: `Bearer ${user.token}`,
           },
         });
         if (!response.ok) {
@@ -3080,185 +2833,58 @@ function ProfilePage() {
     fetchProfile();
   }, []);
 
-  const handleSaveProfile = async (updatedProfile) => {
-    setProfile(updatedProfile);
+  // Cuando el modal guarde, actualizamos el state local con la info
+  const handleSaveProfile = (updatedProfile) => {
+    setProfile(updatedProfile); // Actualiza la foto, name, bio
     playEditProfileSound();
-
-    try {
-      const user = authService.getCurrentUser();
-      const response = await fetch('/api/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.token || ''}`,
-        },
-        body: JSON.stringify(updatedProfile),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setProfile(data);
-        playEditProfileSound();
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Error al actualizar el perfil');
-      }
-    } catch (error) {
-      console.error('Error al actualizar el perfil:', error);
-      setError('Error al actualizar el perfil');
-    }
   };
+
+  // Fallback si la URL está vacía
+  const displayImage = profile.profile_picture_url?.trim()
+    ? profile.profile_picture_url
+    : '/default_silueta.jpeg';
 
   return (
     <div className="profile-layout">
       <aside className="profile-sidebar">
         <div className="profile-picture-container">
-          {profile.profile_picture_url ? (
-            <img
-              src={profile.profile_picture_url}
-              alt="Profile"
-              className="profile-picture"
-              onClick={() => setShowEditModal(true)}
-              title="Editar Perfil"
-            />
-          ) : (
-            <div className="profile-placeholder" onClick={() => setShowEditModal(true)}>
-              Subir Imagen
-            </div>
-          )}
+          <img
+            src={displayImage}
+            alt="Profile"
+            className="profile-picture"
+            onClick={() => setShowEditModal(true)}
+            title="Editar Perfil"
+          />
         </div>
         <h3>{profile.name}</h3>
         <p>{profile.bio}</p>
         <p>{profile.email}</p>
-        <button className="btn btn-info mt-3" onClick={() => setShowEditModal(true)}>
+
+        <button
+          className="btn btn-info mt-3"
+          onClick={() => setShowEditModal(true)}
+        >
           Editar Perfil
         </button>
       </aside>
+
+      <div className="profile-content">
+        {error && <Alert variant="danger">{error}</Alert>}
+        {/* Aquí podrías mostrar tareas del user, etc. */}
+      </div>
+
+      {/* Modal para editar */}
       <EditProfileModal
         show={showEditModal}
         handleClose={() => setShowEditModal(false)}
         profile={profile}
         handleSave={handleSaveProfile}
       />
-      {error && <Alert variant="danger">{error}</Alert>}
     </div>
   );
 }
 
 export default ProfilePage;
-
------ ./frontend/src/pages/FinancePage.css -----
-/* frontend/src/pages/FinancePage.css */
-
-.finance-page {
-  padding: 30px;
-  text-align: center;
-}
-
-.finance-page h1 {
-  color: var(--primary-color);
-  margin-bottom: 25px;
-}
-
-.finance-content {
-  background-color: #ffffff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  display: inline-block;
-  text-align: left;
-}
-
-.finance-content h2 {
-  color: var(--primary-color);
-  margin-bottom: 20px;
-}
-
-.finance-content p {
-  font-size: 18px;
-  color: var(--text-color);
-}
-
-/* Estilos para el modal */
-.modal-body form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.modal-body form .form-group label {
-  font-weight: bold;
-  color: var(--text-color);
-}
-
-.modal-body form .form-control {
-  padding: 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-}
-
-.modal-footer button {
-  min-width: 100px;
-}
-
-/* Estilos para los botones del modal */
-.btn-primary {
-  background-color: var(--primary-color);
-  border: none;
-  transition: background-color 0.3s;
-}
-
-.btn-primary:hover {
-  background-color: #357ab8;
-}
-
-.btn-secondary {
-  background-color: var(--secondary-color);
-  border: none;
-  transition: background-color 0.3s;
-}
-
-.btn-secondary:hover {
-  background-color: #3bc0a4;
-}
-
-/* Estilos para mensajes de error */
-.text-danger {
-  font-weight: bold;
-}
-
------ ./frontend/src/pages/TaskPage.css -----
-/* frontend/src/pages/TaskPage.css */
-
-.task-page {
-    padding: 25px;
-}
-
-.task-page h2 {
-    margin-bottom: 25px;
-    color: var(--primary-color);
-    text-align: center;
-}
-
-.task-layout {
-    display: flex;
-    gap: 30px;
-    flex-wrap: wrap;
-}
-
-.task-form-column {
-    flex: 1;
-    min-width: 300px;
-    background-color: #ffffff;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-.task-list-column {
-    flex: 2;
-    min-width: 300px;
-}
 
 ----- ./frontend/src/pages/RegisterPage.js -----
 // frontend/src/pages/RegisterPage.js
@@ -3302,7 +2928,7 @@ export default RegisterPage;
 ----- ./frontend/src/services/authService.js -----
 // frontend/src/services/authService.js
 import axios from 'axios';
-import { jwtDecode } from 'jwt-decode'; // Importación con nombre
+import { jwtDecode } from 'jwt-decode'; // Import nombrado: tu versión no exporta por defecto.
 
 const API_URL = '/api/auth/';
 
@@ -3310,12 +2936,14 @@ const register = async (userData) => {
   try {
     const response = await axios.post(API_URL + 'register', userData);
     if (response.data.token) {
+      // Decodificar el token
       const decoded = jwtDecode(response.data.token);
       const user = {
         token: response.data.token,
         id: decoded.user.id,
         role: decoded.user.role,
       };
+      // Guardar en localStorage
       localStorage.setItem('user', JSON.stringify(user));
       return user;
     }
@@ -3330,12 +2958,14 @@ const login = async (credentials) => {
   try {
     const response = await axios.post(API_URL + 'login', credentials);
     if (response.data.token) {
+      // Decodificar el token
       const decoded = jwtDecode(response.data.token);
       const user = {
         token: response.data.token,
         id: decoded.user.id,
         role: decoded.user.role,
       };
+      // Guardar en localStorage
       localStorage.setItem('user', JSON.stringify(user));
       return user;
     }
@@ -3362,14 +2992,12 @@ const getCurrentUser = () => {
   }
 };
 
-const authService = {
+export default {
   register,
   login,
   logout,
   getCurrentUser,
 };
-
-export default authService;
 
 ----- ./backend/index.js -----
 // backend/index.js
@@ -3377,30 +3005,32 @@ export default authService;
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
+const morgan = require('morgan');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
+// Rutas
 const tasksRoutes = require('./src/routes/tasks');
 const uploadRoutes = require('./src/routes/upload');
-const profileRoutes = require('./src/routes/profile'); 
-const authRoutes = require('./src/routes/auth'); 
-const usersRoutes = require('./src/routes/users'); 
-const authMiddleware = require('./src/middleware/authMiddleware');
-const morgan = require('morgan'); 
-const helmet = require('helmet'); 
-const rateLimit = require('express-rate-limit'); 
-const path = require('path');
+const profileRoutes = require('./src/routes/profile');
+const authRoutes = require('./src/routes/auth');
+const usersRoutes = require('./src/routes/users');
+const friendsRoutes = require('./src/routes/friends');
 
 dotenv.config();
-
 const app = express();
-const PORT = process.env.PORT || 5000; // Usando el valor simulado de PORT
+const PORT = process.env.PORT || 5000;
 
-app.set('trust proxy', 1); 
-
+app.set('trust proxy', 1);
 app.use(helmet());
 
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000']; 
+// CORS
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000'];
 app.use(
   cors({
     origin: function (origin, callback) {
+      // Permitir llamadas desde herramientas internas (origin puede ser undefined)
       if (!origin) return callback(null, true);
       if (allowedOrigins.indexOf(origin) === -1) {
         const msg = `La política de CORS no permite el acceso desde el origen ${origin}.`;
@@ -3411,11 +3041,11 @@ app.use(
   })
 );
 
+// Rate Limit
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
+  windowMs: 15 * 60 * 1000, // 15 minutos
   max: 100, 
-  message:
-    'Demasiadas solicitudes desde esta IP, por favor intenta de nuevo más tarde.',
+  message: 'Demasiadas solicitudes desde esta IP, por favor intenta más tarde.',
 });
 app.use(limiter);
 
@@ -3425,50 +3055,62 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+// Servir carpeta de uploads (para ver imágenes subidas)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Rutas
+// Rutas de la API
 app.use('/api/tasks', tasksRoutes);
-app.use('/api/upload', uploadRoutes); 
-app.use('/api/profile', profileRoutes); 
+app.use('/api/upload', uploadRoutes);
+app.use('/api/profile', profileRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/users', authMiddleware, usersRoutes); 
+app.use('/api/users', usersRoutes);  // se verifica dentro del propio archivo o usando authMiddleware
+app.use('/api/friends', friendsRoutes); // idem
 
+// Ruta raíz
 app.get('/', (req, res) => {
   res.send('API Planner2025');
 });
 
+// Manejo de rutas no encontradas
 app.use((req, res, next) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
 });
 
+// Manejo de errores internos
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: err.message || 'Error interno del servidor' });
 });
 
+// Iniciar servidor
 app.listen(PORT, () => {
   console.log(`Servidor backend corriendo en el puerto ${PORT}`);
 });
+
 ----- ./backend/src/middleware/authMiddleware.js -----
 // backend/src/middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
 
 module.exports = function (req, res, next) {
-  const token = req.header('Authorization');
-
-  if (!token) {
+  const authHeader = req.header('Authorization');
+  if (!authHeader) {
     return res.status(401).json({ msg: 'No hay token, autorización denegada' });
   }
 
+  const token = authHeader.startsWith('Bearer ')
+    ? authHeader.split(' ')[1]
+    : authHeader;
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || '123456'); // Usando el valor simulado de JWT_SECRET
-    req.user = decoded.user;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || '123456');
+    // 'decoded.user' es lo que seteamos en el payload
+    req.user = decoded.user; 
     next();
   } catch (err) {
-    res.status(401).json({ msg: 'Token no válido' });
+    return res.status(401).json({ msg: 'Token no válido' });
   }
 };
+
 ----- ./backend/src/config/db.js -----
 // backend/src/config/db.js
 
@@ -3492,81 +3134,289 @@ pool.on('connect', () => {
 module.exports = pool;
 ----- ./backend/src/models/profile.js -----
 // backend/src/models/profile.js
+const User = require('./User');
 const pool = require('../config/db');
 
 const Profile = {
-  getProfile: async () => {
-    const { rows } = await pool.query('SELECT * FROM profiles LIMIT 1');
-    return rows.length > 0 ? rows[0] : null;
+  getByUserId: async (userId) => {
+    const { rows } = await pool.query(
+      'SELECT * FROM profiles WHERE user_id = $1',
+      [userId]
+    );
+    return rows[0] || null;
   },
 
-  updateProfile: async (profile) => {
-    const { name, email, bio, profile_picture_url } = profile;
-    const { rows } = await pool.query(
-      `UPDATE profiles SET name = $1, email = $2, bio = $3, profile_picture_url = $4, updated_at = NOW()
-       WHERE id = (SELECT id FROM profiles LIMIT 1) RETURNING *`,
-      [name, email, bio, profile_picture_url]
-    );
-    return rows[0];
+  updateOrCreate: async (userId, { name, bio, profile_picture_url }) => {
+    // Buscamos si hay un profile existente
+    const existing = await Profile.getByUserId(userId);
+
+    // Tomamos la info base desde "users"
+    const userData = await User.findById(userId);
+    const userEmail = userData.email;  
+    const userNameFromUsers = userData.name; 
+
+    // Permitimos que 'name' se pueda sobreescribir por lo que venga
+    const finalName = name || userNameFromUsers;
+
+    if (!existing) {
+      // Insertar
+      const insertQuery = `
+        INSERT INTO profiles (user_id, name, email, bio, profile_picture_url)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *
+      `;
+      const values = [
+        userId,
+        finalName,
+        userEmail, 
+        bio || '',
+        profile_picture_url || '',
+      ];
+      const { rows } = await pool.query(insertQuery, values);
+      return rows[0];
+    } else {
+      // Actualizar
+      const updateQuery = `
+        UPDATE profiles
+        SET
+          name = $1,
+          bio = $2,
+          profile_picture_url = $3,
+          updated_at = now()
+        WHERE user_id = $4
+        RETURNING *
+      `;
+      const values = [
+        finalName,
+        bio || '',
+        profile_picture_url || '',
+        userId,
+      ];
+      const { rows } = await pool.query(updateQuery, values);
+      return rows[0];
+    }
   },
 };
 
 module.exports = Profile;
+
+----- ./backend/src/models/Friend.js -----
+// backend/src/models/Friend.js
+const pool = require('../config/db');
+
+const Friend = {
+  /**
+   * Enviar solicitud de amistad
+   */
+  async sendRequest(fromUserId, toUserId) {
+    // Ver si ya existe una relación (amistad o solicitud) entre ambos
+    const existsQuery = `
+      SELECT 1
+      FROM friends
+      WHERE 
+        (from_user_id = $1 AND to_user_id = $2)
+        OR (from_user_id = $2 AND to_user_id = $1)
+    `;
+    const exists = await pool.query(existsQuery, [fromUserId, toUserId]);
+    if (exists.rows.length > 0) {
+      // Ya existe una solicitud o amistad
+      return null;
+    }
+
+    // Insertar nueva solicitud en estado 'pending'
+    const insertQuery = `
+      INSERT INTO friends (from_user_id, to_user_id, status, created_at, updated_at)
+      VALUES ($1, $2, 'pending', NOW(), NOW())
+      RETURNING *
+    `;
+    const values = [fromUserId, toUserId];
+    const result = await pool.query(insertQuery, values);
+    return result.rows[0];
+  },
+
+  /**
+   * Aceptar solicitud de amistad
+   */
+  async acceptRequest(friendReqId, currentUserId) {
+    // Solo el destinatario (to_user_id) puede aceptar
+    const updateQuery = `
+      UPDATE friends
+        SET status = 'accepted',
+            updated_at = NOW()
+      WHERE id = $1
+        AND to_user_id = $2
+      RETURNING *
+    `;
+    const values = [friendReqId, currentUserId];
+    const result = await pool.query(updateQuery, values);
+    return result.rows[0];
+  },
+
+  /**
+   * Rechazar solicitud de amistad
+   */
+  async rejectRequest(friendReqId, currentUserId) {
+    // Solo el destinatario (to_user_id) puede rechazar
+    const updateQuery = `
+      UPDATE friends
+        SET status = 'rejected',
+            updated_at = NOW()
+      WHERE id = $1
+        AND to_user_id = $2
+      RETURNING *
+    `;
+    const values = [friendReqId, currentUserId];
+    const result = await pool.query(updateQuery, values);
+    return result.rows[0];
+  },
+
+  /**
+   * Obtener todos los amigos (relaciones en status='accepted')
+   * para un usuario (userId). Se hace un JOIN para tener info de nombres y fotos.
+   */
+  async getFriendsOfUser(userId) {
+    const query = `
+      SELECT 
+        f.*,
+        -- Datos del usuario "from_user"
+        uf.name             AS from_name,
+        uf.email            AS from_email,
+        pf.profile_picture_url AS from_photo,
+        -- Datos del usuario "to_user"
+        ut.name             AS to_name,
+        ut.email            AS to_email,
+        pt.profile_picture_url AS to_photo
+      FROM friends f
+        JOIN users uf ON f.from_user_id = uf.id
+        LEFT JOIN profiles pf ON pf.user_id = uf.id
+        JOIN users ut ON f.to_user_id = ut.id
+        LEFT JOIN profiles pt ON pt.user_id = ut.id
+      WHERE 
+        (f.from_user_id = $1 OR f.to_user_id = $1)
+        AND f.status = 'accepted'
+      ORDER BY f.id DESC
+    `;
+    const { rows } = await pool.query(query, [userId]);
+    return rows;
+  },
+
+  /**
+   * Lista de solicitudes pendientes para un usuario (userId).
+   * Se asume que userId es el "destinatario" (to_user_id).
+   * JOIN para obtener nombre y foto de quien envía la solicitud.
+   */
+  async getRequestsForUser(userId) {
+    const query = `
+      SELECT 
+        f.*,
+        uf.name  AS from_name,
+        uf.email AS from_email,
+        pf.profile_picture_url AS from_photo
+      FROM friends f
+        JOIN users uf ON f.from_user_id = uf.id
+        LEFT JOIN profiles pf ON pf.user_id = uf.id
+      WHERE 
+        f.to_user_id = $1
+        AND f.status = 'pending'
+      ORDER BY f.id DESC
+    `;
+    const { rows } = await pool.query(query, [userId]);
+    return rows;
+  },
+
+  /**
+   * Buscar usuario por email o ID
+   * Se hace LEFT JOIN con la tabla profiles para también devolver la foto
+   */
+  async findUserByEmailOrId(queryText) {
+    // El ILIKE sirve para coincidencias parciales en email
+    const sql = `
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        u.role,
+        p.profile_picture_url
+      FROM users u
+        LEFT JOIN profiles p ON p.user_id = u.id
+      WHERE 
+        u.email ILIKE $1
+        OR CAST(u.id AS TEXT) = $2
+    `;
+    const values = [`%${queryText}%`, queryText];
+    const { rows } = await pool.query(sql, values);
+    return rows;
+  },
+};
+
+module.exports = Friend;
+
 ----- ./backend/src/models/User.js -----
 // backend/src/models/User.js
 const pool = require('../config/db');
 
 const User = {
-    create: async (userData) => {
-        const { name, email, password, role } = userData;
-        const userRole = role || 'user'; // Asigna 'user' por defecto si no se proporciona rol
-        const result = await pool.query(
-            'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
-            [name, email, password, userRole]
-        );
-        return result.rows[0];
-    },
+  // Retorna todos los usuarios (para admin)
+  async getAll() {
+    const query = 'SELECT id, name, email, role FROM users ORDER BY id ASC';
+    const { rows } = await pool.query(query);
+    return rows;
+  },
 
-    findByEmail: async (email) => {
-        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        return result.rows[0];
-    },
+  // Obtener usuario por email
+  async findByEmail(email) {
+    const query = 'SELECT * FROM users WHERE email = $1';
+    const { rows } = await pool.query(query, [email]);
+    return rows[0];
+  },
 
-    findById: async (id) => {
-        const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
-        return result.rows[0];
-    },
+  // Obtener usuario por ID
+  async findById(id) {
+    const query = 'SELECT * FROM users WHERE id = $1';
+    const { rows } = await pool.query(query, [id]);
+    return rows[0];
+  },
 
-    getAll: async () => {
-        const result = await pool.query('SELECT id, name, email, role FROM users');
-        return result.rows;
-    },
+  // Crear usuario (usado por authController)
+  async create({ name, email, password, role }) {
+    const query = `
+      INSERT INTO users (name, email, password, role)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, name, email, role
+    `;
+    const values = [name, email, password, role || 'user'];
+    const { rows } = await pool.query(query, values);
+    return rows[0];
+  },
 
-    update: async (id, userData) => {
-        const { name, email, password, role } = userData;
-        const userRole = role || 'user'; // Asigna 'user' por defecto si no se proporciona rol
+  /**
+   * Actualiza SOLO el "name" (ejemplo). 
+   * Si quieres más campos, agrega y ajusta la consulta.
+   */
+  async update(id, { name }) {
+    const query = `
+      UPDATE users
+      SET name = $1
+      WHERE id = $2
+      RETURNING id, name, email, role
+    `;
+    const values = [name, id];
+    const { rows } = await pool.query(query, values);
+    return rows[0] || null;
+  },
 
-        let query = 'UPDATE users SET name = $1, email = $2, role = $3';
-        const values = [name, email, userRole];
-        let count = 4;
-
-        if (password) {
-            query += ', password = $4';
-            values.push(password);
-            count++;
-        }
-
-        query += ` WHERE id = $${count} RETURNING id, name, email, role`;
-        values.push(id);
-
-        const result = await pool.query(query, values);
-        return result.rows[0];
-    },
-
-    delete: async (id) => {
-        const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id, name, email, role', [id]);
-        return result.rows[0];
-    },
+  /**
+   * Eliminar usuario por ID
+   */
+  async delete(id) {
+    // Verificar si el user existe
+    const existing = await this.findById(id);
+    if (!existing) {
+      return null;
+    }
+    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    return existing; // o true, lo que prefieras
+  },
 };
 
 module.exports = User;
@@ -3576,6 +3426,7 @@ module.exports = User;
 const pool = require('../config/db');
 
 const Task = {
+  // Tareas activas (admin)
   getAll: async () => {
     const { rows } = await pool.query(
       'SELECT * FROM tasks WHERE archived_at IS NULL'
@@ -3583,11 +3434,34 @@ const Task = {
     return rows;
   },
 
+  // Tareas activas (user)
+  getAllByUserId: async (userId) => {
+    const { rows } = await pool.query(
+      'SELECT * FROM tasks WHERE archived_at IS NULL AND user_id = $1',
+      [userId]
+    );
+    return rows;
+  },
+
+  // Obtener tarea por ID (admin)
   getById: async (id) => {
-    const { rows } = await pool.query('SELECT * FROM tasks WHERE id = $1', [id]);
+    const { rows } = await pool.query(
+      'SELECT * FROM tasks WHERE id = $1',
+      [id]
+    );
     return rows[0];
   },
 
+  // Obtener tarea por ID (user)
+  getByIdAndUser: async (id, userId) => {
+    const { rows } = await pool.query(
+      'SELECT * FROM tasks WHERE id = $1 AND user_id = $2',
+      [id, userId]
+    );
+    return rows[0];
+  },
+
+  // Crear nueva tarea
   create: async (taskData) => {
     const {
       name,
@@ -3596,38 +3470,70 @@ const Task = {
       priority,
       difficulty,
       estimated_time,
+      user_id,
+      status = 'Pending',
     } = taskData;
-    const { rows } = await pool.query(
-      'INSERT INTO tasks (name, description, category, priority, difficulty, estimated_time) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [name, description, category, priority, difficulty, estimated_time]
-    );
+
+    const query = `
+      INSERT INTO tasks
+        (name, description, category, priority, difficulty, estimated_time, user_id, status)
+      VALUES
+        ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `;
+
+    const values = [
+      name || null,
+      description || null,
+      category || null,
+      priority || null,
+      difficulty || null,
+      estimated_time || null,
+      user_id,
+      status,
+    ];
+
+    const { rows } = await pool.query(query, values);
     return rows[0];
   },
 
+  // Completar (status = 'Completed')
   complete: async (id) => {
     const { rows } = await pool.query(
-      'UPDATE tasks SET status = $1, completed_at = $2, updated_at = NOW() WHERE id = $3 RETURNING *',
-      ['Completed', new Date(), id]
+      `UPDATE tasks 
+       SET status = $1, completed_at = NOW(), updated_at = NOW() 
+       WHERE id = $2 
+       RETURNING *`,
+      ['Completed', id]
     );
     return rows[0];
   },
 
+  // Archivar (status = 'Archived')
   archive: async (id) => {
     const { rows } = await pool.query(
-      'UPDATE tasks SET status = $1, archived_at = $2, updated_at = NOW() WHERE id = $3 RETURNING *',
-      ['Archived', new Date(), id]
+      `UPDATE tasks 
+       SET status = $1, archived_at = NOW(), updated_at = NOW() 
+       WHERE id = $2 
+       RETURNING *`,
+      ['Archived', id]
     );
     return rows[0];
   },
 
+  // Desarchivar (status = 'Pending')
   unarchive: async (id) => {
     const { rows } = await pool.query(
-      'UPDATE tasks SET status = $1, archived_at = NULL, updated_at = NOW() WHERE id = $2 RETURNING *',
+      `UPDATE tasks 
+       SET status = $1, archived_at = NULL, updated_at = NOW() 
+       WHERE id = $2 
+       RETURNING *`,
       ['Pending', id]
     );
     return rows[0];
   },
 
+  // Actualizar
   update: async (id, taskData) => {
     const {
       name,
@@ -3642,7 +3548,7 @@ const Task = {
       estimated_time,
       actual_time,
     } = taskData;
-  
+
     const query = `
       UPDATE tasks
       SET
@@ -3661,43 +3567,64 @@ const Task = {
       WHERE id = $12
       RETURNING *;
     `;
-  
+
     const values = [
-      name,
-      description,
-      category,
-      priority,
-      difficulty,
-      status,
-      completed_at,
-      time_taken,
-      archived_at,
-      estimated_time,
-      actual_time,
+      name || null,
+      description || null,
+      category || null,
+      priority || null,
+      difficulty || null,
+      status || null,
+      completed_at || null,
+      time_taken || null,
+      archived_at || null,
+      estimated_time || null,
+      actual_time || null,
       id,
     ];
-  
-    console.log('Update Query:', query);
-    console.log('Values:', values);
-  
-    try {
-      const { rows } = await pool.query(query, values);
-      return rows[0];
-    } catch (error) {
-      console.error('Error al actualizar la tarea:', error);
-      throw error;
-    }
+
+    const { rows } = await pool.query(query, values);
+    return rows[0];
   },
 
+  // Eliminar
   delete: async (id) => {
     await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
   },
 
+  // Tareas archivadas (admin)
+  getArchivedTasks: async () => {
+    const { rows } = await pool.query(
+      'SELECT * FROM tasks WHERE archived_at IS NOT NULL'
+    );
+    return rows;
+  },
+
+  // Tareas archivadas (user)
+  getArchivedTasksByUserId: async (userId) => {
+    const { rows } = await pool.query(
+      'SELECT * FROM tasks WHERE archived_at IS NOT NULL AND user_id = $1',
+      [userId]
+    );
+    return rows;
+  },
+
+  // Contar todas las tareas (admin)
   countAll: async () => {
     const { rows } = await pool.query('SELECT COUNT(*) FROM tasks');
     return parseInt(rows[0].count, 10);
   },
 
+  // Contar todas las tareas (user)
+  countAllForUser: async (userId) => {
+    const { rows } = await pool.query(
+      'SELECT COUNT(*) FROM tasks WHERE user_id = $1',
+      [userId]
+    );
+    return parseInt(rows[0].count, 10);
+  },
+
+  // Contar tareas por status (admin)
   countByStatus: async (status) => {
     const { rows } = await pool.query(
       'SELECT COUNT(*) FROM tasks WHERE status = $1',
@@ -3706,36 +3633,149 @@ const Task = {
     return parseInt(rows[0].count, 10);
   },
 
-  getArchivedTasks: async () => {
+  // Contar tareas por status (user)
+  countByStatusForUser: async (status, userId) => {
     const { rows } = await pool.query(
-      'SELECT * FROM tasks WHERE archived_at IS NOT NULL'
+      'SELECT COUNT(*) FROM tasks WHERE status = $1 AND user_id = $2',
+      [status, userId]
     );
-    return rows;
-  },
-  getDifficultyByPriority: async () => {
-    const { rows } = await pool.query(
-      'SELECT priority, AVG(difficulty) as avg_difficulty FROM tasks GROUP BY priority'
-    );
-    return rows;
+    return parseInt(rows[0].count, 10);
   },
 };
 
 module.exports = Task;
+
+----- ./backend/src/controllers/friendsController.js -----
+// backend/src/controllers/friendsController.js
+const Friend = require('../models/Friend');
+const { validationResult } = require('express-validator');
+
+const friendsController = {
+  // Enviar solicitud de amistad
+  sendRequest: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+      const fromUserId = req.user.id;
+      const { to_user_id } = req.body;
+      const friendReq = await Friend.sendRequest(fromUserId, to_user_id);
+
+      if (!friendReq) {
+        return res
+          .status(400)
+          .json({ error: 'Ya existe una solicitud o amistad con ese usuario.' });
+      }
+      res.json(friendReq);
+    } catch (error) {
+      console.error('Error al enviar solicitud de amistad:', error);
+      res.status(500).json({ error: 'Error al enviar solicitud de amistad' });
+    }
+  },
+
+  // Aceptar solicitud
+  acceptRequest: async (req, res) => {
+    try {
+      const friendReqId = req.params.id;
+      const userId = req.user.id;
+      const updated = await Friend.acceptRequest(friendReqId, userId);
+      if (!updated) {
+        return res.status(404).json({
+          error: 'Solicitud no encontrada o no eres el destinatario.',
+        });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error('Error al aceptar solicitud:', error);
+      res.status(500).json({ error: 'Error al aceptar solicitud' });
+    }
+  },
+
+  // Rechazar solicitud
+  rejectRequest: async (req, res) => {
+    try {
+      const friendReqId = req.params.id;
+      const userId = req.user.id;
+      const updated = await Friend.rejectRequest(friendReqId, userId);
+      if (!updated) {
+        return res.status(404).json({
+          error: 'Solicitud no encontrada o no eres el destinatario.',
+        });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error('Error al rechazar solicitud:', error);
+      res.status(500).json({ error: 'Error al rechazar solicitud' });
+    }
+  },
+
+  // Lista de amigos (aceptados)
+  getMyFriends: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const friends = await Friend.getFriendsOfUser(userId);
+      res.json(friends);
+    } catch (error) {
+      console.error('Error al obtener amigos:', error);
+      res.status(500).json({ error: 'Error al obtener amigos' });
+    }
+  },
+
+  // Lista de solicitudes pendientes
+  getMyRequests: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const requests = await Friend.getRequestsForUser(userId);
+      res.json(requests);
+    } catch (error) {
+      console.error('Error al obtener solicitudes:', error);
+      res.status(500).json({ error: 'Error al obtener solicitudes' });
+    }
+  },
+
+  // Buscar usuario por email o id
+  searchUser: async (req, res) => {
+    try {
+      const { query } = req.query; // ?query=...
+      if (!query) return res.json([]);
+      const users = await Friend.findUserByEmailOrId(query);
+      res.json(users);
+    } catch (error) {
+      console.error('Error al buscar usuario:', error);
+      res.status(500).json({ error: 'Error al buscar usuario' });
+    }
+  },
+};
+
+module.exports = friendsController;
+
 ----- ./backend/src/controllers/userController.js -----
 // backend/src/controllers/userController.js
 const User = require('../models/User');
 
+/**
+ * CONTROLADOR de usuarios (solo para ADMIN), con getAll, getById, update, delete
+ * NOTA: la creación de usuarios se hace en authController (register).
+ */
 const userController = {
+  /**
+   * Listar todos los usuarios
+   */
   getAllUsers: async (req, res) => {
     try {
+      // OJO: asumes que req.user.role === 'admin' (middleware lo permite). 
       const users = await User.getAll();
       res.json(users);
     } catch (error) {
-      console.error(error.message);
-      res.status(500).send('Error del servidor');
+      console.error('Error al obtener todos los usuarios:', error.message);
+      res.status(500).json({ msg: 'Error del servidor' });
     }
   },
 
+  /**
+   * Obtener un usuario por ID
+   */
   getUserById: async (req, res) => {
     try {
       const user = await User.findById(req.params.id);
@@ -3744,24 +3784,37 @@ const userController = {
       }
       res.json(user);
     } catch (error) {
-      console.error(error.message);
-      res.status(500).send('Error del servidor');
+      console.error('Error al obtener usuario por ID:', error.message);
+      res.status(500).json({ msg: 'Error del servidor' });
     }
   },
 
+  /**
+   * Actualizar usuario (solo admin). 
+   * - Por simplicidad, solo actualiza "name" en la tabla users.
+   * - Si quisieras actualizar "email", adáptalo a tu gusto.
+   */
   updateUser: async (req, res) => {
     try {
-      const updatedUser = await User.update(req.params.id, req.body);
+      const { name } = req.body; // ajusta si deseas actualizar más campos
+      if (!name) {
+        return res.status(400).json({ msg: 'Se requiere un nombre para actualizar.' });
+      }
+
+      const updatedUser = await User.update(req.params.id, { name });
       if (!updatedUser) {
-        return res.status(404).json({ msg: 'Usuario no encontrado' });
+        return res.status(404).json({ msg: 'Usuario no encontrado o no se actualizó' });
       }
       res.json(updatedUser);
     } catch (error) {
-      console.error(error.message);
-      res.status(500).send('Error del servidor');
+      console.error('Error al actualizar usuario:', error.message);
+      res.status(500).json({ msg: 'Error del servidor' });
     }
   },
 
+  /**
+   * Eliminar usuario (solo admin).
+   */
   deleteUser: async (req, res) => {
     try {
       const deletedUser = await User.delete(req.params.id);
@@ -3770,31 +3823,54 @@ const userController = {
       }
       res.json({ msg: 'Usuario eliminado' });
     } catch (error) {
-      console.error(error.message);
-      res.status(500).send('Error del servidor');
+      console.error('Error al eliminar usuario:', error.message);
+      res.status(500).json({ msg: 'Error del servidor' });
     }
   },
 };
 
 module.exports = userController;
+
 ----- ./backend/src/controllers/tasksController.js -----
 // backend/src/controllers/tasksController.js
 const Task = require('../models/task');
 const { validationResult } = require('express-validator');
 
 const tasksController = {
-  // Obtener todas las tareas no archivadas
+  // Obtener todas las tareas (no archivadas)
   getAllTasks: async (req, res) => {
     try {
-      const tasks = await Task.getAll();
+      // req.user viene del authMiddleware con { id, role, ... }
+      let tasks;
+      if (req.user.role === 'admin') {
+        tasks = await Task.getAll(); 
+      } else {
+        tasks = await Task.getAllByUserId(req.user.id);
+      }
       res.json(tasks);
     } catch (error) {
-      console.error('Error al obtener las tareas:', error);
+      console.error('Error al obtener tareas:', error);
       res.status(500).json({ error: 'Error al obtener las tareas' });
     }
   },
 
-  // Obtener una tarea por ID
+  // Obtener tareas archivadas
+  getArchivedTasks: async (req, res) => {
+    try {
+      let tasks;
+      if (req.user.role === 'admin') {
+        tasks = await Task.getArchivedTasks();
+      } else {
+        tasks = await Task.getArchivedTasksByUserId(req.user.id);
+      }
+      res.json(tasks);
+    } catch (error) {
+      console.error('Error al obtener tareas archivadas:', error);
+      res.status(500).json({ error: 'Error al obtener tareas archivadas' });
+    }
+  },
+
+  // Obtener una tarea concreta por ID
   getTaskById: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -3802,12 +3878,17 @@ const tasksController = {
     }
 
     try {
-      const task = await Task.getById(req.params.id);
-      if (task) {
-        res.json(task);
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
       } else {
-        res.status(404).json({ error: 'Tarea no encontrada' });
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
       }
+
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+      res.json(task);
     } catch (error) {
       console.error('Error al obtener la tarea:', error);
       res.status(500).json({ error: 'Error al obtener la tarea' });
@@ -3822,15 +3903,20 @@ const tasksController = {
     }
 
     try {
-      const newTask = await Task.create(req.body);
-      res.status(201).json(newTask);
+      // Asignar user_id al body para forzar que la tarea sea del usuario logueado
+      const taskData = {
+        ...req.body,
+        user_id: req.user.id,
+      };
+      const newTask = await Task.create(taskData);
+      return res.status(201).json(newTask);
     } catch (error) {
       console.error('Error al crear la tarea:', error);
       res.status(500).json({ error: 'Error al crear la tarea' });
     }
   },
 
-  // Completar una tarea
+  // Completar una tarea (status => 'Completed')
   completeTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -3838,19 +3924,24 @@ const tasksController = {
     }
 
     try {
-      const updatedTask = await Task.complete(req.params.id);
-      if (updatedTask) {
-        res.json(updatedTask);
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
       } else {
-        res.status(404).json({ error: 'Tarea no encontrada' });
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
       }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+      const updatedTask = await Task.complete(req.params.id);
+      res.json(updatedTask);
     } catch (error) {
       console.error('Error al completar la tarea:', error);
       res.status(500).json({ error: 'Error al completar la tarea' });
     }
   },
 
-  // Archivar una tarea
+  // Archivar una tarea (status => 'Archived')
   archiveTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -3858,19 +3949,24 @@ const tasksController = {
     }
 
     try {
-      const updatedTask = await Task.archive(req.params.id);
-      if (updatedTask) {
-        res.json(updatedTask);
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
       } else {
-        res.status(404).json({ error: 'Tarea no encontrada para archivar' });
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
       }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+      const updatedTask = await Task.archive(req.params.id);
+      res.json(updatedTask);
     } catch (error) {
       console.error('Error al archivar la tarea:', error);
       res.status(500).json({ error: 'Error al archivar la tarea' });
     }
   },
 
-  // Desarchivar una tarea
+  // Desarchivar una tarea (status => 'Pending')
   unarchiveTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -3878,19 +3974,24 @@ const tasksController = {
     }
 
     try {
-      const updatedTask = await Task.unarchive(req.params.id);
-      if (updatedTask) {
-        res.json(updatedTask);
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
       } else {
-        res.status(404).json({ error: 'Tarea no encontrada para desarchivar' });
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
       }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+      const updatedTask = await Task.unarchive(req.params.id);
+      res.json(updatedTask);
     } catch (error) {
       console.error('Error al desarchivar la tarea:', error);
       res.status(500).json({ error: 'Error al desarchivar la tarea' });
     }
   },
 
-  // Actualizar una tarea existente
+  // Actualizar una tarea
   updateTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -3898,12 +3999,18 @@ const tasksController = {
     }
 
     try {
-      const updatedTask = await Task.update(req.params.id, req.body);
-      if (updatedTask) {
-        res.json(updatedTask);
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
       } else {
-        res.status(404).json({ error: 'Tarea no encontrada' });
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
       }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+
+      const updatedTask = await Task.update(req.params.id, req.body);
+      res.json(updatedTask);
     } catch (error) {
       console.error('Error al actualizar la tarea:', error);
       res.status(500).json({ error: 'Error al actualizar la tarea' });
@@ -3918,6 +4025,16 @@ const tasksController = {
     }
 
     try {
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
+      } else {
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
+      }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+
       await Task.delete(req.params.id);
       res.json({ message: 'Tarea eliminada' });
     } catch (error) {
@@ -3926,60 +4043,106 @@ const tasksController = {
     }
   },
 
-  // Obtener estadísticas de tareas
+  /**
+   * Estadísticas. Devuelve un JSON con:
+   *  {
+   *    totalTasks,
+   *    completed,
+   *    pending,
+   *    inProgress
+   *  }
+   *  Si quieres un stacked chart, necesitarás un group by (priority,difficulty).
+   */
   getStats: async (req, res) => {
     try {
-      const totalTasks = await Task.countAll();
-      const completed = await Task.countByStatus('Completed');
-      const pending = await Task.countByStatus('Pending');
-      const inProgress = await Task.countByStatus('In Progress');
-      const priorityDistribution = await Task.getDifficultyByPriority(); // Llama a la función correcta
+      let totalTasks, completed, pending, inProgress;
 
-      res.json({
+      if (req.user.role === 'admin') {
+        totalTasks = await Task.countAll();
+        completed = await Task.countByStatus('Completed');
+        pending = await Task.countByStatus('Pending');
+        inProgress = await Task.countByStatus('In Progress');
+      } else {
+        totalTasks = await Task.countAllForUser(req.user.id);
+        completed = await Task.countByStatusForUser('Completed', req.user.id);
+        pending = await Task.countByStatusForUser('Pending', req.user.id);
+        inProgress = await Task.countByStatusForUser('In Progress', req.user.id);
+      }
+
+      // EJEMPLO: Si deseas stackedData (priority vs difficulty),
+      // deberías hacer un método en Task que agrupe y devuelva 
+      // { priority, difficulty, total }. Lo omito aquí por brevedad.
+
+      // Devolvemos el JSON (compatible con tu TaskMetricsPage actual)
+      return res.json({
         totalTasks,
         completed,
         pending,
         inProgress,
-        priorityDistribution,
       });
     } catch (error) {
       console.error('Error al obtener estadísticas:', error);
       res.status(500).json({ error: 'Error al obtener estadísticas' });
     }
   },
-
-  // Obtener tareas archivadas
-  getArchivedTasks: async (req, res) => {
-    try {
-      const archivedTasks = await Task.getArchivedTasks();
-      res.json(archivedTasks);
-    } catch (error) {
-      console.error('Error al obtener tareas archivadas:', error);
-      res.status(500).json({ error: 'Error al obtener tareas archivadas' });
-    }
-  },
 };
 
 module.exports = tasksController;
+
 ----- ./backend/src/controllers/profileController.js -----
 // backend/src/controllers/profileController.js
-const Profile = require('../models/profile');
+const fs = require('fs');
+const path = require('path');
 const { validationResult } = require('express-validator');
+const Profile = require('../models/profile');
+const User = require('../models/User');
 
 const profileController = {
+  /**
+   * GET /api/profile
+   * Retorna el perfil del usuario logueado, o si no existe en "profiles",
+   * retorna datos básicos desde la tabla "users".
+   */
   getProfile: async (req, res) => {
     try {
-      const profile = await Profile.getProfile();
-      if (!profile) {
-        return res.status(404).json({ error: 'Perfil no encontrado' });
+      const userId = req.user?.id;
+      if (!userId) {
+        return res
+          .status(401)
+          .json({ error: 'No se encontró ID de usuario en el token' });
       }
-      res.json(profile);
+
+      // Buscar si existe profile
+      const profile = await Profile.getByUserId(userId);
+
+      if (!profile) {
+        // Si no existe, retornamos info básica de la tabla users
+        const userData = await User.findById(userId);
+        if (!userData) {
+          return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+        return res.json({
+          user_id: userId,
+          name: userData.name,
+          email: userData.email,
+          bio: '',
+          profile_picture_url: '',
+        });
+      } else {
+        // Existe profile en la BD
+        return res.json(profile);
+      }
     } catch (error) {
       console.error('Error al obtener el perfil:', error);
       res.status(500).json({ error: 'Error al obtener el perfil' });
     }
   },
 
+  /**
+   * PUT /api/profile
+   * Actualiza (o crea) el perfil. 
+   * Si el profile_picture_url cambió, borra la imagen anterior.
+   */
   updateProfile: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -3987,119 +4150,174 @@ const profileController = {
     }
 
     try {
-      const profileData = {
-        ...req.body,
-        profile_picture_url: req.body.profile_picture_url,
-      };
-
-      const updatedProfile = await Profile.updateProfile(profileData);
-      if (!updatedProfile) {
-        return res.status(404).json({ error: 'Perfil no encontrado' });
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
       }
-      res.json(updatedProfile);
+
+      const { name, bio, profile_picture_url } = req.body;
+
+      // 1) Obtener el perfil actual para ver si hay que borrar la imagen anterior
+      const existingProfile = await Profile.getByUserId(userId);
+
+      // 2) Si existe y la "profile_picture_url" es distinta & no vacía
+      if (
+        existingProfile &&
+        existingProfile.profile_picture_url &&
+        existingProfile.profile_picture_url.trim() !== '' &&
+        existingProfile.profile_picture_url !== profile_picture_url
+      ) {
+        const oldUrl = existingProfile.profile_picture_url;
+        // Basename extrae '12345.png' de 'http://localhost:5000/uploads/12345.png'
+        const filename = path.basename(oldUrl);
+        const filePath = path.join(__dirname, '../../uploads', filename);
+
+        fs.unlink(filePath, (err) => {
+          if (err) {
+            console.error('Error al borrar imagen anterior:', err);
+          } else {
+            console.log('Imagen anterior borrada con éxito:', filename);
+          }
+        });
+      }
+
+      // 3) Llamar a updateOrCreate => lo que ya hacías
+      const updated = await Profile.updateOrCreate(userId, {
+        name,
+        bio,
+        profile_picture_url,
+      });
+
+      return res.json(updated);
     } catch (error) {
       console.error('Error al actualizar el perfil:', error);
-      res.status(500).json({ error: 'Error al actualizar el perfil' });
+      return res.status(500).json({ error: 'Error al actualizar el perfil' });
     }
   },
 };
 
 module.exports = profileController;
+
 ----- ./backend/src/controllers/authController.js -----
 // backend/src/controllers/authController.js
-
 const User = require('../models/User');
+const Profile = require('../models/profile'); // <-- Importamos el modelo Profile
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 
 const authController = {
-    register: async (req, res) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+  register: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, email, password } = req.body; // Eliminamos 'role' aquí
+
+    try {
+      let user = await User.findByEmail(email);
+      if (user) {
+        return res.status(400).json({ msg: 'El usuario ya existe' });
+      }
+
+      // Hashear password
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      // Crear usuario con rol 'user' por defecto
+      user = await User.create({
+        name,
+        email,
+        password: hashedPassword,
+        role: 'user',
+      });
+
+      // Justo después de crear el user, creamos su profile en la tabla "profiles"
+      // Usamos updateOrCreate para no duplicar si existiera
+      await Profile.updateOrCreate(user.id, {
+        name: user.name,             // inicializamos con su name de la tabla users
+        bio: '',                     // vacío por defecto
+        profile_picture_url: '',     // vacío al inicio
+      });
+
+      // Generar token
+      const payload = {
+        user: {
+          id: user.id,
+          role: user.role,
+        },
+      };
+
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET || '123456',
+        { expiresIn: '1h' },
+        (err, token) => {
+          if (err) throw err;
+          res.json({ token });
         }
+      );
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send('Error del servidor');
+    }
+  },
 
-        const { name, email, password } = req.body; // Eliminamos 'role' aquí
+  login: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
-        try {
-            let user = await User.findByEmail(email);
-            if (user) {
-                return res.status(400).json({ msg: 'El usuario ya existe' });
-            }
+    const { email, password } = req.body;
 
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
+    try {
+      let user = await User.findByEmail(email);
+      if (!user) {
+        return res.status(400).json({ msg: 'Credenciales inválidas' });
+      }
 
-            user = await User.create({
-                name,
-                email,
-                password: hashedPassword,
-                role: 'user' // Asigna 'user' por defecto
-            });
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ msg: 'Credenciales inválidas' });
+      }
 
-            const payload = {
-                user: {
-                    id: user.id,
-                    role: user.role
-                },
-            };
+      const payload = {
+        user: {
+          id: user.id,
+          role: user.role,
+        },
+      };
 
-            jwt.sign(
-                payload,
-                process.env.JWT_SECRET || '123456', // Asegúrate de tener una variable de entorno para JWT_SECRET
-                { expiresIn: '1h' },
-                (err, token) => {
-                    if (err) throw err;
-                    res.json({ token });
-                }
-            );
-        } catch (error) {
-            console.error(error.message);
-            res.status(500).send('Error del servidor');
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET || '123456',
+        { expiresIn: '1h' },
+        (err, token) => {
+          if (err) throw err;
+          res.json({ token });
         }
-    },
+      );
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send('Error del servidor');
+    }
+  },
 
-    login: async (req, res) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { email, password } = req.body;
-
-        try {
-            let user = await User.findByEmail(email);
-            if (!user) {
-                return res.status(400).json({ msg: 'Credenciales inválidas' });
-            }
-
-            const isMatch = await bcrypt.compare(password, user.password);
-            if (!isMatch) {
-                return res.status(400).json({ msg: 'Credenciales inválidas' });
-            }
-
-            const payload = {
-                user: {
-                    id: user.id,
-                    role: user.role
-                },
-            };
-
-            jwt.sign(
-                payload,
-                process.env.JWT_SECRET || '123456', // Asegúrate de tener una variable de entorno para JWT_SECRET
-                { expiresIn: '1h' },
-                (err, token) => {
-                    if (err) throw err;
-                    res.json({ token });
-                }
-            );
-        } catch (error) {
-            console.error(error.message);
-            res.status(500).send('Error del servidor');
-        }
-    },
+  // (Opcional) Verificar token si deseas un endpoint /verify
+  verifyToken: (req, res) => {
+    const token = req.body.token;
+    if (!token) {
+      return res.status(400).json({ msg: 'No token in request' });
+    }
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || '123456');
+      return res.json({ user: decoded.user });
+    } catch (error) {
+      return res.status(401).json({ msg: 'Token inválido' });
+    }
+  },
 };
 
 module.exports = authController;
@@ -4109,29 +4327,28 @@ module.exports = authController;
 const express = require('express');
 const router = express.Router();
 const profileController = require('../controllers/profileController');
+const authMiddleware = require('../middleware/authMiddleware');
 const { body } = require('express-validator');
+
+// Proteger rutas
+router.use(authMiddleware);
 
 // Obtener el perfil
 router.get('/', profileController.getProfile);
 
-// Actualizar el perfil con validaciones SIMPLIFICADAS TEMPORALMENTE
+// Actualizar el perfil
 router.put(
   '/',
   [
-    body('name')
-      .isLength({ min: 1 })
-      .withMessage('El nombre es obligatorio.'),
-    body('email')
-      .isEmail()
-      .withMessage('Formato de email inválido.'),
+    body('name').isLength({ min: 1 }).withMessage('El nombre es obligatorio.'),
     body('bio').optional().isString(),
-    // Eliminamos la validación custom temporalmente
-    // body('profile_picture_url').optional().isString(),
+    body('profile_picture_url').optional().isString(),
   ],
   profileController.updateProfile
 );
 
 module.exports = router;
+
 ----- ./backend/src/routes/auth.js -----
 // backend/src/routes/auth.js
 const express = require('express');
@@ -4162,7 +4379,11 @@ router.post(
   authController.login
 );
 
+// (Opcional) Verificar token
+router.post('/verify', authController.verifyToken);
+
 module.exports = router;
+
 ----- ./backend/src/routes/users.js -----
 // backend/src/routes/users.js
 const express = require('express');
@@ -4170,20 +4391,25 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middleware/authMiddleware');
 
-// Obtener todos los usuarios (protegida, solo para administradores)
-router.get('/', authMiddleware, userController.getAllUsers);
+// Aplicar middleware a todas las rutas
+router.use(authMiddleware);
 
-// Obtener un usuario por ID (protegida, solo para administradores)
-router.get('/:id', authMiddleware, userController.getUserById);
+// Obtener todos los usuarios (solo admin)
+router.get('/', userController.getAllUsers);
 
-// Actualizar un usuario (protegida, solo para administradores)
-router.put('/:id', authMiddleware, userController.updateUser);
+// Obtener un usuario por ID (solo admin)
+router.get('/:id', userController.getUserById);
 
-// Eliminar un usuario (protegida, solo para administradores)
-router.delete('/:id', authMiddleware, userController.deleteUser);
+// Actualizar un usuario (solo admin)
+router.put('/:id', userController.updateUser);
+
+// Eliminar un usuario (solo admin)
+router.delete('/:id', userController.deleteUser);
 
 module.exports = router;
+
 ----- ./backend/src/routes/upload.js -----
+// backend/src/routes/upload.js
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -4192,35 +4418,32 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-// Configuración de almacenamiento de multer
+// Configuración de almacenamiento con multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Asegúrate de que la carpeta 'uploads' exista en la raíz de tu proyecto
+    cb(null, 'uploads/');
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname)); // Nombre único para cada archivo
+    cb(null, Date.now() + path.extname(file.originalname));
   },
 });
 
-// Filtro de archivos para permitir solo imágenes
+// Filtro de archivos para solo imágenes
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif/;
-  const extname = allowedTypes.test(
-    path.extname(file.originalname).toLowerCase()
-  );
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowedTypes.test(file.mimetype);
   if (mimetype && extname) {
-    return cb(null, true);
+    cb(null, true);
   } else {
     cb(new Error('Solo se permiten imágenes (jpeg, jpg, png, gif)'));
   }
 };
 
-// Configuración de multer
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Limitar a 5MB
-  fileFilter: fileFilter,
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter,
 });
 
 // Ruta para subir una imagen de perfil
@@ -4228,94 +4451,156 @@ router.post('/profile-picture', upload.single('profilePicture'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No se subió ningún archivo' });
   }
-  // Construir la URL completa de la imagen
   const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
   const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
   res.json({ imageUrl });
 });
 
 module.exports = router;
+
+----- ./backend/src/routes/friends.js -----
+// backend/src/routes/friends.js
+const express = require('express');
+const router = express.Router();
+const friendController = require('../controllers/friendsController');
+const authMiddleware = require('../middleware/authMiddleware');
+const { body, query, param } = require('express-validator');
+
+// Todas requieren auth
+router.use(authMiddleware);
+
+// Buscar usuarios
+router.get(
+  '/search',
+  [query('query').notEmpty().withMessage('Debe proporcionar un ID o email')],
+  friendController.searchUser
+);
+
+// Listar amigos
+router.get('/list', friendController.getMyFriends);
+
+// Listar solicitudes pendientes
+router.get('/requests', friendController.getMyRequests);
+
+// Enviar solicitud
+router.post(
+  '/send',
+  [body('to_user_id').isInt().withMessage('to_user_id debe ser entero')],
+  friendController.sendRequest
+);
+
+// Aceptar
+router.put('/:id/accept', friendController.acceptRequest);
+
+// Rechazar
+router.put('/:id/reject', friendController.rejectRequest);
+
+module.exports = router;
+
 ----- ./backend/src/routes/tasks.js -----
+// backend/src/routes/tasks.js
 const express = require('express');
 const router = express.Router();
 const tasksController = require('../controllers/tasksController');
+const authMiddleware = require('../middleware/authMiddleware');
 const { body, param } = require('express-validator');
 
-// Obtener tareas archivadas primero para evitar conflictos con /:id
+// Todas estas rutas requieren auth
+router.use(authMiddleware);
+
+// Tareas archivadas
 router.get('/archived', tasksController.getArchivedTasks);
 
-// Obtener estadísticas de tareas
+// Estadísticas
 router.get('/stats', tasksController.getStats);
 
-// Obtener todas las tareas no archivadas
+// Todas las tareas activas
 router.get('/', tasksController.getAllTasks);
 
-// Obtener una tarea por ID con validación
-router.get('/:id',
-  [
-    param('id').isInt().withMessage('ID de tarea debe ser un número entero.')
-  ],
+// Obtener una tarea por ID
+router.get(
+  '/:id',
+  [param('id').isInt().withMessage('ID de tarea debe ser un número entero.')],
   tasksController.getTaskById
 );
 
-// Crear una nueva tarea con validaciones
-router.post('/',
+// Crear nueva tarea
+router.post(
+  '/',
   [
-    body('name').isLength({ min: 1 }).withMessage('El nombre de la tarea es obligatorio.'),
+    body('name').isLength({ min: 1 }).withMessage('El nombre es obligatorio.'),
     body('description').optional().isString(),
-    body('priority').isIn(['Low', 'Medium', 'High']).withMessage('Prioridad inválida.'),
-    body('difficulty').isInt({ min: 1, max: 3 }).withMessage('Dificultad debe ser 1, 2 o 3.'),
-    body('status').isIn(['Pending', 'In Progress', 'Completed']).withMessage('Estado inválido.'),
-    body('estimated_time').optional().isFloat({ min: 0 }).withMessage('Tiempo estimado debe ser un número positivo.'),
-    body('actual_time').optional().isFloat({ min: 0 }).withMessage('Tiempo real debe ser un número positivo.')
+    body('priority')
+      .isIn(['Low', 'Medium', 'High'])
+      .withMessage('Prioridad inválida.'),
+    body('difficulty')
+      .isInt({ min: 1, max: 3 })
+      .withMessage('La dificultad debe ser 1, 2 o 3.'),
+    body('status')
+      .isIn(['Pending', 'In Progress', 'Completed'])
+      .withMessage('Estado inválido.'),
+    body('estimated_time')
+      .optional()
+      .isFloat({ min: 0 })
+      .withMessage('Tiempo estimado debe ser >= 0.'),
+    body('actual_time')
+      .optional()
+      .isFloat({ min: 0 })
+      .withMessage('Tiempo real debe ser >= 0.'),
   ],
   tasksController.createTask
 );
 
-// Completar una tarea con validación
-router.put('/:id/complete',
-  [
-    param('id').isInt().withMessage('ID de tarea debe ser un número entero.')
-  ],
+// Completar tarea
+router.put(
+  '/:id/complete',
+  [param('id').isInt().withMessage('ID debe ser entero')],
   tasksController.completeTask
 );
 
-// Archivar una tarea con validación
-router.put('/:id/archive',
-  [
-    param('id').isInt().withMessage('ID de tarea debe ser un número entero.')
-  ],
+// Archivar tarea
+router.put(
+  '/:id/archive',
+  [param('id').isInt().withMessage('ID debe ser entero')],
   tasksController.archiveTask
 );
 
-// Desarchivar una tarea con validación
-router.put('/:id/unarchive',
-  [
-    param('id').isInt().withMessage('ID de tarea debe ser un número entero.')
-  ],
+// Desarchivar tarea
+router.put(
+  '/:id/unarchive',
+  [param('id').isInt().withMessage('ID debe ser entero')],
   tasksController.unarchiveTask
 );
 
-// Actualizar una tarea existente con validaciones
-router.put('/:id',
+// Actualizar tarea
+router.put(
+  '/:id',
   [
-    param('id').isInt().withMessage('ID de tarea debe ser un número entero.'),
-    body('name').optional().isLength({ min: 1 }).withMessage('El nombre de la tarea no puede estar vacío.'),
+    param('id').isInt().withMessage('ID debe ser entero'),
+    body('name')
+      .optional()
+      .isLength({ min: 1 })
+      .withMessage('Nombre no puede estar vacío.'),
     body('description').optional().isString(),
-    body('priority').optional().isIn(['Low', 'Medium', 'High']).withMessage('Prioridad inválida.'),
-    body('difficulty').optional().isInt({ min: 1, max: 3 }).withMessage('Dificultad debe ser 1, 2 o 3.'),
-    body('status').optional().isIn(['Pending', 'In Progress', 'Completed', 'Archived']).withMessage('Estado inválido.'),
-    body('estimated_time').optional().isFloat({ min: 0 }).withMessage('Tiempo estimado debe ser un número positivo.'),
-    body('actual_time').optional().isFloat({ min: 0 }).withMessage('Tiempo real debe ser un número positivo.')
+    body('priority')
+      .optional()
+      .isIn(['Low', 'Medium', 'High'])
+      .withMessage('Prioridad inválida.'),
+    body('difficulty').optional().isInt({ min: 1, max: 3 }),
+    body('status')
+      .optional()
+      .isIn(['Pending', 'In Progress', 'Completed', 'Archived'])
+      .withMessage('Estado inválido.'),
+    body('estimated_time').optional().isFloat({ min: 0 }),
+    body('actual_time').optional().isFloat({ min: 0 }),
   ],
   tasksController.updateTask
 );
 
-// Eliminar una tarea con validación
-router.delete('/:id',
-  [
-    param('id').isInt().withMessage('ID de tarea debe ser un número entero.')
-  ],
+// Eliminar tarea
+router.delete(
+  '/:id',
+  [param('id').isInt().withMessage('ID debe ser entero')],
   tasksController.deleteTask
 );
 

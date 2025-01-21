@@ -1,21 +1,56 @@
 // backend/src/controllers/profileController.js
-const Profile = require('../models/profile');
+const fs = require('fs');
+const path = require('path');
 const { validationResult } = require('express-validator');
+const Profile = require('../models/profile');
+const User = require('../models/User');
 
 const profileController = {
+  /**
+   * GET /api/profile
+   * Retorna el perfil del usuario logueado, o si no existe en "profiles",
+   * retorna datos básicos desde la tabla "users".
+   */
   getProfile: async (req, res) => {
     try {
-      const profile = await Profile.getProfile();
-      if (!profile) {
-        return res.status(404).json({ error: 'Perfil no encontrado' });
+      const userId = req.user?.id;
+      if (!userId) {
+        return res
+          .status(401)
+          .json({ error: 'No se encontró ID de usuario en el token' });
       }
-      res.json(profile);
+
+      // Buscar si existe profile
+      const profile = await Profile.getByUserId(userId);
+
+      if (!profile) {
+        // Si no existe, retornamos info básica de la tabla users
+        const userData = await User.findById(userId);
+        if (!userData) {
+          return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+        return res.json({
+          user_id: userId,
+          name: userData.name,
+          email: userData.email,
+          bio: '',
+          profile_picture_url: '',
+        });
+      } else {
+        // Existe profile en la BD
+        return res.json(profile);
+      }
     } catch (error) {
       console.error('Error al obtener el perfil:', error);
       res.status(500).json({ error: 'Error al obtener el perfil' });
     }
   },
 
+  /**
+   * PUT /api/profile
+   * Actualiza (o crea) el perfil. 
+   * Si el profile_picture_url cambió, borra la imagen anterior.
+   */
   updateProfile: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -23,19 +58,48 @@ const profileController = {
     }
 
     try {
-      const profileData = {
-        ...req.body,
-        profile_picture_url: req.body.profile_picture_url,
-      };
-
-      const updatedProfile = await Profile.updateProfile(profileData);
-      if (!updatedProfile) {
-        return res.status(404).json({ error: 'Perfil no encontrado' });
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
       }
-      res.json(updatedProfile);
+
+      const { name, bio, profile_picture_url } = req.body;
+
+      // 1) Obtener el perfil actual para ver si hay que borrar la imagen anterior
+      const existingProfile = await Profile.getByUserId(userId);
+
+      // 2) Si existe y la "profile_picture_url" es distinta & no vacía
+      if (
+        existingProfile &&
+        existingProfile.profile_picture_url &&
+        existingProfile.profile_picture_url.trim() !== '' &&
+        existingProfile.profile_picture_url !== profile_picture_url
+      ) {
+        const oldUrl = existingProfile.profile_picture_url;
+        // Basename extrae '12345.png' de 'http://localhost:5000/uploads/12345.png'
+        const filename = path.basename(oldUrl);
+        const filePath = path.join(__dirname, '../../uploads', filename);
+
+        fs.unlink(filePath, (err) => {
+          if (err) {
+            console.error('Error al borrar imagen anterior:', err);
+          } else {
+            console.log('Imagen anterior borrada con éxito:', filename);
+          }
+        });
+      }
+
+      // 3) Llamar a updateOrCreate => lo que ya hacías
+      const updated = await Profile.updateOrCreate(userId, {
+        name,
+        bio,
+        profile_picture_url,
+      });
+
+      return res.json(updated);
     } catch (error) {
       console.error('Error al actualizar el perfil:', error);
-      res.status(500).json({ error: 'Error al actualizar el perfil' });
+      return res.status(500).json({ error: 'Error al actualizar el perfil' });
     }
   },
 };

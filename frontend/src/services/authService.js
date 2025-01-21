@@ -1,6 +1,6 @@
 // frontend/src/services/authService.js
 import axios from 'axios';
-import { jwtDecode } from 'jwt-decode'; // Import nombrado: tu versión no exporta por defecto.
+import { jwtDecode } from 'jwt-decode'; // Importación con nombre
 
 const API_URL = '/api/auth/';
 
@@ -8,14 +8,12 @@ const register = async (userData) => {
   try {
     const response = await axios.post(API_URL + 'register', userData);
     if (response.data.token) {
-      // Decodificar el token
       const decoded = jwtDecode(response.data.token);
       const user = {
         token: response.data.token,
         id: decoded.user.id,
         role: decoded.user.role,
       };
-      // Guardar en localStorage
       localStorage.setItem('user', JSON.stringify(user));
       return user;
     }
@@ -30,14 +28,12 @@ const login = async (credentials) => {
   try {
     const response = await axios.post(API_URL + 'login', credentials);
     if (response.data.token) {
-      // Decodificar el token
       const decoded = jwtDecode(response.data.token);
       const user = {
         token: response.data.token,
         id: decoded.user.id,
         role: decoded.user.role,
       };
-      // Guardar en localStorage
       localStorage.setItem('user', JSON.stringify(user));
       return user;
     }
@@ -64,9 +60,11 @@ const getCurrentUser = () => {
   }
 };
 
-export default {
+const authService = {
   register,
   login,
   logout,
   getCurrentUser,
 };
+
+export default authService;

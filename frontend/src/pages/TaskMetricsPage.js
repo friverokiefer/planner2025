@@ -14,6 +14,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Alert } from 'react-bootstrap';
+import authService from '../services/authService'; // Para enviar el token
 
 function TaskMetricsPage() {
   const [stats, setStats] = useState({
@@ -21,15 +22,28 @@ function TaskMetricsPage() {
     completed: 0,
     pending: 0,
     inProgress: 0,
-    priorityDistribution: {},
-    difficultyDistribution: {},
+    stackedData: [], // priority/difficulty
   });
   const [error, setError] = useState(null);
+
+  const pieColors = ['#28a745', '#ffc107', '#007bff'];
+  const difficultyColors = ['#6f42c1', '#20c997', '#fd7e14', '#dc3545', '#17a2b8'];
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/tasks/stats');
+        // Obtener user/token
+        const user = authService.getCurrentUser();
+        if (!user || !user.token) {
+          throw new Error('No hay usuario logueado o token no disponible');
+        }
+
+        // Llamar al backend con Bearer token
+        const response = await fetch('/api/tasks/stats', {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
         if (!response.ok) {
           throw new Error('Error al obtener estadísticas');
         }
@@ -40,42 +54,39 @@ function TaskMetricsPage() {
         setError('Error al obtener estadísticas');
       }
     };
-
     fetchStats();
   }, []);
 
-  const COLORS = ['#28a745', '#ffc107', '#dc3545', '#007bff'];
-
+  // Pie chart
   const pieData = [
     { name: 'Completadas', value: stats.completed },
     { name: 'Pendientes', value: stats.pending },
     { name: 'En Progreso', value: stats.inProgress },
   ];
 
-  // Usar Object.entries() de forma segura
-  const priorityData = stats.priorityDistribution ?
-    Object.entries(stats.priorityDistribution).map(
-      ([priority, value]) => ({
-        priority,
-        value,
-      })
-    ) : [];
+  // Evitar error forEach => fallback a []
+  const safeStackedData = stats.stackedData || [];
 
-  const difficultyData = stats.difficultyDistribution ?
-    Object.entries(stats.difficultyDistribution).map(
-      ([difficulty, value]) => ({
-        difficulty,
-        value,
-      })
-    ) : [];
+  // Analizar keys difficulty_1, difficulty_2, ...
+  const allKeys = new Set();
+  safeStackedData.forEach((item) => {
+    Object.keys(item).forEach((k) => {
+      if (k.startsWith('difficulty_')) {
+        allKeys.add(k);
+      }
+    });
+  });
+  const difficultyKeys = Array.from(allKeys).sort();
 
   return (
-    <div className="profile-dashboard">
-      <h2>Task Metrics Dashboard</h2>
+    <div className="container my-4">
+      <h2 className="text-center">Task Metrics Dashboard</h2>
       {error && <Alert variant="danger">{error}</Alert>}
-      <div className="charts-container">
-        <div className="chart-item">
-          <h4>Estado de Tareas</h4>
+
+      <div className="row">
+        {/* Pie chart */}
+        <div className="col-md-6">
+          <h4 className="text-center">Estado de Tareas</h4>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -84,14 +95,13 @@ function TaskMetricsPage() {
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                outerRadius={100}
-                fill="#8884d8"
+                outerRadius={90}
                 label
               >
                 {pieData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
+                    fill={pieColors[index % pieColors.length]}
                   />
                 ))}
               </Pie>
@@ -100,44 +110,39 @@ function TaskMetricsPage() {
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="chart-item">
-          <h4>Distribución por Prioridad</h4>
+
+        {/* Stacked Bar Chart */}
+        <div className="col-md-6">
+          <h4 className="text-center">Prioridad (Barras apiladas por Dificultad)</h4>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart
-              data={priorityData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              data={safeStackedData}
+              margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="priority" />
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="value" fill="#8884d8" name="Cantidad" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="chart-item">
-          <h4>Distribución por Dificultad</h4>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={difficultyData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="difficulty" />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="value" fill="#8884d8" name="Cantidad" />
+              {difficultyKeys.map((diffKey, idx) => (
+                <Bar
+                  key={diffKey}
+                  dataKey={diffKey}
+                  stackId="stack"
+                  fill={difficultyColors[idx % difficultyColors.length]}
+                  name={diffKey}
+                />
+              ))}
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
-      <div className="additional-stats">
-        <p>Total de Tareas: {stats.totalTasks}</p>
-        <p>Completadas: {stats.completed}</p>
-        <p>Pendientes: {stats.pending}</p>
-        <p>En Progreso: {stats.inProgress}</p>
+
+      <div className="mt-4 p-3 bg-light">
+        <p><strong>Total de Tareas:</strong> {stats.totalTasks}</p>
+        <p><strong>Completadas:</strong> {stats.completed}</p>
+        <p><strong>Pendientes:</strong> {stats.pending}</p>
+        <p><strong>En Progreso:</strong> {stats.inProgress}</p>
       </div>
     </div>
   );

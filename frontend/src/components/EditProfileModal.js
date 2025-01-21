@@ -1,13 +1,14 @@
+// frontend/src/components/EditProfileModal.js
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
 import './EditProfileModal.css';
 import useSound from '../hooks/useSound';
 import editProfileSound from '../assets/sounds/notification-1-269296.mp3';
+import authService from '../services/authService';
 
 function EditProfileModal({ show, handleClose, profile, handleSave }) {
   const [updatedProfile, setUpdatedProfile] = useState({
     name: '',
-    email: '',
     bio: '',
     profile_picture_url: '',
   });
@@ -17,13 +18,14 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
 
+  // Sonido al editar
   const playEditProfileSound = useSound(editProfileSound);
 
+  // Al abrir el modal, llenar estado con los datos actuales
   useEffect(() => {
     if (show) {
       setUpdatedProfile({
         name: profile.name || '',
-        email: profile.email || '',
         bio: profile.bio || '',
         profile_picture_url: profile.profile_picture_url || '',
       });
@@ -34,23 +36,27 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
     }
   }, [profile, show]);
 
+  // Cambios en inputs de texto
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setUpdatedProfile({ ...updatedProfile, [name]: value });
+    setUpdatedProfile((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Al elegir un archivo
   const handleImageChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setImageFile(e.target.files[0]);
-      setUpdatedProfile({
-        ...updatedProfile,
-        profile_picture_url: URL.createObjectURL(e.target.files[0])
-      });
+      // Aquí podríamos mostrar un preview local con objectURL si queremos
+      setUpdatedProfile((prev) => ({
+        ...prev,
+        profile_picture_url: URL.createObjectURL(e.target.files[0]),
+      }));
     }
   };
 
+  // Subir la imagen al backend
   const uploadImage = async () => {
-    if (!imageFile) return null;
+    if (!imageFile) return null; // no se seleccionó archivo nuevo
 
     const formData = new FormData();
     formData.append('profilePicture', imageFile);
@@ -61,14 +67,12 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
         method: 'POST',
         body: formData,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.imageUrl;
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Error al subir la imagen');
       }
+      const data = await response.json(); // { imageUrl: 'http://localhost:5000/uploads/...' }
+      return data.imageUrl;
     } catch (error) {
       console.error('Error al subir la imagen:', error);
       setUploadError(error.message);
@@ -78,45 +82,67 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
     }
   };
 
+  // Guardar los cambios del perfil
   const onSave = async () => {
     setFormError('');
     setFormSuccess('');
 
-    if (!updatedProfile.name.trim() || !updatedProfile.email.trim()) {
-      setFormError('El nombre y el email son obligatorios.');
+    // Validación básica: nombre obligatorio
+    if (!updatedProfile.name.trim()) {
+      setFormError('El nombre es obligatorio.');
       return;
     }
 
-    let imageUrl = updatedProfile.profile_picture_url;
+    // Subir imagen si hay una nueva
+    let finalImageUrl = updatedProfile.profile_picture_url;
     if (imageFile) {
-      imageUrl = await uploadImage();
-      if (!imageUrl) {
+      const uploadedUrl = await uploadImage();
+      if (!uploadedUrl) {
+        // Falló subida
         return;
       }
+      finalImageUrl = uploadedUrl; // URL final devuelta por el backend
+    }
+
+    // Tomar token del usuario
+    const user = authService.getCurrentUser();
+    if (!user || !user.token) {
+      setFormError('No hay usuario autenticado.');
+      return;
     }
 
     try {
+      // PUT /api/profile con Bearer Token
       const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
         },
-        body: JSON.stringify({ ...updatedProfile, profile_picture_url: imageUrl }),
+        body: JSON.stringify({
+          name: updatedProfile.name,
+          bio: updatedProfile.bio,
+          profile_picture_url: finalImageUrl,
+        }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        handleSave(data);
-        playEditProfileSound();
-        setFormSuccess('Perfil actualizado exitosamente.');
-        setTimeout(() => {
-          handleClose();
-          setFormSuccess('');
-        }, 2000);
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
         setFormError(errorData.error || 'Error al actualizar el perfil');
+        return;
       }
+
+      const data = await response.json(); // Perfil actualizado
+      // Llamamos a handleSave para actualizar el state en ProfilePage
+      handleSave(data);
+      playEditProfileSound();
+      setFormSuccess('Perfil actualizado exitosamente.');
+
+      // Cerrar modal un poco después
+      setTimeout(() => {
+        handleClose();
+        setFormSuccess('');
+      }, 1500);
     } catch (error) {
       console.error('Error al actualizar el perfil:', error);
       setFormError('Error al actualizar el perfil');
@@ -124,7 +150,16 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
   };
 
   return (
-    <Modal show={show} onHide={() => { handleClose(); setUploadError(''); setFormError(''); setFormSuccess(''); }} centered>
+    <Modal
+      show={show}
+      onHide={() => {
+        handleClose();
+        setUploadError('');
+        setFormError('');
+        setFormSuccess('');
+      }}
+      centered
+    >
       <Modal.Header closeButton>
         <Modal.Title>Editar Perfil</Modal.Title>
       </Modal.Header>
@@ -132,6 +167,7 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
         {formError && <Alert variant="danger">{formError}</Alert>}
         {formSuccess && <Alert variant="success">{formSuccess}</Alert>}
         {uploadError && <Alert variant="danger">{uploadError}</Alert>}
+
         <Form>
           <Form.Group controlId="formProfileName">
             <Form.Label>Nombre</Form.Label>
@@ -141,18 +177,6 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
               value={updatedProfile.name}
               onChange={handleChange}
               placeholder="Ingrese su nombre"
-              required
-            />
-          </Form.Group>
-
-          <Form.Group controlId="formProfileEmail" className="mt-3">
-            <Form.Label>Email</Form.Label>
-            <Form.Control
-              type="email"
-              name="email"
-              value={updatedProfile.email}
-              onChange={handleChange}
-              placeholder="Ingrese su email"
               required
             />
           </Form.Group>
@@ -178,9 +202,10 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
             />
             {updatedProfile.profile_picture_url && (
               <div className="mt-3">
+                {/* Preview local o imagen actual */}
                 <img
                   src={updatedProfile.profile_picture_url}
-                  alt="Profile Preview"
+                  alt="Preview"
                   className="img-preview"
                 />
               </div>
@@ -189,11 +214,32 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
         </Form>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={() => { handleClose(); setUploadError(''); setFormError(''); setFormSuccess(''); }}>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            handleClose();
+            setUploadError('');
+            setFormError('');
+            setFormSuccess('');
+          }}
+        >
           Cancelar
         </Button>
         <Button variant="primary" onClick={onSave} disabled={uploading}>
-          {uploading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> : 'Guardar Cambios'}
+          {uploading ? (
+            <>
+              <Spinner
+                as="span"
+                animation="border"
+                size="sm"
+                role="status"
+                aria-hidden="true"
+              />{' '}
+              Guardando...
+            </>
+          ) : (
+            'Guardar Cambios'
+          )}
         </Button>
       </Modal.Footer>
     </Modal>

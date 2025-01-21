@@ -2,56 +2,67 @@
 const pool = require('../config/db');
 
 const User = {
-    create: async (userData) => {
-        const { name, email, password, role } = userData;
-        const userRole = role || 'user'; // Asigna 'user' por defecto si no se proporciona rol
-        const result = await pool.query(
-            'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
-            [name, email, password, userRole]
-        );
-        return result.rows[0];
-    },
+  // Retorna todos los usuarios (para admin)
+  async getAll() {
+    const query = 'SELECT id, name, email, role FROM users ORDER BY id ASC';
+    const { rows } = await pool.query(query);
+    return rows;
+  },
 
-    findByEmail: async (email) => {
-        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        return result.rows[0];
-    },
+  // Obtener usuario por email
+  async findByEmail(email) {
+    const query = 'SELECT * FROM users WHERE email = $1';
+    const { rows } = await pool.query(query, [email]);
+    return rows[0];
+  },
 
-    findById: async (id) => {
-        const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
-        return result.rows[0];
-    },
+  // Obtener usuario por ID
+  async findById(id) {
+    const query = 'SELECT * FROM users WHERE id = $1';
+    const { rows } = await pool.query(query, [id]);
+    return rows[0];
+  },
 
-    getAll: async () => {
-        const result = await pool.query('SELECT id, name, email, role FROM users');
-        return result.rows;
-    },
+  // Crear usuario (usado por authController)
+  async create({ name, email, password, role }) {
+    const query = `
+      INSERT INTO users (name, email, password, role)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, name, email, role
+    `;
+    const values = [name, email, password, role || 'user'];
+    const { rows } = await pool.query(query, values);
+    return rows[0];
+  },
 
-    update: async (id, userData) => {
-        const { name, email, password, role } = userData;
-        const userRole = role || 'user'; // Asigna 'user' por defecto si no se proporciona rol
+  /**
+   * Actualiza SOLO el "name" (ejemplo). 
+   * Si quieres más campos, agrega y ajusta la consulta.
+   */
+  async update(id, { name }) {
+    const query = `
+      UPDATE users
+      SET name = $1
+      WHERE id = $2
+      RETURNING id, name, email, role
+    `;
+    const values = [name, id];
+    const { rows } = await pool.query(query, values);
+    return rows[0] || null;
+  },
 
-        let query = 'UPDATE users SET name = $1, email = $2, role = $3';
-        const values = [name, email, userRole];
-        let count = 4;
-
-        if (password) {
-            query += ', password = $4';
-            values.push(password);
-            count++;
-        }
-
-        query += ` WHERE id = $${count} RETURNING id, name, email, role`;
-        values.push(id);
-
-        const result = await pool.query(query, values);
-        return result.rows[0];
-    },
-
-    delete: async (id) => {
-        const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id, name, email, role', [id]);
-        return result.rows[0];
-    },
+  /**
+   * Eliminar usuario por ID
+   */
+  async delete(id) {
+    // Verificar si el user existe
+    const existing = await this.findById(id);
+    if (!existing) {
+      return null;
+    }
+    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    return existing; // o true, lo que prefieras
+  },
 };
 
 module.exports = User;

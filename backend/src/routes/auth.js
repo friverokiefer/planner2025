@@ -27,4 +27,7 @@ router.post(
   authController.login
 );
 
+// (Opcional) Verificar token
+router.post('/verify', authController.verifyToken);
+
 module.exports = router;

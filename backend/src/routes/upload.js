@@ -1,3 +1,4 @@
+// backend/src/routes/upload.js
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -6,46 +7,47 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-// Configuración de almacenamiento de multer
+// Configuración de almacenamiento con multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Asegúrate de que la carpeta 'uploads' exista en la raíz de tu proyecto
+    // Carpeta local 'uploads', asumiendo que existe
+    cb(null, 'uploads/');
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname)); // Nombre único para cada archivo
+    // Nombre único con fecha + extensión
+    cb(null, Date.now() + path.extname(file.originalname));
   },
 });
 
-// Filtro de archivos para permitir solo imágenes
+// Filtrar solo imágenes
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif/;
-  const extname = allowedTypes.test(
-    path.extname(file.originalname).toLowerCase()
-  );
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowedTypes.test(file.mimetype);
   if (mimetype && extname) {
-    return cb(null, true);
+    cb(null, true);
   } else {
     cb(new Error('Solo se permiten imágenes (jpeg, jpg, png, gif)'));
   }
 };
 
-// Configuración de multer
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Limitar a 5MB
-  fileFilter: fileFilter,
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter,
 });
 
-// Ruta para subir una imagen de perfil
+// POST /api/upload/profile-picture
 router.post('/profile-picture', upload.single('profilePicture'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No se subió ningún archivo' });
   }
-  // Construir la URL completa de la imagen
+
+  // BASE_URL sacada del .env o valor por defecto
   const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
   const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
-  res.json({ imageUrl });
+
+  return res.json({ imageUrl });
 });
 
 module.exports = router;

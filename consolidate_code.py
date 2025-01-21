@@ -7,7 +7,7 @@ OUTPUT_FILE = "consolidated_code.txt"
 EXCLUDED_DIRS = {"node_modules", ".git", "__pycache__", "venv", "user_data"}
 
 # Extensiones de archivo a incluir
-INCLUDED_EXTENSIONS = {".js", ".css", ".html", ".py"}
+INCLUDED_EXTENSIONS = {".js", ".html", ".py"}
 
 def consolidate_code():
     """

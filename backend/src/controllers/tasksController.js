@@ -1,16 +1,17 @@
-// --- backend/src/controllers/tasksController.js ---
+// backend/src/controllers/tasksController.js
 const Task = require('../models/task');
 const { validationResult } = require('express-validator');
 
 const tasksController = {
-  // Obtener todas las tareas (no archivadas) del usuario o de todos (si es admin)
+  // Obtener todas las tareas (no archivadas)
   getAllTasks: async (req, res) => {
     try {
+      // req.user viene del authMiddleware con { id, role, ... }
       let tasks;
       if (req.user.role === 'admin') {
-        tasks = await Task.getAll(); // Todas
+        tasks = await Task.getAll(); 
       } else {
-        tasks = await Task.getAllByUserId(req.user.id); // Solo del user
+        tasks = await Task.getAllByUserId(req.user.id);
       }
       res.json(tasks);
     } catch (error) {
@@ -19,7 +20,7 @@ const tasksController = {
     }
   },
 
-  // Obtener tareas archivadas del usuario o de todos (si es admin)
+  // Obtener tareas archivadas
   getArchivedTasks: async (req, res) => {
     try {
       let tasks;
@@ -35,7 +36,7 @@ const tasksController = {
     }
   },
 
-  // Obtener una tarea concreta
+  // Obtener una tarea concreta por ID
   getTaskById: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -60,7 +61,7 @@ const tasksController = {
     }
   },
 
-  // Crear una nueva tarea para el usuario logueado
+  // Crear una nueva tarea
   createTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -68,10 +69,10 @@ const tasksController = {
     }
 
     try {
-      // Forzamos la asignación a user_id
+      // Asignar user_id al body para forzar que la tarea sea del usuario logueado
       const taskData = {
         ...req.body,
-        user_id: req.user.id
+        user_id: req.user.id,
       };
       const newTask = await Task.create(taskData);
       return res.status(201).json(newTask);
@@ -81,7 +82,7 @@ const tasksController = {
     }
   },
 
-  // Completar una tarea (aseguramos que es del user o admin)
+  // Completar una tarea (status => 'Completed')
   completeTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -89,7 +90,6 @@ const tasksController = {
     }
 
     try {
-      // Verificar que exista y que sea del usuario
       let task;
       if (req.user.role === 'admin') {
         task = await Task.getById(req.params.id);
@@ -99,8 +99,6 @@ const tasksController = {
       if (!task) {
         return res.status(404).json({ error: 'Tarea no encontrada' });
       }
-
-      // Marcar como "Completed"
       const updatedTask = await Task.complete(req.params.id);
       res.json(updatedTask);
     } catch (error) {
@@ -109,7 +107,7 @@ const tasksController = {
     }
   },
 
-  // Archivar una tarea
+  // Archivar una tarea (status => 'Archived')
   archiveTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -126,7 +124,6 @@ const tasksController = {
       if (!task) {
         return res.status(404).json({ error: 'Tarea no encontrada' });
       }
-
       const updatedTask = await Task.archive(req.params.id);
       res.json(updatedTask);
     } catch (error) {
@@ -135,7 +132,7 @@ const tasksController = {
     }
   },
 
-  // Desarchivar una tarea
+  // Desarchivar una tarea (status => 'Pending')
   unarchiveTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -152,7 +149,6 @@ const tasksController = {
       if (!task) {
         return res.status(404).json({ error: 'Tarea no encontrada' });
       }
-
       const updatedTask = await Task.unarchive(req.params.id);
       res.json(updatedTask);
     } catch (error) {
@@ -187,7 +183,7 @@ const tasksController = {
     }
   },
 
-  // Eliminar tarea
+  // Eliminar una tarea
   deleteTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -213,7 +209,16 @@ const tasksController = {
     }
   },
 
-  // Estadísticas: si es admin, estadísticas de todos, si no, sólo del user
+  /**
+   * Estadísticas. Devuelve un JSON con:
+   *  {
+   *    totalTasks,
+   *    completed,
+   *    pending,
+   *    inProgress
+   *  }
+   *  Si quieres un stacked chart, necesitarás un group by (priority,difficulty).
+   */
   getStats: async (req, res) => {
     try {
       let totalTasks, completed, pending, inProgress;
@@ -230,9 +235,12 @@ const tasksController = {
         inProgress = await Task.countByStatusForUser('In Progress', req.user.id);
       }
 
-      // Podrías añadir distribuciones por prioridad/dificultad si quieres.
+      // EJEMPLO: Si deseas stackedData (priority vs difficulty),
+      // deberías hacer un método en Task que agrupe y devuelva 
+      // { priority, difficulty, total }. Lo omito aquí por brevedad.
 
-      res.json({
+      // Devolvemos el JSON (compatible con tu TaskMetricsPage actual)
+      return res.json({
         totalTasks,
         completed,
         pending,
