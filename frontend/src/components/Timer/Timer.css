@@ -1,0 +1,14 @@
+/* frontend/src/components/Timer/Timer.css */
+
+.timer-container {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.timer-container p {
+    font-size: 1rem;
+    color: var(--text-color);
+    margin: 0;
+}

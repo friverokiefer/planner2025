@@ -1,4 +1,5 @@
 // frontend/src/App.js
+
 import React, { useState, useEffect } from 'react';
 import {
   BrowserRouter as Router,
@@ -8,15 +9,16 @@ import {
   Navigate,
 } from 'react-router-dom';
 
-import TaskPage from './pages/TaskPage';
-import ProfilePage from './pages/ProfilePage';
-import ArchivedTasksPage from './pages/ArchivedTasksPage';
-import TaskMetricsPage from './pages/TaskMetricsPage';
-import FriendsPage from './pages/FriendsPage';
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import AdminPage from './pages/AdminPage';
+import TaskPage from './pages/TaskPage/TaskPage';
+import ProfilePage from './pages/ProfilePage/ProfilePage';
+import ArchivedTasksPage from './pages/ArchivedTasksPage/ArchivedTasksPage';
+import TaskMetricsPage from './pages/TaskMetricsPage/TaskMetricsPage';
+import FriendsPage from './pages/FriendsPage/FriendsPage';
+import HomePage from './pages/HomePage/HomePage';
+import LoginPage from './pages/LoginPage/LoginPage';
+import RegisterPage from './pages/RegisterPage/RegisterPage';
+import AdminPage from './pages/AdminPage/AdminPage';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary'; // Componente global para errores
 import './App.css';
 
 import {
@@ -32,11 +34,17 @@ import {
 
 import authService from './services/authService';
 
+import useSound from './hooks/useSound'; // Hook personalizado
+import clickSoundFile from './assets/sounds/notification-pluck-on-269288.mp3';
+
 function App() {
   const [user, setUser] = useState(undefined); // null o {token, id, role}
   const [theme, setTheme] = useState('default');
   const [profilePicUrl, setProfilePicUrl] = useState(null);
-  const [profileName, setProfileName] = useState(''); // <-- Estado para nombre a mostrar en H1
+  const [profileName, setProfileName] = useState('');
+
+  // Sonido al hacer clic en el menú
+  const playClickSound = useSound(clickSoundFile);
 
   // Cargar user y sus datos (nombre, foto)
   useEffect(() => {
@@ -58,13 +66,8 @@ function App() {
       });
       if (res.ok) {
         const data = await res.json();
-        // data = { name, bio, profile_picture_url, ... }
-        setProfileName(data.name || ''); // Si no hay name, ''
-        if (data.profile_picture_url) {
-          setProfilePicUrl(data.profile_picture_url);
-        } else {
-          setProfilePicUrl(null);
-        }
+        setProfileName(data.name || '');
+        setProfilePicUrl(data.profile_picture_url || null);
       }
     } catch (err) {
       console.error('Error fetchProfileData:', err);
@@ -88,44 +91,49 @@ function App() {
   };
 
   if (user === undefined) {
-    // Mientras determinamos si hay user
-    return <div>Cargando sesión...</div>;
+    return <div className="loading-screen">Cargando sesión...</div>;
   }
 
   return (
     <div className={`app-container theme-${theme}`}>
       <Router>
         <header className="header">
-          {/* Muestra el nombre en lugar del ID */}
-          <h1>Planner2025
+          <h1>
+            Planner2025
             {user ? ` — ¡Bienvenido, ${profileName || 'Usuario'}!` : ''}
           </h1>
 
-          {/* Foto de perfil en el header (si existe) */}
           {profilePicUrl && (
             <img
               src={profilePicUrl}
               alt="Mi Perfil"
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                marginRight: '10px',
-              }}
+              className="profile-picture-header"
             />
           )}
 
-          {/* Selector de tema */}
-          <select value={theme} onChange={(e) => setTheme(e.target.value)}>
-            <option value="default">Tema Default</option>
-            <option value="dark">Tema Oscuro</option>
-            <option value="pink">Tema Rosa</option>
-          </select>
+          <div className="theme-selector">
+            <label htmlFor="theme-select">Tema:</label>
+            <select
+              id="theme-select"
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+            >
+              <option value="default">Default</option>
+              <option value="dark">Oscuro</option>
+              <option value="pink">Rosa</option>
+            </select>
+          </div>
 
           <nav>
-            <ul>
+            <ul className="nav-links">
               <li>
-                <NavLink to="/" className={({ isActive }) => (isActive ? 'active' : undefined)}>
+                <NavLink
+                  to="/"
+                  className={({ isActive }) =>
+                    isActive ? 'active nav-link' : 'nav-link'
+                  }
+                  onClick={playClickSound}
+                >
                   <FaHome color="#fff" /> Home
                 </NavLink>
               </li>
@@ -135,55 +143,79 @@ function App() {
                   <li>
                     <NavLink
                       to="/profile"
-                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                      className={({ isActive }) =>
+                        isActive ? 'active nav-link' : 'nav-link'
+                      }
+                      onClick={playClickSound}
                     >
-                      <FaUser color="#fff" /> Profile
+                      <FaUser color="#fff" /> Perfil
                     </NavLink>
                   </li>
                   <li>
                     <NavLink
                       to="/tasks"
-                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                      className={({ isActive }) =>
+                        isActive ? 'active nav-link' : 'nav-link'
+                      }
+                      onClick={playClickSound}
                     >
-                      <FaTasks color="#fff" /> Tasks
+                      <FaTasks color="#fff" /> Tareas
                     </NavLink>
                   </li>
                   <li>
                     <NavLink
-                      to="/archived"
-                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                      to="/archived-tasks"
+                      className={({ isActive }) =>
+                        isActive ? 'active nav-link' : 'nav-link'
+                      }
+                      onClick={playClickSound}
                     >
-                      <FaArchive color="#fff" /> Archived
+                      <FaArchive color="#fff" /> Archivadas
                     </NavLink>
                   </li>
                   <li>
                     <NavLink
-                      to="/metrics"
-                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                      to="/task-metrics"
+                      className={({ isActive }) =>
+                        isActive ? 'active nav-link' : 'nav-link'
+                      }
+                      onClick={playClickSound}
                     >
-                      <FaChartPie color="#fff" /> Metrics
+                      <FaChartPie color="#fff" /> Métricas
                     </NavLink>
                   </li>
                   <li>
                     <NavLink
                       to="/friends"
-                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                      className={({ isActive }) =>
+                        isActive ? 'active nav-link' : 'nav-link'
+                      }
+                      onClick={playClickSound}
                     >
-                      Amigos
+                      <FaUser color="#fff" /> Amigos
                     </NavLink>
                   </li>
                   {user.role === 'admin' && (
                     <li>
                       <NavLink
                         to="/admin"
-                        className={({ isActive }) => (isActive ? 'active' : undefined)}
+                        className={({ isActive }) =>
+                          isActive ? 'active nav-link' : 'nav-link'
+                        }
+                        onClick={playClickSound}
                       >
                         <FaUserShield color="#fff" /> Admin
                       </NavLink>
                     </li>
                   )}
                   <li>
-                    <button onClick={handleLogout} className="logout-button">
+                    <button
+                      onClick={() => {
+                        playClickSound();
+                        handleLogout();
+                      }}
+                      className="logout-button"
+                    >
                       Logout
                     </button>
                   </li>
@@ -193,17 +225,23 @@ function App() {
                   <li>
                     <NavLink
                       to="/login"
-                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                      className={({ isActive }) =>
+                        isActive ? 'active nav-link' : 'nav-link'
+                      }
+                      onClick={playClickSound}
                     >
-                      <FaSignInAlt color="#fff" /> Login
+                      <FaSignInAlt color="#fff" /> Iniciar Sesión
                     </NavLink>
                   </li>
                   <li>
                     <NavLink
                       to="/register"
-                      className={({ isActive }) => (isActive ? 'active' : undefined)}
+                      className={({ isActive }) =>
+                        isActive ? 'active nav-link' : 'nav-link'
+                      }
+                      onClick={playClickSound}
                     >
-                      <FaUserPlus color="#fff" /> Register
+                      <FaUserPlus color="#fff" /> Registrarse
                     </NavLink>
                   </li>
                 </>
@@ -212,47 +250,56 @@ function App() {
           </nav>
         </header>
 
-        <div className="main-container">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
+        <ErrorBoundary>
+          <div className="main-container">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
 
-            <Route
-              path="/tasks"
-              element={user ? <TaskPage /> : <Navigate to="/login" />}
-            />
-            <Route
-              path="/profile"
-              element={user ? <ProfilePage /> : <Navigate to="/login" />}
-            />
-            <Route
-              path="/archived"
-              element={user ? <ArchivedTasksPage /> : <Navigate to="/login" />}
-            />
-            <Route
-              path="/metrics"
-              element={user ? <TaskMetricsPage /> : <Navigate to="/login" />}
-            />
-            <Route
-              path="/friends"
-              element={user ? <FriendsPage /> : <Navigate to="/login" />}
-            />
+              <Route
+                path="/login"
+                element={
+                  !user ? <LoginPage onLogin={handleLogin} /> : <Navigate to="/" />
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  !user ? <RegisterPage onLogin={handleLogin} /> : <Navigate to="/" />
+                }
+              />
 
-            {/* Auth */}
-            <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-            <Route path="/register" element={<RegisterPage onLogin={handleLogin} />} />
+              <Route
+                path="/profile"
+                element={user ? <ProfilePage /> : <Navigate to="/login" />}
+              />
+              <Route
+                path="/tasks"
+                element={user ? <TaskPage /> : <Navigate to="/login" />}
+              />
+              <Route
+                path="/archived-tasks"
+                element={user ? <ArchivedTasksPage /> : <Navigate to="/login" />}
+              />
+              <Route
+                path="/task-metrics"
+                element={user ? <TaskMetricsPage /> : <Navigate to="/login" />}
+              />
+              <Route
+                path="/friends"
+                element={user ? <FriendsPage /> : <Navigate to="/login" />}
+              />
 
-            {/* Admin */}
-            <Route
-              path="/admin"
-              element={user?.role === 'admin' ? <AdminPage /> : <Navigate to="/login" />}
-            />
+              {user && user.role === 'admin' && (
+                <Route path="/admin" element={<AdminPage />} />
+              )}
 
-            {/* Catch all */}
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </div>
+              {/* Ruta para manejar páginas no encontradas (404) */}
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </div>
+        </ErrorBoundary>
 
-        <footer className="footer">© 2025 Planner2025. Built with 💜</footer>
+        <footer className="footer">© 2025 Planner2025. Construido con 💜</footer>
       </Router>
     </div>
   );

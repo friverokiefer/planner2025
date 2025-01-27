@@ -3,9 +3,11 @@ import React from 'react';
 import ReactDOM from 'react-dom/client'; // React 18
 import App from './App';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import './App.css'; // Asegúrate de importar los estilos globales
 
-// Eliminamos <React.StrictMode> para evitar problemas con react-beautiful-dnd en desarrollo
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <App />
+  //<React.StrictMode>//
+    <App />
+  //</React.StrictMode>//
 );

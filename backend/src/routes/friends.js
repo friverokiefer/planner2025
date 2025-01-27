@@ -1,7 +1,8 @@
 // backend/src/routes/friends.js
+
 const express = require('express');
-const router = express.Router();
-const friendController = require('../controllers/friendsController');
+const router = express.Router(); // Asegúrate de que estás usando express.Router()
+const friendsController = require('../controllers/friendsController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { body, query, param } = require('express-validator');
 
@@ -12,26 +13,30 @@ router.use(authMiddleware);
 router.get(
   '/search',
   [query('query').notEmpty().withMessage('Debe proporcionar un ID o email')],
-  friendController.searchUser
+  friendsController.searchUser
 );
 
 // Listar amigos
-router.get('/list', friendController.getMyFriends);
+router.get('/list', friendsController.getMyFriends);
 
 // Listar solicitudes pendientes
-router.get('/requests', friendController.getMyRequests);
+router.get('/requests', friendsController.getMyRequests);
 
 // Enviar solicitud
 router.post(
   '/send',
   [body('to_user_id').isInt().withMessage('to_user_id debe ser entero')],
-  friendController.sendRequest
+  friendsController.sendRequest
 );
 
 // Aceptar
-router.put('/:id/accept', friendController.acceptRequest);
+router.put('/:id/accept', [
+  param('id').isInt().withMessage('ID de solicitud debe ser un entero')
+], friendsController.acceptRequest);
 
 // Rechazar
-router.put('/:id/reject', friendController.rejectRequest);
+router.put('/:id/reject', [
+  param('id').isInt().withMessage('ID de solicitud debe ser un entero')
+], friendsController.rejectRequest);
 
-module.exports = router;
+module.exports = router; // Exportar el router

@@ -1,0 +1,61 @@
+/* frontend/src/components/TaskList/TaskList.css */
+
+.task-list {
+    background-color: var(--neutral-white);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+  }
+  
+  .filter-toggle {
+    position: absolute;
+    top: -15px;
+    right: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .filters {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 25px;
+    gap: 15px;
+    flex-wrap: wrap;
+    background-color: var(--secondary-light-gray);
+    padding: 15px;
+    border-radius: 8px;
+  }
+  
+  .filters .form-group {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .filters .form-group label {
+    font-weight: bold;
+    color: var(--text-color);
+  }
+  
+  .filters .form-check-input:checked {
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+  }
+  
+  .task-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  /* Estilo para el efecto de arrastre */
+  .dragging {
+    background-color: rgba(0, 123, 255, 0.1); /* un azul clarito */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    transform: rotate(3deg) scale(1.02);
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
+  }
+  

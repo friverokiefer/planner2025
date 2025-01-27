@@ -1,0 +1,1880 @@
+
+----- backend/index.js -----
+// backend/index.js
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const path = require('path');
+const morgan = require('morgan');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
+// Rutas
+const tasksRoutes = require('./src/routes/tasks');
+const uploadRoutes = require('./src/routes/upload');
+const profileRoutes = require('./src/routes/profile');
+const authRoutes = require('./src/routes/auth');
+const usersRoutes = require('./src/routes/users');
+const friendsRoutes = require('./src/routes/friends');
+
+dotenv.config();
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// (opcional) Para que Express confíe en proxies si usas Heroku, etc.
+app.set('trust proxy', 1);
+
+/**
+ * Configurar Helmet para que:
+ * - No aplique contentSecurityPolicy estricto en dev.
+ * - crossOriginResourcePolicy se permita cross-origin.
+ */
+app.use(
+  helmet({
+    // Desactivamos CSP en local (o lo configuramos a false)
+    contentSecurityPolicy: false,
+    // Permitimos que el navegador cargue recursos (imágenes) desde otro origen
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
+// Configurar CORS (permite acceso desde http://localhost:3000 y http://localhost:5000)
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Si no hay 'origin' (ej. Postman), permitir
+      if (!origin) return callback(null, true);
+      const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000'];
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = `CORS bloqueado para la url: ${origin}`;
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
+  })
+);
+
+// Rate Limit (opcional)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100,
+  message: 'Demasiadas solicitudes. Intenta más tarde.',
+});
+app.use(limiter);
+
+app.use(express.json());
+
+// Logger en modo dev
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
+/**
+ * Servir la carpeta de subidas
+ * IMPORTANTE para ver http://localhost:5000/uploads/<nombre.png>
+ */
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+/**
+ * Rutas de la API
+ */
+app.use('/api/tasks', tasksRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/friends', friendsRoutes);
+
+/**
+ * Ruta raíz
+ */
+app.get('/', (req, res) => {
+  res.send('API Planner2025');
+});
+
+/**
+ * Manejo de errores 404
+ */
+app.use((req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' });
+});
+
+/**
+ * Manejo de errores internos
+ */
+app.use((err, req, res, next) => {
+  console.error('Error no controlado:', err.stack);
+  res.status(500).json({ error: err.message || 'Error interno' });
+});
+
+/**
+ * Iniciar servidor
+ */
+app.listen(PORT, () => {
+  console.log(`Servidor backend corriendo en el puerto ${PORT}`);
+});
+
+----- backend/src/middleware/authMiddleware.js -----
+// backend/src/middleware/authMiddleware.js
+
+const jwt = require('jsonwebtoken');
+
+module.exports = function (req, res, next) {
+  const authHeader = req.header('Authorization');
+  if (!authHeader) {
+    console.log('AuthMiddleware: No hay token');
+    return res.status(401).json({ msg: 'No hay token, autorización denegada' });
+  }
+
+  const token = authHeader.startsWith('Bearer ')
+    ? authHeader.split(' ')[1]
+    : authHeader;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || '123456');
+    req.user = decoded.user;
+    next();
+  } catch (err) {
+    console.error('AuthMiddleware => jwt.verify error:', err.message);
+    return res.status(401).json({ msg: 'Token no válido' });
+  }
+};
+
+----- backend/src/config/db.js -----
+const { Pool } = require('pg');
+require('dotenv').config();
+
+const pool = new Pool({
+  user: process.env.DB_USER || 'tu_usuario',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_DATABASE || 'tu_basedatos',
+  password: process.env.DB_PASSWORD || 'tu_contraseña',
+  port: process.env.DB_PORT || 5432,
+});
+
+pool.on('connect', () => {
+  console.log('Backend: Conectado a la base de datos');
+});
+
+pool.on('error', (err) => {
+  console.error('Backend: Error de conexión', err);
+});
+
+module.exports = pool;
+
+----- backend/src/models/profile.js -----
+// backend/src/models/profile.js
+
+const User = require('./User');
+const pool = require('../config/db');
+
+const Profile = {
+  getByUserId: async (userId) => {
+    try {
+      const { rows } = await pool.query(
+        'SELECT * FROM profiles WHERE user_id = $1',
+        [userId]
+      );
+      return rows[0] || null;
+    } catch (error) {
+      console.error('Profile.getByUserId:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * updateOrCreate
+   * - Si no existe perfil => INSERT
+   * - Si existe => UPDATE
+   * Nota: name, bio, profile_picture_url
+   */
+  updateOrCreate: async (userId, { name, bio, profile_picture_url }) => {
+    try {
+      // Verificar si ya existe un perfil para el usuario
+      const existing = await Profile.getByUserId(userId);
+
+      // Obtener información base desde "users"
+      const userData = await User.findById(userId);
+      if (!userData) {
+        throw new Error('Usuario no encontrado');
+      }
+      const userEmail = userData.email;
+      const userNameFromUsers = userData.name;
+
+      // Permitir que 'name' se sobreescriba con lo que viene del frontend
+      const finalName = name || userNameFromUsers;
+
+      if (!existing) {
+        // Insertar nuevo perfil
+        const insertQuery = `
+          INSERT INTO profiles (user_id, name, email, bio, profile_picture_url)
+          VALUES ($1, $2, $3, $4, $5)
+          RETURNING *
+        `;
+        const values = [
+          userId,
+          finalName,
+          userEmail,
+          bio || '',
+          profile_picture_url || '',
+        ];
+        const { rows } = await pool.query(insertQuery, values);
+        return rows[0];
+      } else {
+        // Actualizar perfil existente
+        const updateQuery = `
+          UPDATE profiles
+          SET
+            name = $1,
+            bio = $2,
+            profile_picture_url = $3,
+            updated_at = now()
+          WHERE user_id = $4
+          RETURNING *
+        `;
+        const values = [
+          finalName,
+          bio || '',
+          profile_picture_url || '',
+          userId,
+        ];
+        const { rows } = await pool.query(updateQuery, values);
+        return rows[0];
+      }
+    } catch (error) {
+      console.error('Profile.updateOrCreate:', error.message);
+      throw error;
+    }
+  },
+};
+
+module.exports = Profile;
+
+----- backend/src/models/Friend.js -----
+// backend/src/models/Friend.js
+
+const pool = require('../config/db');
+
+const Friend = {
+  /**
+   * Enviar solicitud de amistad
+   */
+  async sendRequest(fromUserId, toUserId) {
+    // Ver si ya existe una relación (amistad o solicitud) entre ambos
+    const existsQuery = `
+      SELECT 1
+      FROM friendship
+      WHERE 
+        (user_id = $1 AND friend_id = $2)
+        OR (user_id = $2 AND friend_id = $1)
+    `;
+    const exists = await pool.query(existsQuery, [fromUserId, toUserId]);
+    if (exists.rows.length > 0) {
+      // Ya existe una solicitud o amistad
+      return null;
+    }
+
+    // Insertar nueva solicitud en estado 'pending'
+    const insertQuery = `
+      INSERT INTO friendship (user_id, friend_id, status, created_at, updated_at)
+      VALUES ($1, $2, 'pending', NOW(), NOW())
+      RETURNING *
+    `;
+    const values = [fromUserId, toUserId];
+    const result = await pool.query(insertQuery, values);
+    return result.rows[0];
+  },
+
+  /**
+   * Aceptar solicitud de amistad
+   */
+  async acceptRequest(friendReqId, currentUserId) {
+    // Solo el destinatario (friend_id) puede aceptar
+    const updateQuery = `
+      UPDATE friendship
+        SET status = 'accepted',
+            updated_at = NOW()
+      WHERE id = $1
+        AND friend_id = $2
+      RETURNING *
+    `;
+    const values = [friendReqId, currentUserId];
+    const result = await pool.query(updateQuery, values);
+    return result.rows[0];
+  },
+
+  /**
+   * Rechazar solicitud de amistad
+   */
+  async rejectRequest(friendReqId, currentUserId) {
+    // Solo el destinatario (friend_id) puede rechazar
+    const updateQuery = `
+      UPDATE friendship
+        SET status = 'rejected',
+            updated_at = NOW()
+      WHERE id = $1
+        AND friend_id = $2
+      RETURNING *
+    `;
+    const values = [friendReqId, currentUserId];
+    const result = await pool.query(updateQuery, values);
+    return result.rows[0];
+  },
+
+  /**
+   * Obtener todos los amigos (relaciones en status='accepted')
+   * para un usuario (userId). Se hace un JOIN para tener info de nombres y fotos.
+   */
+  async getFriendsOfUser(userId) {
+    const query = `
+      SELECT 
+        f.*,
+        -- Datos del usuario "user_id"
+        uf.name             AS from_name,
+        uf.email            AS from_email,
+        pf.profile_picture_url AS from_photo,
+        -- Datos del usuario "friend_id"
+        ut.name             AS to_name,
+        ut.email            AS to_email,
+        pt.profile_picture_url AS to_photo
+      FROM friendship f
+        JOIN users uf ON f.user_id = uf.id
+        LEFT JOIN profiles pf ON pf.user_id = uf.id
+        JOIN users ut ON f.friend_id = ut.id
+        LEFT JOIN profiles pt ON pt.user_id = ut.id
+      WHERE 
+        (f.user_id = $1 OR f.friend_id = $1)
+        AND f.status = 'accepted'
+      ORDER BY f.id DESC
+    `;
+    const { rows } = await pool.query(query, [userId]);
+    return rows;
+  },
+
+  /**
+   * Lista de solicitudes pendientes para un usuario (userId).
+   * Se asume que userId es el "destinatario" (friend_id).
+   * JOIN para obtener nombre y foto de quien envía la solicitud.
+   */
+  async getRequestsForUser(userId) {
+    const query = `
+      SELECT 
+        f.*,
+        uf.name  AS from_name,
+        uf.email AS from_email,
+        pf.profile_picture_url AS from_photo
+      FROM friendship f
+        JOIN users uf ON f.user_id = uf.id
+        LEFT JOIN profiles pf ON pf.user_id = uf.id
+      WHERE 
+        f.friend_id = $1
+        AND f.status = 'pending'
+      ORDER BY f.id DESC
+    `;
+    const { rows } = await pool.query(query, [userId]);
+    return rows;
+  },
+
+  /**
+   * Buscar usuario por email o ID
+   * Se hace LEFT JOIN con la tabla profiles para también devolver la foto
+   */
+  async findUserByEmailOrId(queryText) {
+    // El ILIKE sirve para coincidencias parciales en email
+    const sql = `
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        u.role,
+        p.profile_picture_url
+      FROM users u
+        LEFT JOIN profiles p ON p.user_id = u.id
+      WHERE 
+        u.email ILIKE $1
+        OR CAST(u.id AS TEXT) = $2
+    `;
+    const values = [`%${queryText}%`, queryText];
+    const { rows } = await pool.query(sql, values);
+    return rows;
+  },
+};
+
+module.exports = Friend;
+
+----- backend/src/models/User.js -----
+// backend/src/models/User.js
+
+const pool = require('../config/db');
+
+const User = {
+  // Retorna todos los usuarios (para admin)
+  async getAll() {
+    try {
+      const query = 'SELECT id, name, email, role FROM users ORDER BY id ASC';
+      const { rows } = await pool.query(query);
+      return rows;
+    } catch (error) {
+      console.error('User.getAll:', error.message);
+      throw error;
+    }
+  },
+
+  // Obtener usuario por email
+  async findByEmail(email) {
+    try {
+      const query = 'SELECT * FROM users WHERE email = $1';
+      const { rows } = await pool.query(query, [email]);
+      return rows[0];
+    } catch (error) {
+      console.error('User.findByEmail:', error.message);
+      throw error;
+    }
+  },
+
+  // Obtener usuario por ID
+  async findById(id) {
+    try {
+      const query = 'SELECT * FROM users WHERE id = $1';
+      const { rows } = await pool.query(query, [id]);
+      return rows[0];
+    } catch (error) {
+      console.error('User.findById:', error.message);
+      throw error;
+    }
+  },
+
+  // Crear usuario (usado por authController)
+  async create({ name, email, password, role }) {
+    try {
+      const query = `
+        INSERT INTO users (name, email, password, role)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, name, email, role
+      `;
+      const values = [name, email, password, role || 'user'];
+      const { rows } = await pool.query(query, values);
+      return rows[0];
+    } catch (error) {
+      console.error('User.create:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Actualiza SOLO el "name" (ejemplo). 
+   * Si quieres más campos, agrega y ajusta la consulta.
+   */
+  async update(id, { name }) {
+    try {
+      const query = `
+        UPDATE users
+        SET name = $1
+        WHERE id = $2
+        RETURNING id, name, email, role
+      `;
+      const values = [name, id];
+      const { rows } = await pool.query(query, values);
+      return rows[0] || null;
+    } catch (error) {
+      console.error('User.update:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Eliminar usuario por ID
+   */
+  async delete(id) {
+    try {
+      // Verificar si el user existe
+      const existing = await this.findById(id);
+      if (!existing) {
+        return null;
+      }
+      await pool.query('DELETE FROM users WHERE id = $1', [id]);
+      return existing; // o true, lo que prefieras
+    } catch (error) {
+      console.error('User.delete:', error.message);
+      throw error;
+    }
+  },
+};
+
+module.exports = User;
+
+----- backend/src/models/task.js -----
+// backend/src/models/task.js
+const pool = require('../config/db');
+
+const Task = {
+  /**
+   * Crear una nueva tarea
+   * @param {Object} taskData - Datos de la tarea
+   * @returns {Object} - Tarea creada
+   */
+  async create(taskData) {
+    const { user_id, title, description, start_date, end_date, is_active, total_time_spent } = taskData;
+
+    const query = `
+      INSERT INTO task 
+        (user_id, title, description, start_date, end_date, is_active, total_time_spent)
+      VALUES 
+        ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+    `;
+    const values = [
+      user_id,
+      title,
+      description || '',
+      start_date || new Date(),
+      is_active ? end_date : null,
+      is_active || false,
+      total_time_spent || 0, // Inicializar en 0 si no se proporciona
+    ];
+
+    try {
+      const { rows } = await pool.query(query, values);
+      return rows[0];
+    } catch (error) {
+      console.error('Task.create:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener todas las tareas activas (sin archivar)
+   * @returns {Array} - Lista de tareas
+   */
+  async getAll() {
+    const query = `
+      SELECT * FROM task
+      WHERE archived_at IS NULL
+      ORDER BY created_at DESC
+    `;
+    try {
+      const { rows } = await pool.query(query);
+      return rows;
+    } catch (error) {
+      console.error('Task.getAll:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener todas las tareas activas de un usuario específico
+   * @param {Integer} userId - ID del usuario
+   * @returns {Array} - Lista de tareas
+   */
+  async getAllByUserId(userId) {
+    const query = `
+      SELECT * FROM task
+      WHERE user_id = $1 AND archived_at IS NULL
+      ORDER BY created_at DESC
+    `;
+    try {
+      const { rows } = await pool.query(query, [userId]);
+      return rows;
+    } catch (error) {
+      console.error('Task.getAllByUserId:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener una tarea por su ID
+   * @param {Integer} taskId - ID de la tarea
+   * @returns {Object} - Tarea encontrada
+   */
+  async getById(taskId) {
+    const query = `
+      SELECT * FROM task
+      WHERE id = $1
+    `;
+    try {
+      const { rows } = await pool.query(query, [taskId]);
+      return rows[0];
+    } catch (error) {
+      console.error('Task.getById:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener una tarea por su ID y el ID del usuario
+   * @param {Integer} taskId - ID de la tarea
+   * @param {Integer} userId - ID del usuario
+   * @returns {Object} - Tarea encontrada
+   */
+  async getByIdAndUser(taskId, userId) {
+    const query = `
+      SELECT * FROM task
+      WHERE id = $1 AND user_id = $2
+    `;
+    try {
+      const { rows } = await pool.query(query, [taskId, userId]);
+      return rows[0];
+    } catch (error) {
+      console.error('Task.getByIdAndUser:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Completar una tarea (is_active = false, completed_at = NOW())
+   * @param {Integer} taskId - ID de la tarea
+   * @returns {Object} - Tarea actualizada
+   */
+  async complete(taskId) {
+    const query = `
+      UPDATE task 
+      SET is_active = FALSE, completed_at = NOW(), updated_at = NOW() 
+      WHERE id = $1 
+      RETURNING *
+    `;
+    try {
+      const { rows } = await pool.query(query, [taskId]);
+      return rows[0];
+    } catch (error) {
+      console.error('Task.complete:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Archivar una tarea (archived_at = NOW())
+   * @param {Integer} taskId - ID de la tarea
+   * @returns {Object} - Tarea actualizada
+   */
+  async archive(taskId) {
+    const query = `
+      UPDATE task 
+      SET archived_at = NOW(), updated_at = NOW() 
+      WHERE id = $1 
+      RETURNING *
+    `;
+    try {
+      const { rows } = await pool.query(query, [taskId]);
+      return rows[0];
+    } catch (error) {
+      console.error('Task.archive:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Desarchivar una tarea (archived_at = NULL)
+   * @param {Integer} taskId - ID de la tarea
+   * @returns {Object} - Tarea actualizada
+   */
+  async unarchive(taskId) {
+    const query = `
+      UPDATE task 
+      SET archived_at = NULL, updated_at = NOW() 
+      WHERE id = $1 
+      RETURNING *
+    `;
+    try {
+      const { rows } = await pool.query(query, [taskId]);
+      return rows[0];
+    } catch (error) {
+      console.error('Task.unarchive:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Actualizar una tarea
+   * @param {Integer} taskId - ID de la tarea
+   * @param {Object} updateData - Datos a actualizar
+   * @returns {Object} - Tarea actualizada
+   */
+  async update(taskId, updateData) {
+    const { title, description, start_date, end_date, is_active, total_time_spent } = updateData;
+
+    // Construir dinámicamente la consulta de actualización
+    const fields = [];
+    const values = [];
+    let index = 1;
+
+    if (title !== undefined) {
+      fields.push(`title = $${index++}`);
+      values.push(title);
+    }
+    if (description !== undefined) {
+      fields.push(`description = $${index++}`);
+      values.push(description);
+    }
+    if (start_date !== undefined) {
+      fields.push(`start_date = $${index++}`);
+      values.push(start_date);
+    }
+    if (end_date !== undefined) {
+      fields.push(`end_date = $${index++}`);
+      values.push(end_date);
+    }
+    if (is_active !== undefined) {
+      fields.push(`is_active = $${index++}`);
+      values.push(is_active);
+      // Si is_active es false, limpiar end_date
+      if (!is_active) {
+        fields.push(`end_date = NULL`);
+      }
+    }
+    if (total_time_spent !== undefined) {
+      fields.push(`total_time_spent = total_time_spent + $${index++}`);
+      values.push(total_time_spent);
+    }
+
+    if (fields.length === 0) {
+      throw new Error('No hay campos para actualizar');
+    }
+
+    const query = `
+      UPDATE task
+      SET 
+        ${fields.join(', ')},
+        updated_at = NOW()
+      WHERE id = $${index}
+      RETURNING *
+    `;
+    values.push(taskId);
+
+    try {
+      const { rows } = await pool.query(query, values);
+      return rows[0];
+    } catch (error) {
+      console.error('Task.update:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Eliminar una tarea
+   * @param {Integer} taskId - ID de la tarea
+   * @returns {Boolean} - Verdadero si se eliminó, falso si no
+   */
+  async delete(taskId) {
+    const query = `
+      DELETE FROM task
+      WHERE id = $1
+    `;
+    try {
+      const res = await pool.query(query, [taskId]);
+      return res.rowCount > 0;
+    } catch (error) {
+      console.error('Task.delete:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener tareas archivadas
+   * @returns {Array} - Lista de tareas archivadas
+   */
+  async getArchivedTasks() {
+    const query = `
+      SELECT * FROM task
+      WHERE archived_at IS NOT NULL
+      ORDER BY archived_at DESC
+    `;
+    try {
+      const { rows } = await pool.query(query);
+      return rows;
+    } catch (error) {
+      console.error('Task.getArchivedTasks:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener tareas archivadas de un usuario específico
+   * @param {Integer} userId - ID del usuario
+   * @returns {Array} - Lista de tareas archivadas
+   */
+  async getArchivedTasksByUserId(userId) {
+    const query = `
+      SELECT * FROM task
+      WHERE archived_at IS NOT NULL AND user_id = $1
+      ORDER BY archived_at DESC
+    `;
+    try {
+      const { rows } = await pool.query(query, [userId]);
+      return rows;
+    } catch (error) {
+      console.error('Task.getArchivedTasksByUserId:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Contar todas las tareas
+   * @returns {Integer} - Total de tareas
+   */
+  async countAll() {
+    const { rows } = await pool.query('SELECT COUNT(*) FROM task');
+    return parseInt(rows[0].count, 10);
+  },
+
+  /**
+   * Contar todas las tareas de un usuario
+   * @param {Integer} userId - ID del usuario
+   * @returns {Integer} - Total de tareas del usuario
+   */
+  async countAllForUser(userId) {
+    const { rows } = await pool.query('SELECT COUNT(*) FROM task WHERE user_id = $1', [userId]);
+    return parseInt(rows[0].count, 10);
+  },
+
+  /**
+   * Contar tareas por estado
+   * @param {String} status - Estado de la tarea ('Completed', 'Pending', 'In Progress')
+   * @returns {Integer} - Total de tareas en el estado dado
+   */
+  async countByStatus(status) {
+    const { rows } = await pool.query('SELECT COUNT(*) FROM task WHERE status = $1', [status]);
+    return parseInt(rows[0].count, 10);
+  },
+
+  /**
+   * Contar tareas por estado para un usuario
+   * @param {String} status - Estado de la tarea
+   * @param {Integer} userId - ID del usuario
+   * @returns {Integer} - Total de tareas en el estado dado para el usuario
+   */
+  async countByStatusForUser(status, userId) {
+    const { rows } = await pool.query('SELECT COUNT(*) FROM task WHERE status = $1 AND user_id = $2', [status, userId]);
+    return parseInt(rows[0].count, 10);
+  },
+};
+
+module.exports = Task;
+
+----- backend/src/controllers/friendsController.js -----
+// backend/src/controllers/friendsController.js
+
+const Friend = require('../models/Friend'); // Asegúrate de que el nombre del archivo coincide
+const { validationResult } = require('express-validator');
+
+const friendsController = {
+  // Enviar solicitud de amistad
+  sendRequest: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+      const fromUserId = req.user.id;
+      const { to_user_id } = req.body;
+      if (fromUserId === to_user_id) {
+        return res.status(400).json({ error: 'No puedes enviarte una solicitud de amistad a ti mismo.' });
+      }
+      const friendReq = await Friend.sendRequest(fromUserId, to_user_id);
+
+      if (!friendReq) {
+        return res
+          .status(400)
+          .json({ error: 'Ya existe una solicitud o amistad con ese usuario.' });
+      }
+      res.json(friendReq);
+    } catch (error) {
+      console.error('Error al enviar solicitud de amistad:', error);
+      res.status(500).json({ error: 'Error al enviar solicitud de amistad' });
+    }
+  },
+
+  // Aceptar solicitud
+  acceptRequest: async (req, res) => {
+    try {
+      const friendReqId = req.params.id;
+      const userId = req.user.id;
+      const updated = await Friend.acceptRequest(friendReqId, userId);
+      if (!updated) {
+        return res.status(404).json({
+          error: 'Solicitud no encontrada o no eres el destinatario.',
+        });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error('Error al aceptar solicitud:', error);
+      res.status(500).json({ error: 'Error al aceptar solicitud' });
+    }
+  },
+
+  // Rechazar solicitud
+  rejectRequest: async (req, res) => {
+    try {
+      const friendReqId = req.params.id;
+      const userId = req.user.id;
+      const updated = await Friend.rejectRequest(friendReqId, userId);
+      if (!updated) {
+        return res.status(404).json({
+          error: 'Solicitud no encontrada o no eres el destinatario.',
+        });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error('Error al rechazar solicitud:', error);
+      res.status(500).json({ error: 'Error al rechazar solicitud' });
+    }
+  },
+
+  // Lista de amigos (aceptados)
+  getMyFriends: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const friends = await Friend.getFriendsOfUser(userId);
+      res.json(friends);
+    } catch (error) {
+      console.error('Error al obtener amigos:', error);
+      res.status(500).json({ error: 'Error al obtener amigos' });
+    }
+  },
+
+  // Lista de solicitudes pendientes
+  getMyRequests: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const requests = await Friend.getRequestsForUser(userId);
+      res.json(requests);
+    } catch (error) {
+      console.error('Error al obtener solicitudes:', error);
+      res.status(500).json({ error: 'Error al obtener solicitudes' });
+    }
+  },
+
+  // Buscar usuario por email o id
+  searchUser: async (req, res) => {
+    try {
+      const { query } = req.query; // ?query=...
+      if (!query) return res.json([]);
+      const users = await Friend.findUserByEmailOrId(query);
+      res.json(users);
+    } catch (error) {
+      console.error('Error al buscar usuario:', error);
+      res.status(500).json({ error: 'Error al buscar usuario' });
+    }
+  },
+};
+
+module.exports = friendsController;
+
+----- backend/src/controllers/userController.js -----
+// backend/src/controllers/userController.js
+const User = require('../models/User');
+
+/**
+ * CONTROLADOR de usuarios (solo para ADMIN), con getAll, getById, update, delete
+ * NOTA: la creación de usuarios se hace en authController (register).
+ */
+const userController = {
+  /**
+   * Listar todos los usuarios
+   */
+  getAllUsers: async (req, res) => {
+    try {
+      // OJO: asumes que req.user.role === 'admin' (middleware lo permite). 
+      const users = await User.getAll();
+      res.json(users);
+    } catch (error) {
+      console.error('Error al obtener todos los usuarios:', error.message);
+      res.status(500).json({ msg: 'Error del servidor' });
+    }
+  },
+
+  /**
+   * Obtener un usuario por ID
+   */
+  getUserById: async (req, res) => {
+    try {
+      const user = await User.findById(req.params.id);
+      if (!user) {
+        return res.status(404).json({ msg: 'Usuario no encontrado' });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error('Error al obtener usuario por ID:', error.message);
+      res.status(500).json({ msg: 'Error del servidor' });
+    }
+  },
+
+  /**
+   * Actualizar usuario (solo admin). 
+   * - Por simplicidad, solo actualiza "name" en la tabla users.
+   * - Si quisieras actualizar "email", adáptalo a tu gusto.
+   */
+  updateUser: async (req, res) => {
+    try {
+      const { name } = req.body; // ajusta si deseas actualizar más campos
+      if (!name) {
+        return res.status(400).json({ msg: 'Se requiere un nombre para actualizar.' });
+      }
+
+      const updatedUser = await User.update(req.params.id, { name });
+      if (!updatedUser) {
+        return res.status(404).json({ msg: 'Usuario no encontrado o no se actualizó' });
+      }
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error.message);
+      res.status(500).json({ msg: 'Error del servidor' });
+    }
+  },
+
+  /**
+   * Eliminar usuario (solo admin).
+   */
+  deleteUser: async (req, res) => {
+    try {
+      const deletedUser = await User.delete(req.params.id);
+      if (!deletedUser) {
+        return res.status(404).json({ msg: 'Usuario no encontrado' });
+      }
+      res.json({ msg: 'Usuario eliminado' });
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error.message);
+      res.status(500).json({ msg: 'Error del servidor' });
+    }
+  },
+};
+
+module.exports = userController;
+
+----- backend/src/controllers/tasksController.js -----
+// backend/src/controllers/tasksController.js
+
+const Task = require('../models/task');
+const { validationResult } = require('express-validator');
+
+const tasksController = {
+  /**
+   * Obtener todas las tareas (no archivadas)
+   */
+  getAllTasks: async (req, res) => {
+    try {
+      let tasks;
+      if (req.user.role === 'admin') {
+        tasks = await Task.getAll();
+      } else {
+        tasks = await Task.getAllByUserId(req.user.id);
+      }
+      res.json(tasks);
+    } catch (error) {
+      console.error('Error al obtener tareas:', error);
+      res.status(500).json({ error: 'Error al obtener las tareas' });
+    }
+  },
+
+  /**
+   * Obtener todas las tareas archivadas
+   */
+  getArchivedTasks: async (req, res) => {
+    try {
+      let tasks;
+      if (req.user.role === 'admin') {
+        tasks = await Task.getArchivedTasks();
+      } else {
+        tasks = await Task.getArchivedTasksByUserId(req.user.id);
+      }
+      res.json(tasks);
+    } catch (error) {
+      console.error('Error al obtener tareas archivadas:', error);
+      res.status(500).json({ error: 'Error al obtener tareas archivadas' });
+    }
+  },
+
+  /**
+   * Obtener una tarea por su ID
+   */
+  getTaskById: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
+      } else {
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
+      }
+
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+      res.json(task);
+    } catch (error) {
+      console.error('Error al obtener la tarea:', error);
+      res.status(500).json({ error: 'Error al obtener la tarea' });
+    }
+  },
+
+  /**
+   * Crear una nueva tarea
+   */
+  createTask: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      // Asignar user_id al body para forzar que la tarea sea del usuario logueado
+      const taskData = {
+        ...req.body,
+        user_id: req.user.id,
+      };
+      const newTask = await Task.create(taskData);
+      return res.status(201).json(newTask);
+    } catch (error) {
+      console.error('Error al crear la tarea:', error);
+      res.status(500).json({ error: 'Error al crear la tarea' });
+    }
+  },
+
+  /**
+   * Completar una tarea (is_active = false, completed_at = NOW())
+   */
+  completeTask: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
+      } else {
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
+      }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+      const updatedTask = await Task.complete(req.params.id);
+      res.json(updatedTask);
+    } catch (error) {
+      console.error('Error al completar la tarea:', error);
+      res.status(500).json({ error: 'Error al completar la tarea' });
+    }
+  },
+
+  /**
+   * Archivar una tarea (archived_at = NOW())
+   */
+  archiveTask: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
+      } else {
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
+      }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+      const updatedTask = await Task.archive(req.params.id);
+      res.json(updatedTask);
+    } catch (error) {
+      console.error('Error al archivar la tarea:', error);
+      res.status(500).json({ error: 'Error al archivar la tarea' });
+    }
+  },
+
+  /**
+   * Desarchivar una tarea (archived_at = NULL)
+   */
+  unarchiveTask: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
+      } else {
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
+      }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+      const updatedTask = await Task.unarchive(req.params.id);
+      res.json(updatedTask);
+    } catch (error) {
+      console.error('Error al desarchivar la tarea:', error);
+      res.status(500).json({ error: 'Error al desarchivar la tarea' });
+    }
+  },
+
+  /**
+   * Actualizar una tarea
+   */
+  updateTask: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
+      } else {
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
+      }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+
+      const updatedTask = await Task.update(req.params.id, req.body);
+      res.json(updatedTask);
+    } catch (error) {
+      console.error('Error al actualizar la tarea:', error);
+      res.status(500).json({ error: 'Error al actualizar la tarea' });
+    }
+  },
+
+  /**
+   * Eliminar una tarea
+   */
+  deleteTask: async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(req.params.id);
+      } else {
+        task = await Task.getByIdAndUser(req.params.id, req.user.id);
+      }
+      if (!task) {
+        return res.status(404).json({ error: 'Tarea no encontrada' });
+      }
+
+      await Task.delete(req.params.id);
+      res.json({ message: 'Tarea eliminada' });
+    } catch (error) {
+      console.error('Error al eliminar la tarea:', error);
+      res.status(500).json({ error: 'Error al eliminar la tarea' });
+    }
+  },
+
+  /**
+   * Obtener estadísticas de tareas
+   * Devuelve un JSON con:
+   * {
+   *   totalTasks,
+   *   completed,
+   *   pending,
+   *   inProgress
+   * }
+   */
+  getStats: async (req, res) => {
+    try {
+      let totalTasks, completed, pending, inProgress;
+
+      if (req.user.role === 'admin') {
+        totalTasks = await Task.countAll();
+        completed = await Task.countByStatus('Completed');
+        pending = await Task.countByStatus('Pending');
+        inProgress = await Task.countByStatus('In Progress');
+      } else {
+        totalTasks = await Task.countAllForUser(req.user.id);
+        completed = await Task.countByStatusForUser('Completed', req.user.id);
+        pending = await Task.countByStatusForUser('Pending', req.user.id);
+        inProgress = await Task.countByStatusForUser('In Progress', req.user.id);
+      }
+
+      return res.json({
+        totalTasks,
+        completed,
+        pending,
+        inProgress,
+      });
+    } catch (error) {
+      console.error('Error al obtener estadísticas:', error);
+      res.status(500).json({ error: 'Error al obtener estadísticas' });
+    }
+  },
+};
+
+module.exports = tasksController;
+
+----- backend/src/controllers/profileController.js -----
+// backend/src/controllers/profileController.js
+
+const fs = require('fs');
+const path = require('path');
+const { validationResult } = require('express-validator');
+const Profile = require('../models/profile');
+const User = require('../models/User');
+
+const profileController = {
+  /**
+   * GET /api/profile
+   * Retorna el perfil del usuario logueado, o si no existe en "profiles",
+   * retorna datos básicos desde la tabla "users".
+   */
+  getProfile: async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res
+          .status(401)
+          .json({ error: 'No se encontró ID de usuario en el token' });
+      }
+
+      // Buscar si existe profile en la tabla
+      const profile = await Profile.getByUserId(userId);
+
+      if (!profile) {
+        // No existe => retornamos info básica de "users"
+        const userData = await User.findById(userId);
+        if (!userData) {
+          return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+        return res.json({
+          user_id: userId,
+          name: userData.name,
+          email: userData.email,
+          bio: '',
+          profile_picture_url: '',
+        });
+      } else {
+        // Existe profile en la BD
+        return res.json(profile);
+      }
+    } catch (error) {
+      console.error('Error al obtener el perfil:', error);
+      res.status(500).json({ error: 'Error al obtener el perfil' });
+    }
+  },
+
+  /**
+   * PUT /api/profile
+   * Actualiza (o crea) el perfil. 
+   * Si el profile_picture_url cambió, borra la imagen anterior.
+   */
+  updateProfile: async (req, res) => {
+    // Para ver si hay validaciones
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log('ProfileController.updateProfile: Errores de validación', errors.array());
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+
+      // Log para depurar
+      console.log('[updateProfile] BODY RECIBIDO:', req.body);
+
+      const { name, bio, profile_picture_url } = req.body;
+
+      // 1) Obtener el perfil actual para ver si hay que borrar la imagen anterior
+      const existingProfile = await Profile.getByUserId(userId);
+
+      // 2) Si existe y la "profile_picture_url" es distinta & no vacía => borrar anterior
+      if (
+        existingProfile &&
+        existingProfile.profile_picture_url &&
+        existingProfile.profile_picture_url.trim() !== '' &&
+        existingProfile.profile_picture_url !== profile_picture_url
+      ) {
+        const oldUrl = existingProfile.profile_picture_url;
+        const filename = path.basename(oldUrl);
+        const filePath = path.join(__dirname, '../../uploads', filename);
+
+        fs.unlink(filePath, (err) => {
+          if (err) {
+            console.error('Error al borrar imagen anterior:', err);
+          } else {
+            console.log('Imagen anterior borrada con éxito:', filename);
+          }
+        });
+      }
+
+      // 3) updateOrCreate => actualiza o inserta en la tabla "profiles"
+      const updated = await Profile.updateOrCreate(userId, {
+        name,
+        bio,
+        profile_picture_url,
+      });
+
+      // Log para depurar
+      console.log('[updateProfile] PERFIL ACTUALIZADO:', updated);
+
+      return res.json(updated);
+    } catch (error) {
+      console.error('Error al actualizar el perfil:', error);
+      return res.status(500).json({ error: 'Error al actualizar el perfil' });
+    }
+  },
+};
+
+module.exports = profileController;
+
+----- backend/src/controllers/authController.js -----
+// backend/src/controllers/authController.js
+
+const User = require('../models/User');
+const Profile = require('../models/profile');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator');
+
+const authController = {
+  register: async (req, res) => {
+    console.log('AuthController: Iniciando registro');
+
+    // Validación de entradas
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log('AuthController: Errores de validación', errors.array());
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { name, email, password } = req.body; // 'role' no se recibe del frontend
+    console.log(`AuthController: Datos recibidos - Nombre: ${name}, Email: ${email}`);
+
+    try {
+      // Verificar si el usuario ya existe
+      let user = await User.findByEmail(email);
+      if (user) {
+        console.log('AuthController: El usuario ya existe');
+        return res.status(400).json({ msg: 'El usuario ya existe' });
+      }
+
+      // Hashear la contraseña
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      console.log('AuthController: Contraseña hasheada');
+
+      // Crear el nuevo usuario con rol 'user' por defecto
+      user = await User.create({
+        name,
+        email,
+        password: hashedPassword,
+        role: 'user',
+      });
+      console.log(`AuthController: Usuario creado con ID ${user.id}`);
+
+      // Crear el perfil del usuario
+      const profile = await Profile.updateOrCreate(user.id, {
+        name: user.name,             // Inicializar con el nombre del usuario
+        bio: '',                     // Biografía vacía por defecto
+        profile_picture_url: '',     // URL de foto vacía al inicio
+      });
+      console.log(`AuthController: Perfil creado para el usuario ID ${user.id}`);
+
+      // Generar el token JWT
+      const payload = {
+        user: {
+          id: user.id,
+          role: user.role,
+        },
+      };
+
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET || '123456', // Asegúrate de definir JWT_SECRET en tu .env
+        { expiresIn: '1h' },
+        (err, token) => {
+          if (err) {
+            console.error('AuthController: Error al generar el token JWT', err);
+            return res.status(500).json({ msg: 'Error al generar el token' });
+          }
+          console.log('AuthController: Token JWT generado exitosamente');
+          res.status(201).json({ token });
+        }
+      );
+    } catch (error) {
+      console.error('AuthController: Error durante el registro', error.message);
+      res.status(500).send('Error del servidor');
+    }
+  },
+
+  login: async (req, res) => {
+    console.log('AuthController: Iniciando login');
+
+    // Validación de entradas
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log('AuthController: Errores de validación', errors.array());
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, password } = req.body;
+    console.log(`AuthController: Datos de login - Email: ${email}`);
+
+    try {
+      // Buscar el usuario por email
+      let user = await User.findByEmail(email);
+      if (!user) {
+        console.log('AuthController: Usuario no encontrado');
+        return res.status(400).json({ msg: 'Credenciales inválidas' });
+      }
+
+      // Comparar la contraseña
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        console.log('AuthController: Contraseña incorrecta');
+        return res.status(400).json({ msg: 'Credenciales inválidas' });
+      }
+
+      // Generar el token JWT
+      const payload = {
+        user: {
+          id: user.id,
+          role: user.role,
+        },
+      };
+
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET || '123456',
+        { expiresIn: '1h' },
+        (err, token) => {
+          if (err) {
+            console.error('AuthController: Error al generar el token JWT', err);
+            return res.status(500).json({ msg: 'Error al generar el token' });
+          }
+          console.log('AuthController: Token JWT generado exitosamente');
+          res.json({ token });
+        }
+      );
+    } catch (error) {
+      console.error('AuthController: Error durante el login', error.message);
+      res.status(500).send('Error del servidor');
+    }
+  },
+
+  // (Opcional) Verificar token
+  verifyToken: (req, res) => {
+    console.log('AuthController: Verificando token');
+
+    const token = req.body.token;
+    if (!token) {
+      console.log('AuthController: No se proporcionó token');
+      return res.status(400).json({ msg: 'No token in request' });
+    }
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || '123456');
+      console.log('AuthController: Token válido');
+      return res.json({ user: decoded.user });
+    } catch (error) {
+      console.log('AuthController: Token inválido');
+      return res.status(401).json({ msg: 'Token inválido' });
+    }
+  },
+};
+
+module.exports = authController;
+
+----- backend/src/routes/profile.js -----
+// backend/src/routes/profile.js
+
+const express = require('express');
+const authMiddleware = require('../middleware/authMiddleware'); // Middleware para verificar token
+const profileController = require('../controllers/profileController'); // Controlador para perfiles
+const { body } = require('express-validator');
+
+const router = express.Router();
+
+// @route   GET /api/profile
+// @desc    Obtener el perfil del usuario actual
+// @access  Privado
+router.get('/', authMiddleware, profileController.getProfile);
+
+// @route   PUT /api/profile
+// @desc    Actualizar el perfil del usuario
+// @access  Privado
+router.put(
+  '/',
+  authMiddleware,
+  [
+    body('name')
+      .optional()
+      .isString()
+      .withMessage('El nombre debe ser una cadena de texto'),
+
+    body('bio')
+      .optional()
+      .isString()
+      .withMessage('La biografía debe ser una cadena de texto'),
+
+    // Ajustamos la validación para que "http://localhost" sea aceptado
+    body('profile_picture_url')
+      .optional()
+      .isURL({ require_tld: false })
+      .withMessage('La URL de la imagen debe ser válida'),
+  ],
+  profileController.updateProfile
+);
+
+module.exports = router;
+
+----- backend/src/routes/auth.js -----
+// backend/src/routes/auth.js
+
+const express = require('express');
+const { body } = require('express-validator');
+const authController = require('../controllers/authController');
+
+const router = express.Router();
+
+// @route   POST /api/auth/register
+// @desc    Registrar un nuevo usuario
+// @access  Public
+router.post(
+  '/register',
+  [
+    body('name', 'El nombre es obligatorio').not().isEmpty(),
+    body('email', 'Por favor, incluye un email válido').isEmail(),
+    body('password', 'La contraseña debe tener al menos 6 caracteres').isLength({ min: 6 }),
+  ],
+  authController.register
+);
+
+// @route   POST /api/auth/login
+// @desc    Iniciar sesión
+// @access  Public
+router.post(
+  '/login',
+  [
+    body('email', 'Por favor, incluye un email válido').isEmail(),
+    body('password', 'La contraseña es obligatoria').exists(),
+  ],
+  authController.login
+);
+
+// @route   POST /api/auth/verify-token
+// @desc    Verificar token JWT
+// @access  Public (puede ser Privado según necesidad)
+router.post('/verify-token', authController.verifyToken);
+
+module.exports = router;
+
+----- backend/src/routes/users.js -----
+// backend/src/routes/users.js
+const express = require('express');
+const router = express.Router();
+const userController = require('../controllers/userController');
+const authMiddleware = require('../middleware/authMiddleware');
+
+// Aplicar middleware a todas las rutas
+router.use(authMiddleware);
+
+// Obtener todos los usuarios (solo admin)
+router.get('/', userController.getAllUsers);
+
+// Obtener un usuario por ID (solo admin)
+router.get('/:id', userController.getUserById);
+
+// Actualizar un usuario (solo admin)
+router.put('/:id', userController.updateUser);
+
+// Eliminar un usuario (solo admin)
+router.delete('/:id', userController.deleteUser);
+
+module.exports = router;
+
+----- backend/src/routes/upload.js -----
+// backend/src/routes/upload.js
+
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+
+// Configurar multer (almacenamiento en carpeta 'uploads')
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // Asegúrate de tener 'uploads/' en tu backend
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    // Generar nombre único
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+
+// Filtrar solo imágenes
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = allowedTypes.test(file.mimetype);
+  if (mimetype && extname) {
+    cb(null, true);
+  } else {
+    cb(new Error('Solo se permiten imágenes (jpeg, jpg, png, gif)'));
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+});
+
+// POST /api/upload/profile-picture
+router.post('/profile-picture', upload.single('profilePicture'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No se subió ningún archivo' });
+  }
+  // BASE_URL en tu .env o valor por defecto
+  const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+  const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
+  return res.json({ imageUrl });
+});
+
+module.exports = router;
+
+----- backend/src/routes/friends.js -----
+// backend/src/routes/friends.js
+
+const express = require('express');
+const router = express.Router(); // Asegúrate de que estás usando express.Router()
+const friendsController = require('../controllers/friendsController');
+const authMiddleware = require('../middleware/authMiddleware');
+const { body, query, param } = require('express-validator');
+
+// Todas requieren auth
+router.use(authMiddleware);
+
+// Buscar usuarios
+router.get(
+  '/search',
+  [query('query').notEmpty().withMessage('Debe proporcionar un ID o email')],
+  friendsController.searchUser
+);
+
+// Listar amigos
+router.get('/list', friendsController.getMyFriends);
+
+// Listar solicitudes pendientes
+router.get('/requests', friendsController.getMyRequests);
+
+// Enviar solicitud
+router.post(
+  '/send',
+  [body('to_user_id').isInt().withMessage('to_user_id debe ser entero')],
+  friendsController.sendRequest
+);
+
+// Aceptar
+router.put('/:id/accept', [
+  param('id').isInt().withMessage('ID de solicitud debe ser un entero')
+], friendsController.acceptRequest);
+
+// Rechazar
+router.put('/:id/reject', [
+  param('id').isInt().withMessage('ID de solicitud debe ser un entero')
+], friendsController.rejectRequest);
+
+module.exports = router; // Exportar el router
+
+----- backend/src/routes/tasks.js -----
+// backend/src/routes/tasks.js
+
+const express = require('express');
+const router = express.Router();
+const tasksController = require('../controllers/tasksController');
+const authMiddleware = require('../middleware/authMiddleware');
+const { body, param } = require('express-validator');
+
+// Todas las rutas requieren autenticación
+router.use(authMiddleware);
+
+/**
+ * @route   GET /api/tasks
+ * @desc    Obtener todas las tareas (administrador puede ver todas)
+ * @access  Privado
+ */
+router.get('/', tasksController.getAllTasks);
+
+/**
+ * @route   GET /api/tasks/archived
+ * @desc    Obtener todas las tareas archivadas
+ * @access  Privado
+ */
+router.get('/archived', tasksController.getArchivedTasks);
+
+/**
+ * @route   GET /api/tasks/:id
+ * @desc    Obtener una tarea por su ID
+ * @access  Privado
+ */
+router.get('/:id', tasksController.getTaskById);
+
+/**
+ * @route   POST /api/tasks
+ * @desc    Crear una nueva tarea
+ * @access  Privado
+ */
+router.post(
+  '/',
+  [
+    body('title').notEmpty().withMessage('El título es obligatorio'),
+    // Puedes agregar más validaciones según tus necesidades
+  ],
+  tasksController.createTask
+);
+
+/**
+ * @route   PUT /api/tasks/:id/complete
+ * @desc    Completar una tarea
+ * @access  Privado
+ */
+router.put('/:id/complete', tasksController.completeTask);
+
+/**
+ * @route   PUT /api/tasks/:id/archive
+ * @desc    Archivar una tarea
+ * @access  Privado
+ */
+router.put('/:id/archive', tasksController.archiveTask);
+
+/**
+ * @route   PUT /api/tasks/:id/unarchive
+ * @desc    Desarchivar una tarea
+ * @access  Privado
+ */
+router.put('/:id/unarchive', tasksController.unarchiveTask);
+
+/**
+ * @route   PUT /api/tasks/:id
+ * @desc    Actualizar una tarea
+ * @access  Privado
+ */
+router.put('/:id', tasksController.updateTask);
+
+/**
+ * @route   DELETE /api/tasks/:id
+ * @desc    Eliminar una tarea
+ * @access  Privado
+ */
+router.delete('/:id', tasksController.deleteTask);
+
+/**
+ * @route   GET /api/tasks/stats
+ * @desc    Obtener estadísticas de tareas
+ * @access  Privado
+ */
+router.get('/stats', tasksController.getStats);
+
+module.exports = router;

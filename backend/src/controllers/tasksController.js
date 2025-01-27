@@ -1,15 +1,17 @@
 // backend/src/controllers/tasksController.js
+
 const Task = require('../models/task');
 const { validationResult } = require('express-validator');
 
 const tasksController = {
-  // Obtener todas las tareas (no archivadas)
+  /**
+   * Obtener todas las tareas (no archivadas)
+   */
   getAllTasks: async (req, res) => {
     try {
-      // req.user viene del authMiddleware con { id, role, ... }
       let tasks;
       if (req.user.role === 'admin') {
-        tasks = await Task.getAll(); 
+        tasks = await Task.getAll();
       } else {
         tasks = await Task.getAllByUserId(req.user.id);
       }
@@ -20,7 +22,9 @@ const tasksController = {
     }
   },
 
-  // Obtener tareas archivadas
+  /**
+   * Obtener todas las tareas archivadas
+   */
   getArchivedTasks: async (req, res) => {
     try {
       let tasks;
@@ -36,7 +40,9 @@ const tasksController = {
     }
   },
 
-  // Obtener una tarea concreta por ID
+  /**
+   * Obtener una tarea por su ID
+   */
   getTaskById: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -61,7 +67,9 @@ const tasksController = {
     }
   },
 
-  // Crear una nueva tarea
+  /**
+   * Crear una nueva tarea
+   */
   createTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -82,7 +90,9 @@ const tasksController = {
     }
   },
 
-  // Completar una tarea (status => 'Completed')
+  /**
+   * Completar una tarea (is_active = false, completed_at = NOW())
+   */
   completeTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -107,7 +117,9 @@ const tasksController = {
     }
   },
 
-  // Archivar una tarea (status => 'Archived')
+  /**
+   * Archivar una tarea (archived_at = NOW())
+   */
   archiveTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -132,7 +144,9 @@ const tasksController = {
     }
   },
 
-  // Desarchivar una tarea (status => 'Pending')
+  /**
+   * Desarchivar una tarea (archived_at = NULL)
+   */
   unarchiveTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -157,7 +171,9 @@ const tasksController = {
     }
   },
 
-  // Actualizar una tarea
+  /**
+   * Actualizar una tarea
+   */
   updateTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -183,7 +199,9 @@ const tasksController = {
     }
   },
 
-  // Eliminar una tarea
+  /**
+   * Eliminar una tarea
+   */
   deleteTask: async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -210,14 +228,14 @@ const tasksController = {
   },
 
   /**
-   * Estadísticas. Devuelve un JSON con:
-   *  {
-   *    totalTasks,
-   *    completed,
-   *    pending,
-   *    inProgress
-   *  }
-   *  Si quieres un stacked chart, necesitarás un group by (priority,difficulty).
+   * Obtener estadísticas de tareas
+   * Devuelve un JSON con:
+   * {
+   *   totalTasks,
+   *   completed,
+   *   pending,
+   *   inProgress
+   * }
    */
   getStats: async (req, res) => {
     try {
@@ -235,11 +253,6 @@ const tasksController = {
         inProgress = await Task.countByStatusForUser('In Progress', req.user.id);
       }
 
-      // EJEMPLO: Si deseas stackedData (priority vs difficulty),
-      // deberías hacer un método en Task que agrupe y devuelva 
-      // { priority, difficulty, total }. Lo omito aquí por brevedad.
-
-      // Devolvemos el JSON (compatible con tu TaskMetricsPage actual)
       return res.json({
         totalTasks,
         completed,

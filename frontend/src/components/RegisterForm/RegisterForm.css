@@ -1,0 +1,27 @@
+/* frontend/src/components/RegisterForm/RegisterForm.css */
+.register-form {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+}
+
+.register-form .form-group {
+  margin-bottom: 15px;
+}
+
+.register-form .form-label {
+  font-weight: bold;
+}
+
+.register-form .btn-success {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+.register-form .btn-success:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
+}

@@ -1,4 +1,5 @@
 // backend/src/controllers/profileController.js
+
 const fs = require('fs');
 const path = require('path');
 const { validationResult } = require('express-validator');
@@ -20,11 +21,11 @@ const profileController = {
           .json({ error: 'No se encontró ID de usuario en el token' });
       }
 
-      // Buscar si existe profile
+      // Buscar si existe profile en la tabla
       const profile = await Profile.getByUserId(userId);
 
       if (!profile) {
-        // Si no existe, retornamos info básica de la tabla users
+        // No existe => retornamos info básica de "users"
         const userData = await User.findById(userId);
         if (!userData) {
           return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -52,8 +53,10 @@ const profileController = {
    * Si el profile_picture_url cambió, borra la imagen anterior.
    */
   updateProfile: async (req, res) => {
+    // Para ver si hay validaciones
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('ProfileController.updateProfile: Errores de validación', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -63,12 +66,15 @@ const profileController = {
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
+      // Log para depurar
+      console.log('[updateProfile] BODY RECIBIDO:', req.body);
+
       const { name, bio, profile_picture_url } = req.body;
 
       // 1) Obtener el perfil actual para ver si hay que borrar la imagen anterior
       const existingProfile = await Profile.getByUserId(userId);
 
-      // 2) Si existe y la "profile_picture_url" es distinta & no vacía
+      // 2) Si existe y la "profile_picture_url" es distinta & no vacía => borrar anterior
       if (
         existingProfile &&
         existingProfile.profile_picture_url &&
@@ -76,7 +82,6 @@ const profileController = {
         existingProfile.profile_picture_url !== profile_picture_url
       ) {
         const oldUrl = existingProfile.profile_picture_url;
-        // Basename extrae '12345.png' de 'http://localhost:5000/uploads/12345.png'
         const filename = path.basename(oldUrl);
         const filePath = path.join(__dirname, '../../uploads', filename);
 
@@ -89,12 +94,15 @@ const profileController = {
         });
       }
 
-      // 3) Llamar a updateOrCreate => lo que ya hacías
+      // 3) updateOrCreate => actualiza o inserta en la tabla "profiles"
       const updated = await Profile.updateOrCreate(userId, {
         name,
         bio,
         profile_picture_url,
       });
+
+      // Log para depurar
+      console.log('[updateProfile] PERFIL ACTUALIZADO:', updated);
 
       return res.json(updated);
     } catch (error) {

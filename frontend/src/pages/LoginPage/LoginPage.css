@@ -1,0 +1,17 @@
+.login-page-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  
+  .login-page-container h1 {
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  .login-page-container .alert {
+    width: 100%;
+  }
