@@ -1,5 +1,4 @@
 // frontend/src/pages/TaskPage/TaskPage.js
-
 import React, { useState, useEffect } from 'react';
 import TaskForm from '../../components/TaskForm/TaskForm';
 import TaskList from '../../components/TaskList/TaskList';
@@ -19,9 +18,8 @@ function TaskPage() {
         setError('No hay usuario autenticado');
         return;
       }
-      // Llamada al backend con Bearer Token
       const response = await fetch('/api/tasks', {
-        headers: { 'Authorization': `Bearer ${user.token}` },
+        headers: { Authorization: `Bearer ${user.token}` },
       });
       if (!response.ok) {
         throw new Error('Error al obtener las tareas');
@@ -47,7 +45,6 @@ function TaskPage() {
 
       <div className="task-layout">
         <div className="task-form-column">
-          {/* onTaskAdded actualiza estado global de tasks */}
           <TaskForm
             onTaskAdded={(newTask) => {
               setTasks((prev) => [newTask, ...prev]);

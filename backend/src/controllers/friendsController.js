@@ -1,6 +1,5 @@
 // backend/src/controllers/friendsController.js
-
-const Friend = require('../models/Friend'); // Asegúrate de que el nombre del archivo coincide
+const Friend = require('../models/Friend');
 const { validationResult } = require('express-validator');
 
 const friendsController = {
@@ -13,12 +12,16 @@ const friendsController = {
     try {
       const fromUserId = req.user.id;
       const { to_user_id } = req.body;
-      if (fromUserId === to_user_id) {
-        return res.status(400).json({ error: 'No puedes enviarte una solicitud de amistad a ti mismo.' });
-      }
-      const friendReq = await Friend.sendRequest(fromUserId, to_user_id);
 
+      if (fromUserId === to_user_id) {
+        return res
+          .status(400)
+          .json({ error: 'No puedes enviarte una solicitud a ti mismo.' });
+      }
+
+      const friendReq = await Friend.sendRequest(fromUserId, to_user_id);
       if (!friendReq) {
+        // El modelo podría devolver null si ya hay una solicitud previa
         return res
           .status(400)
           .json({ error: 'Ya existe una solicitud o amistad con ese usuario.' });
@@ -33,7 +36,7 @@ const friendsController = {
   // Aceptar solicitud
   acceptRequest: async (req, res) => {
     try {
-      const friendReqId = req.params.id;
+      const friendReqId = req.params.id; // id de la fila en "friendship"
       const userId = req.user.id;
       const updated = await Friend.acceptRequest(friendReqId, userId);
       if (!updated) {

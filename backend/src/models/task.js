@@ -3,11 +3,7 @@ const pool = require('../config/db');
 
 const Task = {
   /**
-   * Crear una nueva tarea.
-   * Se asume que el frontend envía: 
-   * { status, difficulty, priority, ... } 
-   * y aquí los mapeamos a: 
-   *   state = status, difficulty como string, priority como text
+   * Crear una nueva tarea
    */
   async create(taskData) {
     const {
@@ -20,25 +16,29 @@ const Task = {
       start_date,
       end_date,
       is_active,
-      total_time_spent,
+      // total_time_spent => OPCIONAL, si existiera
     } = taskData;
 
-    // Mapeamos al esquema de la BD:
-    const stateValue = status || null; 
-    const difficultyValue = (difficulty !== undefined)
-      ? String(difficulty)
-      : null;
+    // Mapeos
+    const stateValue = status || null;
+    const difficultyValue = (difficulty !== undefined) ? String(difficulty) : null;
     const priorityValue = priority || null;
 
+    // (*) total_time_spent ya no es recomendable con Estrategia 1
+    // pero si sigue existiendo en la BD, lo inicializamos con '00:00:00'
     const query = `
-      INSERT INTO task
-        (user_id, title, description,
-         state, difficulty, priority,
-         start_date, end_date, is_active, total_time_spent, created_at)
-      VALUES
-        ($1, $2, $3,
-         $4, $5, $6,
-         $7, $8, $9, $10, now())
+      INSERT INTO task (
+        user_id, title, description,
+        state, difficulty, priority,
+        start_date, end_date, is_active,
+        total_time_spent, created_at
+      )
+      VALUES (
+        $1, $2, $3,
+        $4, $5, $6,
+        $7, $8, $9,
+        '00:00:00', now()
+      )
       RETURNING *
     `;
     const values = [
@@ -48,10 +48,9 @@ const Task = {
       stateValue,
       difficultyValue,
       priorityValue,
-      start_date || new Date(),
+      start_date || null,
       end_date || null,
       is_active || false,
-      total_time_spent || '00:00:00', // interval
     ];
 
     try {
@@ -63,11 +62,9 @@ const Task = {
     }
   },
 
-  // ---------------------------------------------------------------------------------
-  // Los demás métodos: getAll, getAllByUserId, etc. 
-  // (aquí solo resaltamos los relevantes).
-  // ---------------------------------------------------------------------------------
-
+  // --------------------------------------------------------------------------
+  // Métodos de obtención
+  // --------------------------------------------------------------------------
   async getAll() {
     const query = `
       SELECT * FROM task
@@ -99,11 +96,30 @@ const Task = {
     }
   },
 
+  // Si implementas "task_assignment" real, rellena:
+  async getAllAsCollaborator(userId) {
+    // Ejemplo real:
+    // SELECT t.* FROM task t
+    // JOIN task_assignment ta ON t.id = ta.task_id
+    // WHERE ta.user_id = $1 AND ta.role='collaborator'
+    // AND t.archived_at IS NULL
+    return [];
+  },
+
+  async getAllOwnerOrCollaborator(userId) {
+    const ownerTasks = await this.getAllByUserId(userId);
+    const collabTasks = await this.getAllAsCollaborator(userId);
+
+    const all = [...ownerTasks, ...collabTasks];
+    const map = new Map();
+    for (const t of all) {
+      map.set(t.id, t);
+    }
+    return Array.from(map.values());
+  },
+
   async getById(taskId) {
-    const query = `
-      SELECT * FROM task
-      WHERE id = $1
-    `;
+    const query = `SELECT * FROM task WHERE id = $1`;
     try {
       const { rows } = await pool.query(query, [taskId]);
       return rows[0];
@@ -128,13 +144,13 @@ const Task = {
     }
   },
 
-  /**
-   * Completar => state="Completed"
-   */
+  // --------------------------------------------------------------------------
+  // Completar, Archivar, Desarchivar
+  // --------------------------------------------------------------------------
   async complete(taskId) {
     const query = `
       UPDATE task
-      SET 
+      SET
         is_active = FALSE,
         state = 'Completed',
         completed_at = NOW(),
@@ -151,13 +167,10 @@ const Task = {
     }
   },
 
-  /**
-   * Archivar => state="Archived"
-   */
   async archive(taskId) {
     const query = `
       UPDATE task
-      SET 
+      SET
         archived_at = NOW(),
         state = 'Archived',
         updated_at = NOW()
@@ -173,14 +186,13 @@ const Task = {
     }
   },
 
-  /**
-   * Desarchivar => archived_at=NULL
-   */
   async unarchive(taskId) {
+    // (*) Ajuste para volver a 'Pending' cuando se desarchiva
     const query = `
       UPDATE task
       SET
         archived_at = NULL,
+        state = 'Pending',
         updated_at = NOW()
       WHERE id = $1
       RETURNING *
@@ -194,10 +206,9 @@ const Task = {
     }
   },
 
-  /**
-   * Actualizar una tarea
-   * (El front envía status => state, difficulty => text, priority => text)
-   */
+  // --------------------------------------------------------------------------
+  // Actualizar
+  // --------------------------------------------------------------------------
   async update(taskId, updateData) {
     const {
       title,
@@ -208,7 +219,7 @@ const Task = {
       start_date,
       end_date,
       is_active,
-      total_time_spent,
+      // total_time_spent => OJO si lo usas
     } = updateData;
 
     const fields = [];
@@ -228,7 +239,6 @@ const Task = {
       fields.push(`state = $${index++}`);
       values.push(status);
     }
-    // difficulty => text
     if (difficulty !== undefined) {
       fields.push(`difficulty = $${index++}`);
       values.push(String(difficulty));
@@ -249,11 +259,13 @@ const Task = {
       fields.push(`is_active = $${index++}`);
       values.push(is_active);
     }
-    if (total_time_spent !== undefined) {
-      // suponer que es algo en interval => sumamos
-      fields.push(`total_time_spent = total_time_spent + $${index++}`);
-      values.push(total_time_spent);
-    }
+
+    // Opcional: si quieres seguir soportando total_time_spent
+    // Pero con Estrategia 1 no es tan necesario
+    // if (total_time_spent !== undefined) {
+    //   fields.push(`total_time_spent = total_time_spent + $${index++}`);
+    //   values.push(total_time_spent);
+    // }
 
     if (fields.length === 0) {
       throw new Error('No hay campos para actualizar');
@@ -289,6 +301,9 @@ const Task = {
     }
   },
 
+  // --------------------------------------------------------------------------
+  // Tareas Archivadas
+  // --------------------------------------------------------------------------
   async getArchivedTasks() {
     const query = `
       SELECT * FROM task
@@ -320,7 +335,89 @@ const Task = {
     }
   },
 
-  // Y los métodos count... si requieres
+  // --------------------------------------------------------------------------
+  // shareTask => si usas task_assignment
+  // --------------------------------------------------------------------------
+  async shareTask(taskId, collaboratorId) {
+    // tu lógica real, p.ej:
+    // INSERT INTO task_assignment(task_id, user_id, role) VALUES(...)
+    // RETURNING ...
+    return null;
+  },
+
+  // --------------------------------------------------------------------------
+  // Métodos "dummy" para evitar error 500 en countAll, etc.
+  // --------------------------------------------------------------------------
+  async countAll() {
+    const query = `SELECT COUNT(*) AS cnt FROM task`;
+    const { rows } = await pool.query(query);
+    return parseInt(rows[0].cnt, 10);
+  },
+
+  async countByStatus(statusValue) {
+    const query = `SELECT COUNT(*) AS cnt FROM task WHERE state = $1`;
+    const { rows } = await pool.query(query, [statusValue]);
+    return parseInt(rows[0].cnt, 10);
+  },
+
+  async countAllForUser(userId) {
+    const query = `SELECT COUNT(*) AS cnt FROM task WHERE user_id = $1`;
+    const { rows } = await pool.query(query, [userId]);
+    return parseInt(rows[0].cnt, 10);
+  },
+
+  async countByStatusForUser(statusValue, userId) {
+    const query = `SELECT COUNT(*) AS cnt FROM task WHERE state = $1 AND user_id = $2`;
+    const { rows } = await pool.query(query, [statusValue, userId]);
+    return parseInt(rows[0].cnt, 10);
+  },
+
+  async getStackedPriorityDifficultyAll() {
+    // Devuelve array con { priority, difficulty_1, difficulty_2, ...}
+    // Ejemplo ficticio:
+    return [];
+  },
+
+  async getStackedPriorityDifficultyByUser(userId) {
+    // Devuelve array con { priority, difficulty_1, ...} para un user
+    return [];
+  },
+
+  // --------------------------------------------------------------------------
+  // addTime: Insertar en la tabla time_track
+  // --------------------------------------------------------------------------
+  async addTime(taskId, userId, durationHrs, comment) {
+    // Queremos insertar un registro en time_track,
+    // asumiendo que "durationHrs" es un número de horas en decimal.
+    // Generamos un "start_time" y "end_time" ficticio, o guardamos sólo end_time.
+    // Aquí simulo: end_time = now(), start_time = now() - durationHrs
+    // y guardamos el comment
+    const insertQuery = `
+      INSERT INTO time_track (
+        task_id, user_id,
+        start_time, end_time,
+        comment,
+        created_at
+      )
+      VALUES (
+        $1, $2,
+        NOW() - ($3 * INTERVAL '1 hour'),
+        NOW(),
+        $4,
+        NOW()
+      )
+      RETURNING *
+    `;
+    const values = [taskId, userId, durationHrs, comment || ''];
+
+    try {
+      const { rows } = await pool.query(insertQuery, values);
+      return rows[0];
+    } catch (error) {
+      console.error('Task.addTime:', error);
+      return null;
+    }
+  },
 };
 
 module.exports = Task;

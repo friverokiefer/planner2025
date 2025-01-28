@@ -252,7 +252,6 @@ module.exports = Profile;
 
 ----- backend/src/models/Friend.js -----
 // backend/src/models/Friend.js
-
 const pool = require('../config/db');
 
 const Friend = {
@@ -276,8 +275,8 @@ const Friend = {
 
     // Insertar nueva solicitud en estado 'pending'
     const insertQuery = `
-      INSERT INTO friendship (user_id, friend_id, status, created_at, updated_at)
-      VALUES ($1, $2, 'pending', NOW(), NOW())
+      INSERT INTO friendship (user_id, friend_id, status, created_at)
+      VALUES ($1, $2, 'pending', NOW())
       RETURNING *
     `;
     const values = [fromUserId, toUserId];
@@ -292,8 +291,7 @@ const Friend = {
     // Solo el destinatario (friend_id) puede aceptar
     const updateQuery = `
       UPDATE friendship
-        SET status = 'accepted',
-            updated_at = NOW()
+        SET status = 'accepted'
       WHERE id = $1
         AND friend_id = $2
       RETURNING *
@@ -310,8 +308,7 @@ const Friend = {
     // Solo el destinatario (friend_id) puede rechazar
     const updateQuery = `
       UPDATE friendship
-        SET status = 'rejected',
-            updated_at = NOW()
+        SET status = 'rejected'
       WHERE id = $1
         AND friend_id = $2
       RETURNING *
@@ -323,7 +320,7 @@ const Friend = {
 
   /**
    * Obtener todos los amigos (relaciones en status='accepted')
-   * para un usuario (userId). Se hace un JOIN para tener info de nombres y fotos.
+   * para un usuario (userId).
    */
   async getFriendsOfUser(userId) {
     const query = `
@@ -333,10 +330,12 @@ const Friend = {
         uf.name             AS from_name,
         uf.email            AS from_email,
         pf.profile_picture_url AS from_photo,
+
         -- Datos del usuario "friend_id"
         ut.name             AS to_name,
         ut.email            AS to_email,
         pt.profile_picture_url AS to_photo
+
       FROM friendship f
         JOIN users uf ON f.user_id = uf.id
         LEFT JOIN profiles pf ON pf.user_id = uf.id
@@ -354,7 +353,6 @@ const Friend = {
   /**
    * Lista de solicitudes pendientes para un usuario (userId).
    * Se asume que userId es el "destinatario" (friend_id).
-   * JOIN para obtener nombre y foto de quien envía la solicitud.
    */
   async getRequestsForUser(userId) {
     const query = `
@@ -377,10 +375,9 @@ const Friend = {
 
   /**
    * Buscar usuario por email o ID
-   * Se hace LEFT JOIN con la tabla profiles para también devolver la foto
    */
   async findUserByEmailOrId(queryText) {
-    // El ILIKE sirve para coincidencias parciales en email
+    // Se hace ILIKE para coincidencias parciales en email
     const sql = `
       SELECT 
         u.id,
@@ -509,11 +506,7 @@ const pool = require('../config/db');
 
 const Task = {
   /**
-   * Crear una nueva tarea.
-   * Se asume que el frontend envía: 
-   * { status, difficulty, priority, ... } 
-   * y aquí los mapeamos a: 
-   *   state = status, difficulty como string, priority como text
+   * Crear una nueva tarea
    */
   async create(taskData) {
     const {
@@ -526,25 +519,29 @@ const Task = {
       start_date,
       end_date,
       is_active,
-      total_time_spent,
+      // total_time_spent => OPCIONAL, si existiera
     } = taskData;
 
-    // Mapeamos al esquema de la BD:
-    const stateValue = status || null; 
-    const difficultyValue = (difficulty !== undefined)
-      ? String(difficulty)
-      : null;
+    // Mapeos
+    const stateValue = status || null;
+    const difficultyValue = (difficulty !== undefined) ? String(difficulty) : null;
     const priorityValue = priority || null;
 
+    // (*) total_time_spent ya no es recomendable con Estrategia 1
+    // pero si sigue existiendo en la BD, lo inicializamos con '00:00:00'
     const query = `
-      INSERT INTO task
-        (user_id, title, description,
-         state, difficulty, priority,
-         start_date, end_date, is_active, total_time_spent, created_at)
-      VALUES
-        ($1, $2, $3,
-         $4, $5, $6,
-         $7, $8, $9, $10, now())
+      INSERT INTO task (
+        user_id, title, description,
+        state, difficulty, priority,
+        start_date, end_date, is_active,
+        total_time_spent, created_at
+      )
+      VALUES (
+        $1, $2, $3,
+        $4, $5, $6,
+        $7, $8, $9,
+        '00:00:00', now()
+      )
       RETURNING *
     `;
     const values = [
@@ -554,10 +551,9 @@ const Task = {
       stateValue,
       difficultyValue,
       priorityValue,
-      start_date || new Date(),
+      start_date || null,
       end_date || null,
       is_active || false,
-      total_time_spent || '00:00:00', // interval
     ];
 
     try {
@@ -569,11 +565,9 @@ const Task = {
     }
   },
 
-  // ---------------------------------------------------------------------------------
-  // Los demás métodos: getAll, getAllByUserId, etc. 
-  // (aquí solo resaltamos los relevantes).
-  // ---------------------------------------------------------------------------------
-
+  // --------------------------------------------------------------------------
+  // Métodos de obtención
+  // --------------------------------------------------------------------------
   async getAll() {
     const query = `
       SELECT * FROM task
@@ -605,11 +599,30 @@ const Task = {
     }
   },
 
+  // Si implementas "task_assignment" real, rellena:
+  async getAllAsCollaborator(userId) {
+    // Ejemplo real:
+    // SELECT t.* FROM task t
+    // JOIN task_assignment ta ON t.id = ta.task_id
+    // WHERE ta.user_id = $1 AND ta.role='collaborator'
+    // AND t.archived_at IS NULL
+    return [];
+  },
+
+  async getAllOwnerOrCollaborator(userId) {
+    const ownerTasks = await this.getAllByUserId(userId);
+    const collabTasks = await this.getAllAsCollaborator(userId);
+
+    const all = [...ownerTasks, ...collabTasks];
+    const map = new Map();
+    for (const t of all) {
+      map.set(t.id, t);
+    }
+    return Array.from(map.values());
+  },
+
   async getById(taskId) {
-    const query = `
-      SELECT * FROM task
-      WHERE id = $1
-    `;
+    const query = `SELECT * FROM task WHERE id = $1`;
     try {
       const { rows } = await pool.query(query, [taskId]);
       return rows[0];
@@ -634,13 +647,13 @@ const Task = {
     }
   },
 
-  /**
-   * Completar => state="Completed"
-   */
+  // --------------------------------------------------------------------------
+  // Completar, Archivar, Desarchivar
+  // --------------------------------------------------------------------------
   async complete(taskId) {
     const query = `
       UPDATE task
-      SET 
+      SET
         is_active = FALSE,
         state = 'Completed',
         completed_at = NOW(),
@@ -657,13 +670,10 @@ const Task = {
     }
   },
 
-  /**
-   * Archivar => state="Archived"
-   */
   async archive(taskId) {
     const query = `
       UPDATE task
-      SET 
+      SET
         archived_at = NOW(),
         state = 'Archived',
         updated_at = NOW()
@@ -679,14 +689,13 @@ const Task = {
     }
   },
 
-  /**
-   * Desarchivar => archived_at=NULL
-   */
   async unarchive(taskId) {
+    // (*) Ajuste para volver a 'Pending' cuando se desarchiva
     const query = `
       UPDATE task
       SET
         archived_at = NULL,
+        state = 'Pending',
         updated_at = NOW()
       WHERE id = $1
       RETURNING *
@@ -700,10 +709,9 @@ const Task = {
     }
   },
 
-  /**
-   * Actualizar una tarea
-   * (El front envía status => state, difficulty => text, priority => text)
-   */
+  // --------------------------------------------------------------------------
+  // Actualizar
+  // --------------------------------------------------------------------------
   async update(taskId, updateData) {
     const {
       title,
@@ -714,7 +722,7 @@ const Task = {
       start_date,
       end_date,
       is_active,
-      total_time_spent,
+      // total_time_spent => OJO si lo usas
     } = updateData;
 
     const fields = [];
@@ -734,7 +742,6 @@ const Task = {
       fields.push(`state = $${index++}`);
       values.push(status);
     }
-    // difficulty => text
     if (difficulty !== undefined) {
       fields.push(`difficulty = $${index++}`);
       values.push(String(difficulty));
@@ -755,11 +762,13 @@ const Task = {
       fields.push(`is_active = $${index++}`);
       values.push(is_active);
     }
-    if (total_time_spent !== undefined) {
-      // suponer que es algo en interval => sumamos
-      fields.push(`total_time_spent = total_time_spent + $${index++}`);
-      values.push(total_time_spent);
-    }
+
+    // Opcional: si quieres seguir soportando total_time_spent
+    // Pero con Estrategia 1 no es tan necesario
+    // if (total_time_spent !== undefined) {
+    //   fields.push(`total_time_spent = total_time_spent + $${index++}`);
+    //   values.push(total_time_spent);
+    // }
 
     if (fields.length === 0) {
       throw new Error('No hay campos para actualizar');
@@ -795,6 +804,9 @@ const Task = {
     }
   },
 
+  // --------------------------------------------------------------------------
+  // Tareas Archivadas
+  // --------------------------------------------------------------------------
   async getArchivedTasks() {
     const query = `
       SELECT * FROM task
@@ -826,15 +838,96 @@ const Task = {
     }
   },
 
-  // Y los métodos count... si requieres
+  // --------------------------------------------------------------------------
+  // shareTask => si usas task_assignment
+  // --------------------------------------------------------------------------
+  async shareTask(taskId, collaboratorId) {
+    // tu lógica real, p.ej:
+    // INSERT INTO task_assignment(task_id, user_id, role) VALUES(...)
+    // RETURNING ...
+    return null;
+  },
+
+  // --------------------------------------------------------------------------
+  // Métodos "dummy" para evitar error 500 en countAll, etc.
+  // --------------------------------------------------------------------------
+  async countAll() {
+    const query = `SELECT COUNT(*) AS cnt FROM task`;
+    const { rows } = await pool.query(query);
+    return parseInt(rows[0].cnt, 10);
+  },
+
+  async countByStatus(statusValue) {
+    const query = `SELECT COUNT(*) AS cnt FROM task WHERE state = $1`;
+    const { rows } = await pool.query(query, [statusValue]);
+    return parseInt(rows[0].cnt, 10);
+  },
+
+  async countAllForUser(userId) {
+    const query = `SELECT COUNT(*) AS cnt FROM task WHERE user_id = $1`;
+    const { rows } = await pool.query(query, [userId]);
+    return parseInt(rows[0].cnt, 10);
+  },
+
+  async countByStatusForUser(statusValue, userId) {
+    const query = `SELECT COUNT(*) AS cnt FROM task WHERE state = $1 AND user_id = $2`;
+    const { rows } = await pool.query(query, [statusValue, userId]);
+    return parseInt(rows[0].cnt, 10);
+  },
+
+  async getStackedPriorityDifficultyAll() {
+    // Devuelve array con { priority, difficulty_1, difficulty_2, ...}
+    // Ejemplo ficticio:
+    return [];
+  },
+
+  async getStackedPriorityDifficultyByUser(userId) {
+    // Devuelve array con { priority, difficulty_1, ...} para un user
+    return [];
+  },
+
+  // --------------------------------------------------------------------------
+  // addTime: Insertar en la tabla time_track
+  // --------------------------------------------------------------------------
+  async addTime(taskId, userId, durationHrs, comment) {
+    // Queremos insertar un registro en time_track,
+    // asumiendo que "durationHrs" es un número de horas en decimal.
+    // Generamos un "start_time" y "end_time" ficticio, o guardamos sólo end_time.
+    // Aquí simulo: end_time = now(), start_time = now() - durationHrs
+    // y guardamos el comment
+    const insertQuery = `
+      INSERT INTO time_track (
+        task_id, user_id,
+        start_time, end_time,
+        comment,
+        created_at
+      )
+      VALUES (
+        $1, $2,
+        NOW() - ($3 * INTERVAL '1 hour'),
+        NOW(),
+        $4,
+        NOW()
+      )
+      RETURNING *
+    `;
+    const values = [taskId, userId, durationHrs, comment || ''];
+
+    try {
+      const { rows } = await pool.query(insertQuery, values);
+      return rows[0];
+    } catch (error) {
+      console.error('Task.addTime:', error);
+      return null;
+    }
+  },
 };
 
 module.exports = Task;
 
 ----- backend/src/controllers/friendsController.js -----
 // backend/src/controllers/friendsController.js
-
-const Friend = require('../models/Friend'); // Asegúrate de que el nombre del archivo coincide
+const Friend = require('../models/Friend');
 const { validationResult } = require('express-validator');
 
 const friendsController = {
@@ -847,12 +940,16 @@ const friendsController = {
     try {
       const fromUserId = req.user.id;
       const { to_user_id } = req.body;
-      if (fromUserId === to_user_id) {
-        return res.status(400).json({ error: 'No puedes enviarte una solicitud de amistad a ti mismo.' });
-      }
-      const friendReq = await Friend.sendRequest(fromUserId, to_user_id);
 
+      if (fromUserId === to_user_id) {
+        return res
+          .status(400)
+          .json({ error: 'No puedes enviarte una solicitud a ti mismo.' });
+      }
+
+      const friendReq = await Friend.sendRequest(fromUserId, to_user_id);
       if (!friendReq) {
+        // El modelo podría devolver null si ya hay una solicitud previa
         return res
           .status(400)
           .json({ error: 'Ya existe una solicitud o amistad con ese usuario.' });
@@ -867,7 +964,7 @@ const friendsController = {
   // Aceptar solicitud
   acceptRequest: async (req, res) => {
     try {
-      const friendReqId = req.params.id;
+      const friendReqId = req.params.id; // id de la fila en "friendship"
       const userId = req.user.id;
       const updated = await Friend.acceptRequest(friendReqId, userId);
       if (!updated) {
@@ -1027,17 +1124,44 @@ module.exports = userController;
 const Task = require('../models/task');
 const { validationResult } = require('express-validator');
 
+/**
+ * EJEMPLO DE FUNCIÓN AUXILIAR (opcional)
+ * para parsear el query param filter=owner|collaborator|all
+ */
+function getFilterParam(req) {
+  // Si no viene ?filter=..., por defecto = 'all'
+  const validFilters = ['owner', 'collaborator', 'all'];
+  const filter = (req.query.filter || 'all').toLowerCase();
+  return validFilters.includes(filter) ? filter : 'all';
+}
+
 const tasksController = {
   /**
-   * Obtener todas las tareas (no archivadas)
+   * Obtener tareas (NO archivadas) con posibilidad de filtrar
+   * ?filter=owner|collaborator|all
    */
   getAllTasks: async (req, res) => {
     try {
+      // Usamos el query param
+      const filter = getFilterParam(req);
+
       let tasks;
       if (req.user.role === 'admin') {
+        // Admin ve todo (ignora filter => puede verse unificado si gustas)
         tasks = await Task.getAll();
       } else {
-        tasks = await Task.getAllByUserId(req.user.id);
+        if (filter === 'owner') {
+          tasks = await Task.getAllByUserId(req.user.id); // Tareas donde user_id = user
+        } else if (filter === 'collaborator') {
+          // Requiere un método en tu modelo: getAllAsCollaborator
+          // Que busque en la tabla task_assignment (o similar) las tareas donde
+          // user = req.user.id y role = 'collaborator'
+          tasks = await Task.getAllAsCollaborator(req.user.id);
+        } else {
+          // 'all' => Owner + Colaborador
+          // un método getAllByUserOwnerOrCollab, o la union de ambos
+          tasks = await Task.getAllOwnerOrCollaborator(req.user.id);
+        }
       }
       res.json(tasks);
     } catch (error) {
@@ -1258,23 +1382,33 @@ const tasksController = {
    *   totalTasks,
    *   completed,
    *   pending,
-   *   inProgress
+   *   inProgress,
+   *   stackedData: [
+   *     { priority: 'Low', difficulty_1: X, difficulty_2: Y, ... },
+   *     ...
+   *   ]
    * }
    */
   getStats: async (req, res) => {
     try {
       let totalTasks, completed, pending, inProgress;
+      // stackedData => agrupar por priority + difficulty
+      let stackedData = [];
 
       if (req.user.role === 'admin') {
         totalTasks = await Task.countAll();
         completed = await Task.countByStatus('Completed');
         pending = await Task.countByStatus('Pending');
         inProgress = await Task.countByStatus('In Progress');
+        // Por ejemplo, un método getStackedPriorityDifficultyAll()
+        stackedData = await Task.getStackedPriorityDifficultyAll();
       } else {
         totalTasks = await Task.countAllForUser(req.user.id);
         completed = await Task.countByStatusForUser('Completed', req.user.id);
         pending = await Task.countByStatusForUser('Pending', req.user.id);
         inProgress = await Task.countByStatusForUser('In Progress', req.user.id);
+        // getStackedPriorityDifficultyByUser
+        stackedData = await Task.getStackedPriorityDifficultyByUser(req.user.id);
       }
 
       return res.json({
@@ -1282,10 +1416,77 @@ const tasksController = {
         completed,
         pending,
         inProgress,
+        stackedData,
       });
     } catch (error) {
       console.error('Error al obtener estadísticas:', error);
       res.status(500).json({ error: 'Error al obtener estadísticas' });
+    }
+  },
+
+  /**
+   * Compartir una tarea con otro usuario => INSERT en task_assignment (role='collaborator')
+   */
+  shareTask: async (req, res) => {
+    try {
+      const taskId = req.params.id;
+      const { collaborator_id } = req.body;
+
+      // 1) Verificar que la tarea sea del user (owner) o que sea admin
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(taskId);
+      } else {
+        task = await Task.getByIdAndUser(taskId, req.user.id);
+      }
+      if (!task) {
+        return res.status(403).json({ error: 'No tienes permiso para compartir esta tarea' });
+      }
+
+      // 2) Llamar a un método del modelo:
+      // p.ej. Task.shareTask(taskId, collaborator_id)
+      const result = await Task.shareTask(taskId, collaborator_id);
+      if (!result) {
+        return res.status(400).json({ error: 'No se pudo asignar al colaborador (¿ya existe?)' });
+      }
+      return res.json({ msg: 'Tarea compartida con éxito', assignment: result });
+    } catch (error) {
+      console.error('Error al compartir la tarea:', error);
+      return res.status(500).json({ error: 'Error al compartir la tarea' });
+    }
+  },
+
+  /**
+   * Agregar tiempo trabajado (en horas) + comentario opcional
+   * => Actualiza la sumatoria en la BD (p.ej. en una tabla task_time_summary) y opcionalmente inserta un comment
+   */
+  addTime: async (req, res) => {
+    try {
+      const taskId = req.params.id;
+      const { duration, comment } = req.body;
+
+      // 1) Verificar que user sea owner o collaborator
+      let task;
+      if (req.user.role === 'admin') {
+        task = await Task.getById(taskId);
+      } else {
+        // O un método: getByIdAndUserOrCollab(taskId, req.user.id)
+        task = await Task.getByIdAndUser(taskId, req.user.id);
+        // (Si colaborador => también debería retornar esa tarea)
+      }
+      if (!task) {
+        return res.status(403).json({ error: 'No tienes permiso para añadir tiempo a esta tarea' });
+      }
+
+      // 2) Llamar al modelo p.ej. Task.addTime(taskId, req.user.id, duration, comment)
+      const result = await Task.addTime(taskId, req.user.id, duration, comment);
+      if (!result) {
+        return res.status(400).json({ error: 'No se pudo agregar el tiempo' });
+      }
+      return res.json({ msg: 'Tiempo agregado', data: result });
+    } catch (error) {
+      console.error('Error al agregar tiempo:', error);
+      return res.status(500).json({ error: 'Error al agregar tiempo' });
     }
   },
 };
@@ -1727,9 +1928,8 @@ module.exports = router;
 
 ----- backend/src/routes/friends.js -----
 // backend/src/routes/friends.js
-
 const express = require('express');
-const router = express.Router(); // Asegúrate de que estás usando express.Router()
+const router = express.Router();
 const friendsController = require('../controllers/friendsController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { body, query, param } = require('express-validator');
@@ -1758,16 +1958,20 @@ router.post(
 );
 
 // Aceptar
-router.put('/:id/accept', [
-  param('id').isInt().withMessage('ID de solicitud debe ser un entero')
-], friendsController.acceptRequest);
+router.put(
+  '/:id/accept',
+  [param('id').isInt().withMessage('ID de solicitud debe ser un entero')],
+  friendsController.acceptRequest
+);
 
 // Rechazar
-router.put('/:id/reject', [
-  param('id').isInt().withMessage('ID de solicitud debe ser un entero')
-], friendsController.rejectRequest);
+router.put(
+  '/:id/reject',
+  [param('id').isInt().withMessage('ID de solicitud debe ser un entero')],
+  friendsController.rejectRequest
+);
 
-module.exports = router; // Exportar el router
+module.exports = router;
 
 ----- backend/src/routes/tasks.js -----
 // backend/src/routes/tasks.js
@@ -1782,8 +1986,8 @@ const { body, param } = require('express-validator');
 router.use(authMiddleware);
 
 /**
- * @route   GET /api/tasks
- * @desc    Obtener todas las tareas (administrador puede ver todas)
+ * @route   GET /api/tasks?filter=owner|collaborator|all
+ * @desc    Obtener todas las tareas (filtro optional) => ver tasksController.getAllTasks
  * @access  Privado
  */
 router.get('/', tasksController.getAllTasks);
@@ -1794,6 +1998,13 @@ router.get('/', tasksController.getAllTasks);
  * @access  Privado
  */
 router.get('/archived', tasksController.getArchivedTasks);
+
+/**
+ * @route   GET /api/tasks/stats
+ * @desc    Obtener estadísticas de tareas
+ * @access  Privado
+ */
+router.get('/stats', tasksController.getStats);
 
 /**
  * @route   GET /api/tasks/:id
@@ -1852,10 +2063,17 @@ router.put('/:id', tasksController.updateTask);
 router.delete('/:id', tasksController.deleteTask);
 
 /**
- * @route   GET /api/tasks/stats
- * @desc    Obtener estadísticas de tareas
+ * @route   POST /api/tasks/:id/share
+ * @desc    Compartir tarea con un colaborador
  * @access  Privado
  */
-router.get('/stats', tasksController.getStats);
+router.post('/:id/share', tasksController.shareTask);
+
+/**
+ * @route   PUT /api/tasks/:id/add-time
+ * @desc    Agregar tiempo trabajado + comentario
+ * @access  Privado
+ */
+router.put('/:id/add-time', tasksController.addTime);
 
 module.exports = router;

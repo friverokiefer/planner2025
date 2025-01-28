@@ -10,8 +10,8 @@ const { body, param } = require('express-validator');
 router.use(authMiddleware);
 
 /**
- * @route   GET /api/tasks
- * @desc    Obtener todas las tareas (administrador puede ver todas)
+ * @route   GET /api/tasks?filter=owner|collaborator|all
+ * @desc    Obtener todas las tareas (filtro optional) => ver tasksController.getAllTasks
  * @access  Privado
  */
 router.get('/', tasksController.getAllTasks);
@@ -22,6 +22,13 @@ router.get('/', tasksController.getAllTasks);
  * @access  Privado
  */
 router.get('/archived', tasksController.getArchivedTasks);
+
+/**
+ * @route   GET /api/tasks/stats
+ * @desc    Obtener estadísticas de tareas
+ * @access  Privado
+ */
+router.get('/stats', tasksController.getStats);
 
 /**
  * @route   GET /api/tasks/:id
@@ -80,10 +87,17 @@ router.put('/:id', tasksController.updateTask);
 router.delete('/:id', tasksController.deleteTask);
 
 /**
- * @route   GET /api/tasks/stats
- * @desc    Obtener estadísticas de tareas
+ * @route   POST /api/tasks/:id/share
+ * @desc    Compartir tarea con un colaborador
  * @access  Privado
  */
-router.get('/stats', tasksController.getStats);
+router.post('/:id/share', tasksController.shareTask);
+
+/**
+ * @route   PUT /api/tasks/:id/add-time
+ * @desc    Agregar tiempo trabajado + comentario
+ * @access  Privado
+ */
+router.put('/:id/add-time', tasksController.addTime);
 
 module.exports = router;

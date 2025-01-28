@@ -12,7 +12,7 @@ import {
   FaPlay,
   FaStop,
 } from 'react-icons/fa';
-import { Dropdown, Button, Alert } from 'react-bootstrap';
+import { Dropdown, Button, Alert, ProgressBar } from 'react-bootstrap';
 import EditTaskModal from '../EditTaskModal/EditTaskModal';
 import ConfirmModal from '../ConfirmModal/ConfirmModal';
 import Timer from '../Timer/Timer';
@@ -27,13 +27,16 @@ import archiveSound from '../../assets/sounds/intro-sound-2-269294.mp3';
 import authService from '../../services/authService';
 
 /**
- * Notas:
- * - El backend guarda "status" en la columna "state". Al traer la tarea, vendrá "state" con "Pending"/"Archived"/etc.
- *   Para simplificar, asumimos que en "task" llega "task.state" en lugar de "task.status".
- *   Pero si tu fetch te trae "status" directamente, ajusta la nomenclatura. 
+ * Notas importantes:
+ * - El backend guarda "state" para el estado de la tarea, en tu front lo llamas "status".
+ * - "estimated_time" y "actual_time" se manejan como horas numéricas (o strings parseables).
+ * - Para que la edición funcione (PUT /api/tasks/:id),
+ *   tu backend debe permitir actualizar los campos que mandas (priority, difficulty, state, etc.).
+ * - El mini gráfico de barra (ProgressBar) usará estimated_time y actual_time para calcular porcentaje.
  */
+
 function TaskItem({
-  task,          // { state, priority, difficulty, ... }
+  task,          // objeto con { id, title, description, state, priority, difficulty, estimated_time, actual_time, ...}
   onComplete,
   onDelete,
   onEdit,
@@ -44,8 +47,11 @@ function TaskItem({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [actionError, setActionError] = useState('');
   const [timerActive, setTimerActive] = useState(false);
-  const [timeWorked, setTimeWorked] = useState(task.actual_time || 0);
 
+  // Si la tarea trae actual_time (num) lo asignamos, si no, 0
+  const [timeWorked, setTimeWorked] = useState(parseFloat(task.actual_time) || 0);
+
+  // Sonidos
   const playCompleteSound = useSound(completeSound);
   const playDeleteSound = useSound(deleteSound);
   const playEditSound = useSound(editSound);
@@ -57,15 +63,16 @@ function TaskItem({
     return null;
   }
 
-  // OJO: en la BD "state" = front "status"
-  const status = task.state || 'Pending'; // Valor real del estado
+  // "state" => status en el front
+  const status = task.state || 'Pending';
   const difficulty = parseInt(task.difficulty || '1', 10); // "1","2","3"
   const priority = task.priority || 'Low';
-
   const user = authService.getCurrentUser();
   const token = user?.token;
 
-  // Helpers: mostrar label en español
+  // ~~~~~~~~~~~~~~~~~~~~~~
+  // 1) Helpers de Etiquetas
+  // ~~~~~~~~~~~~~~~~~~~~~~
   const getStatusLabel = (st) => {
     switch (st) {
       case 'Pending':
@@ -105,7 +112,51 @@ function TaskItem({
     }
   };
 
-  // Se llama tras guardar en el modal
+  // ~~~~~~~~~~~~~~~~~~~~~~
+  // 2) Helpers de Colores (están en tu code original)
+  // ~~~~~~~~~~~~~~~~~~~~~~
+  const getStatusColor = (st) => {
+    switch (st) {
+      case 'Pending':
+        return '#007bff'; // Azul
+      case 'In Progress':
+        return '#ffc107'; // Amarillo
+      case 'Completed':
+        return '#28a745'; // Verde
+      case 'Archived':
+        return '#6c757d'; // Gris
+      default:
+        return '#17a2b8';
+    }
+  };
+  const getDifficultyColor = (diff) => {
+    switch (diff) {
+      case 1:
+        return '#28a745'; // Verde
+      case 2:
+        return '#ffc107'; // Amarillo
+      case 3:
+        return '#dc3545'; // Rojo
+      default:
+        return '#6c757d';
+    }
+  };
+  const getPriorityColor = (prio) => {
+    switch ((prio || '').toLowerCase()) {
+      case 'low':
+        return '#007bff'; // Azul
+      case 'medium':
+        return '#ffc107'; // Amarillo
+      case 'high':
+        return '#dc3545'; // Rojo
+      default:
+        return '#6c757d';
+    }
+  };
+
+  // ~~~~~~~~~~~~~~~~~~~~~~
+  // 3) Manejo de Edición (PUT /:id)
+  // ~~~~~~~~~~~~~~~~~~~~~~
   const handleEditSave = async (updatedTaskData) => {
     setActionError('');
     try {
@@ -119,7 +170,7 @@ function TaskItem({
       });
       if (response.ok) {
         const updatedTask = await response.json();
-        if (onEdit) onEdit(updatedTask);
+        onEdit && onEdit(updatedTask);
         playEditSound();
         setShowEditModal(false);
       } else {
@@ -132,7 +183,9 @@ function TaskItem({
     }
   };
 
-  // Confirmar borrado
+  // ~~~~~~~~~~~~~~~~~~~~~~
+  // 4) Manejo de Borrado
+  // ~~~~~~~~~~~~~~~~~~~~~~
   const handleDelete = () => setShowDeleteConfirm(true);
   const confirmDelete = async () => {
     setActionError('');
@@ -155,7 +208,9 @@ function TaskItem({
     }
   };
 
-  // Completar => PUT /complete
+  // ~~~~~~~~~~~~~~~~~~~~~~
+  // 5) Manejo de Completar
+  // ~~~~~~~~~~~~~~~~~~~~~~
   const handleComplete = async () => {
     setActionError('');
     try {
@@ -177,7 +232,9 @@ function TaskItem({
     }
   };
 
-  // Archivar => PUT /archive
+  // ~~~~~~~~~~~~~~~~~~~~~~
+  // 6) Manejo de Archivar/Desarchivar
+  // ~~~~~~~~~~~~~~~~~~~~~~
   const handleArchive = async () => {
     setActionError('');
     try {
@@ -198,8 +255,6 @@ function TaskItem({
       setActionError('Error al archivar la tarea');
     }
   };
-
-  // Desarchivar => PUT /unarchive
   const handleUnarchive = async () => {
     setActionError('');
     try {
@@ -221,102 +276,40 @@ function TaskItem({
     }
   };
 
-  // Cambiar STATUS desde dropdown => PUT /api/tasks/:id con { status: newStatus }
-  const handleStatusChange = async (newStatus) => {
-    setActionError('');
-    try {
-      const response = await fetch(`/api/tasks/${task.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (response.ok) {
-        const updatedTask = await response.json();
-        onEdit && onEdit(updatedTask);
-      } else {
-        const errorData = await response.json();
-        setActionError(errorData.error || 'Error al actualizar estado');
-      }
-    } catch (error) {
-      console.error('Error al actualizar estado:', error);
-      setActionError('Error al actualizar estado');
-    }
-  };
-
-  // Cambiar DIFICULTAD => { difficulty: newDiff } (1,2,3)
-  const handleDifficultyChange = async (newDiff) => {
-    setActionError('');
-    try {
-      const response = await fetch(`/api/tasks/${task.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ difficulty: newDiff }),
-      });
-      if (response.ok) {
-        const updatedTask = await response.json();
-        onEdit && onEdit(updatedTask);
-      } else {
-        const errorData = await response.json();
-        setActionError(errorData.error || 'Error al actualizar dificultad');
-      }
-    } catch (error) {
-      console.error('Error al actualizar dificultad:', error);
-      setActionError('Error al actualizar dificultad');
-    }
-  };
-
-  // Cambiar PRIORIDAD => { priority: "Low"/"High"/...}
-  const handlePriorityChange = async (newPriority) => {
-    setActionError('');
-    try {
-      const response = await fetch(`/api/tasks/${task.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ priority: newPriority }),
-      });
-      if (response.ok) {
-        const updatedTask = await response.json();
-        onEdit && onEdit(updatedTask);
-      } else {
-        const errorData = await response.json();
-        setActionError(errorData.error || 'Error al actualizar prioridad');
-      }
-    } catch (error) {
-      console.error('Error al actualizar prioridad:', error);
-      setActionError('Error al actualizar prioridad');
-    }
-  };
-
-  // Temporizador
+  // ~~~~~~~~~~~~~~~~~~~~~~
+  // 7) Manejo de Timer + Tiempo
+  // ~~~~~~~~~~~~~~~~~~~~~~
   const handleStartTimer = () => {
     setTimerActive(true);
   };
-  const handleStopTimer = async (time) => {
+  const handleStopTimer = async (timeSpentHrs) => {
     setTimerActive(false);
-    setTimeWorked((prevTime) => prevTime + time);
     setActionError('');
+
+    // Actualiza la variable local
+    setTimeWorked((prev) => prev + timeSpentHrs);
+
+    // Llamamos a /api/tasks/:id/add-time con { duration }
     try {
+      // Pedimos un comentario en un prompt, si deseas
+      const userComment = window.prompt('Agrega un comentario (opcional):', '') || '';
       const response = await fetch(`/api/tasks/${task.id}/add-time`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        // Por ejemplo, { duration: 1.5 } en horas
-        body: JSON.stringify({ duration: time }),
+        body: JSON.stringify({ duration: timeSpentHrs, comment: userComment }),
       });
       if (response.ok) {
         const updatedTask = await response.json();
-        onEdit && onEdit(updatedTask);
+        // Notificamos al padre => forzar refresco
+        if (onEdit) {
+          onEdit({
+            ...task,
+            actual_time: (parseFloat(task.actual_time) || 0) + timeSpentHrs
+          });
+        }
       } else {
         const errorData = await response.json();
         setActionError(errorData.error || 'Error al agregar tiempo trabajado');
@@ -327,6 +320,16 @@ function TaskItem({
     }
   };
 
+  // ~~~~~~~~~~~~~~~~~~~~~~
+  // 8) Cálculo para la barra de porcentaje
+  // ~~~~~~~~~~~~~~~~~~~~~~
+  // assumed "task.estimated_time" y "task.actual_time" sean horas numéricas
+  const estimatedHours = parseFloat(task.estimated_time) || 0;
+  // timeWorked local es la sumatoria local, preferentemente
+  const actualHours = timeWorked;
+  const usedPercent = estimatedHours > 0 ? Math.min((actualHours / estimatedHours) * 100, 100) : 0;
+
+  // Render principal
   return (
     <>
       <div
@@ -334,7 +337,7 @@ function TaskItem({
           status === 'Completed' ? 'completed' : ''
         } ${status === 'Archived' ? 'archived' : ''}`}
       >
-        {/* Botón de menú (3 puntos) */}
+        {/* -- Menú Superior (3 puntos) -- */}
         <div className="dropdown-top-right">
           <Dropdown>
             <Dropdown.Toggle variant="secondary" id={`dropdown-${task.id}`}>
@@ -346,6 +349,7 @@ function TaskItem({
                   <Dropdown.Item onClick={() => setShowEditModal(true)}>
                     <FaEdit /> Editar
                   </Dropdown.Item>
+
                   {status !== 'Completed' && (
                     <Dropdown.Item
                       onClick={handleComplete}
@@ -378,7 +382,6 @@ function TaskItem({
                   <FaUndo /> Desarchivar
                 </Dropdown.Item>
               )}
-
               <Dropdown.Divider />
               <Dropdown.Item
                 onClick={handleDelete}
@@ -390,10 +393,11 @@ function TaskItem({
           </Dropdown>
         </div>
 
+        {/* -- Info Principal -- */}
         <h3>{task.title}</h3>
         <p>{task.description}</p>
 
-        {/* 3 dropdowns: Status, Difficulty, Priority */}
+        {/* -- Dropdowns Inline (opcional) => Status, Difficulty, Priority -- */}
         {status !== 'Archived' && (
           <div className="status-difficulty">
             {/* STATUS */}
@@ -410,19 +414,19 @@ function TaskItem({
               </Dropdown.Toggle>
               <Dropdown.Menu>
                 <Dropdown.Item
-                  onClick={() => handleStatusChange('Pending')}
+                  onClick={() => handleEditSave({ state: 'Pending' })}
                   className="status-pending"
                 >
                   Pendiente
                 </Dropdown.Item>
                 <Dropdown.Item
-                  onClick={() => handleStatusChange('In Progress')}
+                  onClick={() => handleEditSave({ state: 'In Progress' })}
                   className="status-in-progress"
                 >
                   En Progreso
                 </Dropdown.Item>
                 <Dropdown.Item
-                  onClick={() => handleStatusChange('Completed')}
+                  onClick={() => handleEditSave({ state: 'Completed' })}
                   className="status-completed"
                 >
                   Completado
@@ -430,7 +434,7 @@ function TaskItem({
               </Dropdown.Menu>
             </Dropdown>
 
-            {/* DIFICULTAD */}
+            {/* DIFICULTY */}
             <Dropdown className="difficulty-dropdown">
               <Dropdown.Toggle
                 variant="light"
@@ -444,19 +448,19 @@ function TaskItem({
               </Dropdown.Toggle>
               <Dropdown.Menu>
                 <Dropdown.Item
-                  onClick={() => handleDifficultyChange(1)}
+                  onClick={() => handleEditSave({ difficulty: '1' })}
                   className="difficulty-1"
                 >
                   1 - Fácil
                 </Dropdown.Item>
                 <Dropdown.Item
-                  onClick={() => handleDifficultyChange(2)}
+                  onClick={() => handleEditSave({ difficulty: '2' })}
                   className="difficulty-2"
                 >
                   2 - Medio
                 </Dropdown.Item>
                 <Dropdown.Item
-                  onClick={() => handleDifficultyChange(3)}
+                  onClick={() => handleEditSave({ difficulty: '3' })}
                   className="difficulty-3"
                 >
                   3 - Difícil
@@ -464,7 +468,7 @@ function TaskItem({
               </Dropdown.Menu>
             </Dropdown>
 
-            {/* PRIORIDAD */}
+            {/* PRIORITY */}
             <Dropdown className="priority-dropdown">
               <Dropdown.Toggle
                 variant="light"
@@ -477,13 +481,19 @@ function TaskItem({
                 {getPriorityLabel(priority)}
               </Dropdown.Toggle>
               <Dropdown.Menu>
-                <Dropdown.Item onClick={() => handlePriorityChange('Low')}>
+                <Dropdown.Item
+                  onClick={() => handleEditSave({ priority: 'Low' })}
+                >
                   Baja
                 </Dropdown.Item>
-                <Dropdown.Item onClick={() => handlePriorityChange('Medium')}>
+                <Dropdown.Item
+                  onClick={() => handleEditSave({ priority: 'Medium' })}
+                >
                   Media
                 </Dropdown.Item>
-                <Dropdown.Item onClick={() => handlePriorityChange('High')}>
+                <Dropdown.Item
+                  onClick={() => handleEditSave({ priority: 'High' })}
+                >
                   Alta
                 </Dropdown.Item>
               </Dropdown.Menu>
@@ -491,13 +501,27 @@ function TaskItem({
           </div>
         )}
 
+        {/* -- Fechas y Tiempos -- */}
         <p>Fecha de Creación: {new Date(task.created_at).toLocaleString()}</p>
-        {task.estimated_time && (
-          <p>Tiempo Estimado: {task.estimated_time} horas</p>
+        {estimatedHours > 0 && (
+          <p>Tiempo Estimado: {estimatedHours.toFixed(2)} horas</p>
         )}
-        {task.actual_time && <p>Tiempo Real: {timeWorked.toFixed(2)} horas</p>}
+        <p>Tiempo Real: {actualHours.toFixed(2)} horas</p>
 
-        {/* Botón "Completar" si no está completada ni archivada */}
+        {/* -- Mini Barra de Progreso -- */}
+        {estimatedHours > 0 && (
+          <div style={{ marginBottom: '0.5rem' }}>
+            <ProgressBar
+              now={usedPercent}
+              label={`${usedPercent.toFixed(1)}%`}
+              striped
+              animated
+              style={{ height: '20px' }}
+            />
+          </div>
+        )}
+
+        {/* -- Botón "Completar" si no está completada ni archivada -- */}
         {status !== 'Archived' && status !== 'Completed' && (
           <Button
             variant="success"
@@ -507,8 +531,7 @@ function TaskItem({
             <FaCheck /> Completar
           </Button>
         )}
-
-        {/* Botón "Desarchivar" si está archivada */}
+        {/* -- Botón "Desarchivar" si está archivada -- */}
         {status === 'Archived' && (
           <Button
             variant="info"
@@ -519,7 +542,7 @@ function TaskItem({
           </Button>
         )}
 
-        {/* Temporizador */}
+        {/* -- Temporizador -- */}
         {status !== 'Archived' && (
           <div className="timer-button">
             {timerActive ? (
@@ -534,18 +557,19 @@ function TaskItem({
           </div>
         )}
 
+        {/* -- Errores de Acción -- */}
         {actionError && <Alert variant="danger">{actionError}</Alert>}
 
+        {/* -- Temporizador Visible -- */}
         {timerActive && <Timer onStop={handleStopTimer} />}
       </div>
 
-      {/* Modal de edición */}
+      {/* -- Modal de edición manual (campos) -- */}
       <EditTaskModal
         show={showEditModal}
         handleClose={() => setShowEditModal(false)}
         task={{
           ...task,
-          // Pasamos status = state, difficulty=int, priority=string...
           status,
           difficulty,
           priority,
@@ -553,7 +577,7 @@ function TaskItem({
         handleSave={handleEditSave}
       />
 
-      {/* Modal de confirmación de borrado */}
+      {/* -- Modal de confirmación de borrado -- */}
       <ConfirmModal
         show={showDeleteConfirm}
         handleClose={() => setShowDeleteConfirm(false)}
@@ -564,47 +588,5 @@ function TaskItem({
     </>
   );
 }
-
-/** Colores de status, difficulty, priority (igual a TaskForm). */
-export const getStatusColor = (st) => {
-  switch (st) {
-    case 'Pending':
-      return '#007bff'; // Azul
-    case 'In Progress':
-      return '#ffc107'; // Amarillo
-    case 'Completed':
-      return '#28a745'; // Verde
-    case 'Archived':
-      return '#6c757d'; // Gris
-    default:
-      return '#17a2b8';
-  }
-};
-
-export const getDifficultyColor = (diff) => {
-  switch (diff) {
-    case 1:
-      return '#28a745'; // Verde
-    case 2:
-      return '#ffc107'; // Amarillo
-    case 3:
-      return '#dc3545'; // Rojo
-    default:
-      return '#6c757d';
-  }
-};
-
-export const getPriorityColor = (prio) => {
-  switch ((prio || '').toLowerCase()) {
-    case 'low':
-      return '#007bff'; // Azul
-    case 'medium':
-      return '#ffc107'; // Amarillo
-    case 'high':
-      return '#dc3545'; // Rojo
-    default:
-      return '#6c757d';
-  }
-};
 
 export default TaskItem;

@@ -1,171 +1,170 @@
 /* frontend/src/components/TaskItem/TaskItem.css */
 
 .task-item {
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    background-color: var(--neutral-white);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
-    position: relative;
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .task-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-  }
-  
-  /* Si la tarea está completada => verde claro */
-  .task-item.completed {
-    background-color: var(--accent-light-green);
-    border-color: var(--primary-green);
-  }
-  
-  /* Si la tarea está archivada => gris */
-  .task-item.archived {
-    background-color: var(--secondary-light-gray);
-    border-color: var(--secondary-dark-gray);
-  }
-  
-  .dropdown-top-right {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-  }
-  
-  .status-difficulty {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  
-  /* Botones dropdown */
-  .status-dropdown .dropdown-toggle,
-  .difficulty-dropdown .dropdown-toggle,
-  .priority-dropdown .dropdown-toggle {
-    border: none;
-    border-radius: 5px;
-    padding: 5px 10px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.2s ease-in-out;
-    color: #fff; /* texto blanco */
-  }
-  
-  .status-dropdown .dropdown-toggle:hover,
-  .difficulty-dropdown .dropdown-toggle:hover,
-  .priority-dropdown .dropdown-toggle:hover {
-    transform: translateY(-2px);
-  }
-  
-  /* El menú: anchura mínima */
-  .status-dropdown .dropdown-menu,
-  .difficulty-dropdown .dropdown-menu,
-  .priority-dropdown .dropdown-menu {
-    min-width: 150px;
-  }
-  
-  /* Items de color */
-  .status-dropdown .dropdown-item.status-pending {
-    color: var(--primary-blue);
-  }
-  .status-dropdown .dropdown-item.status-in-progress {
-    color: var(--primary-yellow);
-  }
-  .status-dropdown .dropdown-item.status-completed {
-    color: var(--primary-green);
-  }
-  
-  /* ... etc. en la misma línea para difficulty, priority ... */
-  
-  .complete-button {
-    align-self: flex-start;
-    background-color: var(--primary-green);
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    transition: background-color 0.3s, transform 0.2s;
-    font-weight: bold;
-  }
-  
-  .complete-button:hover {
-    background-color: #218838;
-    transform: translateY(-2px);
-  }
-  
-  .unarchive-button {
-    align-self: flex-start;
-    background-color: var(--accent-cyan);
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    transition: background-color 0.3s, transform 0.2s;
-    font-weight: bold;
-  }
-  
-  .unarchive-button:hover {
-    background-color: #138496;
-    transform: translateY(-2px);
-  }
-  
-  .timer-button {
-    align-self: flex-start;
-    margin-top: 10px;
-  }
-  
-  .timer-button .btn {
-    transition: background-color 0.3s, transform 0.2s;
-  }
-  
-  .timer-button .btn:hover {
-    transform: translateY(-2px);
-  }
-  
-  /* Menú items color */
-  .complete-dropdown-item {
-    color: var(--primary-green);
-  }
-  .continue-dropdown-item {
-    color: var(--primary-yellow);
-  }
-  .archive-dropdown-item {
-    color: var(--secondary-gray);
-  }
-  .unarchive-dropdown-item {
-    color: var(--accent-cyan);
-  }
-  .delete-dropdown-item {
-    color: var(--primary-red);
-  }
-  
-  /* Tipografía */
-  h3 {
-    color: var(--primary-blue);
-    font-size: 1.4rem;
-    margin-bottom: 5px;
-  }
-  
-  p {
-    font-size: 1rem;
-    color: var(--text-color);
-    line-height: 1.5;
-  }
-  
-  .timer-container {
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .timer-container p {
-    font-size: 1rem;
-    color: var(--text-color);
-  }
-  
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background-color: var(--neutral-white);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
+  position: relative;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.task-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Si la tarea está completada => verde claro */
+.task-item.completed {
+  background-color: var(--accent-light-green);
+  border-color: var(--primary-green);
+}
+
+/* Si la tarea está archivada => gris */
+.task-item.archived {
+  background-color: var(--secondary-light-gray);
+  border-color: var(--secondary-dark-gray);
+}
+
+.dropdown-top-right {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.status-difficulty {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* Botones dropdown */
+.status-dropdown .dropdown-toggle,
+.difficulty-dropdown .dropdown-toggle,
+.priority-dropdown .dropdown-toggle {
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+  color: #fff; /* texto blanco */
+}
+
+.status-dropdown .dropdown-toggle:hover,
+.difficulty-dropdown .dropdown-toggle:hover,
+.priority-dropdown .dropdown-toggle:hover {
+  transform: translateY(-2px);
+}
+
+/* El menú: anchura mínima */
+.status-dropdown .dropdown-menu,
+.difficulty-dropdown .dropdown-menu,
+.priority-dropdown .dropdown-menu {
+  min-width: 150px;
+}
+
+/* Items de color */
+.status-dropdown .dropdown-item.status-pending {
+  color: var(--primary-blue);
+}
+.status-dropdown .dropdown-item.status-in-progress {
+  color: var(--primary-yellow);
+}
+.status-dropdown .dropdown-item.status-completed {
+  color: var(--primary-green);
+}
+
+/* ... etc. en la misma línea para difficulty, priority ... */
+
+.complete-button {
+  align-self: flex-start;
+  background-color: var(--primary-green);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  transition: background-color 0.3s, transform 0.2s;
+  font-weight: bold;
+}
+
+.complete-button:hover {
+  background-color: #218838;
+  transform: translateY(-2px);
+}
+
+.unarchive-button {
+  align-self: flex-start;
+  background-color: var(--accent-cyan);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  transition: background-color 0.3s, transform 0.2s;
+  font-weight: bold;
+}
+
+.unarchive-button:hover {
+  background-color: #138496;
+  transform: translateY(-2px);
+}
+
+.timer-button {
+  align-self: flex-start;
+  margin-top: 10px;
+}
+
+.timer-button .btn {
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.timer-button .btn:hover {
+  transform: translateY(-2px);
+}
+
+/* Menú items color */
+.complete-dropdown-item {
+  color: var(--primary-green);
+}
+.continue-dropdown-item {
+  color: var(--primary-yellow);
+}
+.archive-dropdown-item {
+  color: var(--secondary-gray);
+}
+.unarchive-dropdown-item {
+  color: var(--accent-cyan);
+}
+.delete-dropdown-item {
+  color: var(--primary-red);
+}
+
+/* Tipografía */
+.task-item h3 {
+  color: var(--primary-blue);
+  font-size: 1.4rem;
+  margin-bottom: 5px;
+}
+
+.task-item p {
+  font-size: 1rem;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.timer-container {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.timer-container p {
+  font-size: 1rem;
+  color: var(--text-color);
+}

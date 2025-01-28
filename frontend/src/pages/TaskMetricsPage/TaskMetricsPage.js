@@ -12,10 +12,10 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  ResponsiveContainer,
+  ResponsiveContainer
 } from 'recharts';
-import { Alert } from 'react-bootstrap';
-import authService from '../../services/authService'; // Para enviar el token
+import { Alert, Form } from 'react-bootstrap';
+import authService from '../../services/authService';
 
 function TaskMetricsPage() {
   const [stats, setStats] = useState({
@@ -23,9 +23,10 @@ function TaskMetricsPage() {
     completed: 0,
     pending: 0,
     inProgress: 0,
-    stackedData: [], // priority/difficulty
+    stackedData: []
   });
   const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('all'); // 'owner' | 'collaborator' | 'all'
 
   const pieColors = ['#28a745', '#ffc107', '#007bff'];
   const difficultyColors = ['#6f42c1', '#20c997', '#fd7e14', '#dc3545', '#17a2b8'];
@@ -33,14 +34,13 @@ function TaskMetricsPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Obtener user/token
         const user = authService.getCurrentUser();
         if (!user || !user.token) {
           throw new Error('No hay usuario logueado o token no disponible');
         }
-
-        // Llamar al backend con Bearer token
-        const response = await fetch('/api/tasks/stats', {
+        // Llamar al backend con Bearer token y enviar un param ?filter=...
+        // Podrías tener /api/tasks/stats?filter=owner
+        const response = await fetch(`/api/tasks/stats?filter=${filter}`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -56,19 +56,17 @@ function TaskMetricsPage() {
       }
     };
     fetchStats();
-  }, []);
+  }, [filter]);
 
   // Pie chart
   const pieData = [
     { name: 'Completadas', value: stats.completed },
     { name: 'Pendientes', value: stats.pending },
-    { name: 'En Progreso', value: stats.inProgress },
+    { name: 'En Progreso', value: stats.inProgress }
   ];
 
-  // Evitar error forEach => fallback a []
   const safeStackedData = stats.stackedData || [];
 
-  // Analizar keys difficulty_1, difficulty_2, ...
   const allKeys = new Set();
   safeStackedData.forEach((item) => {
     Object.keys(item).forEach((k) => {
@@ -84,7 +82,17 @@ function TaskMetricsPage() {
       <h2 className="text-center">Task Metrics Dashboard</h2>
       {error && <Alert variant="danger">{error}</Alert>}
 
-      <div className="row">
+      {/* Selector de filtro */}
+      <Form.Group>
+        <Form.Label>Filtrar Tareas por Rol</Form.Label>
+        <Form.Select value={filter} onChange={(e) => setFilter(e.target.value)}>
+          <option value="all">Todo</option>
+          <option value="owner">Solo Owner</option>
+          <option value="collaborator">Solo Colaborador</option>
+        </Form.Select>
+      </Form.Group>
+
+      <div className="row mt-4">
         {/* Pie chart */}
         <div className="col-md-6">
           <h4 className="text-center">Estado de Tareas</h4>

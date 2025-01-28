@@ -1,12 +1,11 @@
 // frontend/src/pages/FriendsPage/FriendsPage.js
-
 import React, { useState, useEffect } from 'react';
 import authService from '../../services/authService';
 import useSound from '../../hooks/useSound';
 import { Alert, Button, Form, Card, Row, Col } from 'react-bootstrap';
-import friendRequestSound from '../../assets/sounds/intro-sound-4-270301.mp3'; // Ruta corregida
-import acceptSound from '../../assets/sounds/level-up-191997.mp3'; // Ruta corregida
-import errorSound from '../../assets/sounds/ui-sound-off-270300.mp3'; // Ruta corregida
+import friendRequestSound from '../../assets/sounds/intro-sound-4-270301.mp3';
+import acceptSound from '../../assets/sounds/level-up-191997.mp3';
+import errorSound from '../../assets/sounds/ui-sound-off-270300.mp3';
 import './FriendsPage.css';
 
 function FriendsPage() {
@@ -22,6 +21,7 @@ function FriendsPage() {
 
   const user = authService.getCurrentUser();
 
+  // Cargar amigos
   const fetchFriends = async () => {
     try {
       const res = await fetch('/api/friends/list', {
@@ -42,6 +42,7 @@ function FriendsPage() {
     }
   };
 
+  // Cargar solicitudes
   const fetchRequests = async () => {
     try {
       const res = await fetch('/api/friends/requests', {
@@ -68,14 +69,13 @@ function FriendsPage() {
     // eslint-disable-next-line
   }, []);
 
+  // Buscar usuarios
   const handleSearch = async (e) => {
     e.preventDefault();
     setError('');
     try {
       const res = await fetch(`/api/friends/search?query=${searchQuery}`, {
-        headers: {
-          Authorization: `Bearer ${user?.token}`,
-        },
+        headers: { Authorization: `Bearer ${user?.token}` },
       });
       if (res.ok) {
         const data = await res.json();
@@ -90,6 +90,7 @@ function FriendsPage() {
     }
   };
 
+  // Enviar solicitud
   const handleSendRequest = async (to_user_id) => {
     setError('');
     try {
@@ -115,6 +116,7 @@ function FriendsPage() {
     }
   };
 
+  // Aceptar solicitud
   const handleAccept = async (requestId) => {
     setError('');
     try {
@@ -136,6 +138,7 @@ function FriendsPage() {
     }
   };
 
+  // Rechazar solicitud
   const handleReject = async (requestId) => {
     setError('');
     try {
@@ -144,6 +147,7 @@ function FriendsPage() {
         headers: { Authorization: `Bearer ${user?.token}` },
       });
       if (res.ok) {
+        // Quitamos la solicitud del array local
         setRequests((prev) => prev.filter((r) => r.id !== requestId));
       } else {
         playErrorSound();
@@ -155,58 +159,45 @@ function FriendsPage() {
     }
   };
 
-  /**
-   * Si la foto del usuario (req.from_photo, etc.) está vacía,
-   * usamos /default_silueta.jpeg como fallback.
-   */
-  const getPhotoOrDefault = (url) => {
-    if (url && url.trim() !== '') {
-      return url;
-    }
-    return '/default_silueta.jpeg'; // Ruta correcta
-  };
+  const getPhotoOrDefault = (url) =>
+    url && url.trim() !== '' ? url : '/default_silueta.jpeg';
 
   return (
-    <div className="container my-4">
+    <div className="friends-page-container">
       <h2>Amigos & Solicitudes</h2>
       {error && <Alert variant="danger">{error}</Alert>}
 
-      {/* Sección de búsqueda */}
-      <Form onSubmit={handleSearch} className="mb-4">
-        <Form.Group>
-          <Form.Label>Buscar usuario por email o ID</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="user@example.com o 123"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </Form.Group>
-        <Button variant="primary" type="submit" className="mt-2">
-          Buscar
-        </Button>
-      </Form>
+      <div className="search-form mb-4">
+        <Form onSubmit={handleSearch}>
+          <Form.Group>
+            <Form.Label>Buscar usuario por email o ID</Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="user@example.com o 123"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </Form.Group>
+          <Button variant="primary" type="submit" className="mt-2">
+            Buscar
+          </Button>
+        </Form>
+      </div>
 
-      {/* Resultados de búsqueda */}
       {searchResults.length > 0 && (
-        <div className="mb-4">
+        <div className="search-results mb-4">
           <h4>Resultados de la búsqueda:</h4>
           <Row>
             {searchResults.map((u) => (
               <Col key={u.id} xs={12} md={6} lg={4} className="mb-3">
-                <Card>
+                <Card className="p-2">
                   <Card.Body className="d-flex align-items-center">
                     <img
                       src={getPhotoOrDefault(u.profile_picture_url)}
                       alt="avatar"
-                      style={{
-                        width: 50,
-                        height: 50,
-                        borderRadius: '50%',
-                        marginRight: 10,
-                      }}
+                      className="friend-avatar"
                     />
-                    <div>
+                    <div className="friend-info">
                       <div>
                         <strong>ID:</strong> {u.id}
                       </div>
@@ -215,12 +206,12 @@ function FriendsPage() {
                       </div>
                     </div>
                     <Button
-                      variant="info"
+                      variant="outline-primary"
                       size="sm"
                       onClick={() => handleSendRequest(u.id)}
-                      className="ml-auto"
+                      style={{ marginLeft: 'auto' }}
                     >
-                      Enviar Solicitud
+                      Enviar
                     </Button>
                   </Card.Body>
                 </Card>
@@ -230,8 +221,7 @@ function FriendsPage() {
         </div>
       )}
 
-      {/* Solicitudes pendientes */}
-      <div className="mb-4">
+      <div className="pending-requests mb-4">
         <h4>Solicitudes Recibidas</h4>
         {requests.length === 0 ? (
           <p>No tienes solicitudes pendientes.</p>
@@ -239,34 +229,30 @@ function FriendsPage() {
           <Row>
             {requests.map((req) => (
               <Col key={req.id} xs={12} md={6} lg={4} className="mb-3">
-                <Card>
+                <Card className="p-2">
                   <Card.Body className="d-flex align-items-center">
                     <img
                       src={getPhotoOrDefault(req.from_photo)}
                       alt="avatar"
-                      style={{
-                        width: 50,
-                        height: 50,
-                        borderRadius: '50%',
-                        marginRight: 10,
-                      }}
+                      className="friend-avatar"
                     />
-                    <div>
+                    <div className="friend-info">
                       <div>
-                        <strong>De:</strong> {req.from_name} (ID: {req.from_user_id})
+                        <strong>De:</strong> {req.from_name}{' '}
+                        <small>(ID: {req.from_user_id})</small>
                       </div>
                     </div>
-                    <div className="ml-auto">
+                    <div style={{ marginLeft: 'auto' }}>
                       <Button
                         variant="success"
                         size="sm"
                         onClick={() => handleAccept(req.id)}
-                        style={{ marginRight: '5px' }}
+                        style={{ marginRight: '8px' }}
                       >
                         Aceptar
                       </Button>
                       <Button
-                        variant="danger"
+                        variant="outline-danger"
                         size="sm"
                         onClick={() => handleReject(req.id)}
                       >
@@ -281,8 +267,7 @@ function FriendsPage() {
         )}
       </div>
 
-      {/* Amigos aceptados */}
-      <div>
+      <div className="accepted-friends">
         <h4>Mis Amigos</h4>
         {friends.length === 0 ? (
           <p>Aún no tienes amigos aceptados.</p>
@@ -296,19 +281,14 @@ function FriendsPage() {
 
               return (
                 <Col key={f.id} xs={12} md={6} lg={4} className="mb-3">
-                  <Card>
+                  <Card className="p-2">
                     <Card.Body className="d-flex align-items-center">
                       <img
                         src={getPhotoOrDefault(friendPhoto)}
                         alt="avatar"
-                        style={{
-                          width: 50,
-                          height: 50,
-                          borderRadius: '50%',
-                          marginRight: 10,
-                        }}
+                        className="friend-avatar"
                       />
-                      <div>
+                      <div className="friend-info">
                         <div>
                           <strong>ID:</strong> {friendId}
                         </div>
