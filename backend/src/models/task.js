@@ -3,28 +3,55 @@ const pool = require('../config/db');
 
 const Task = {
   /**
-   * Crear una nueva tarea
-   * @param {Object} taskData - Datos de la tarea
-   * @returns {Object} - Tarea creada
+   * Crear una nueva tarea.
+   * Se asume que el frontend envía: 
+   * { status, difficulty, priority, ... } 
+   * y aquí los mapeamos a: 
+   *   state = status, difficulty como string, priority como text
    */
   async create(taskData) {
-    const { user_id, title, description, start_date, end_date, is_active, total_time_spent } = taskData;
+    const {
+      user_id,
+      title,
+      description,
+      status,
+      difficulty,
+      priority,
+      start_date,
+      end_date,
+      is_active,
+      total_time_spent,
+    } = taskData;
+
+    // Mapeamos al esquema de la BD:
+    const stateValue = status || null; 
+    const difficultyValue = (difficulty !== undefined)
+      ? String(difficulty)
+      : null;
+    const priorityValue = priority || null;
 
     const query = `
-      INSERT INTO task 
-        (user_id, title, description, start_date, end_date, is_active, total_time_spent)
-      VALUES 
-        ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO task
+        (user_id, title, description,
+         state, difficulty, priority,
+         start_date, end_date, is_active, total_time_spent, created_at)
+      VALUES
+        ($1, $2, $3,
+         $4, $5, $6,
+         $7, $8, $9, $10, now())
       RETURNING *
     `;
     const values = [
       user_id,
       title,
       description || '',
+      stateValue,
+      difficultyValue,
+      priorityValue,
       start_date || new Date(),
-      is_active ? end_date : null,
+      end_date || null,
       is_active || false,
-      total_time_spent || 0, // Inicializar en 0 si no se proporciona
+      total_time_spent || '00:00:00', // interval
     ];
 
     try {
@@ -36,10 +63,11 @@ const Task = {
     }
   },
 
-  /**
-   * Obtener todas las tareas activas (sin archivar)
-   * @returns {Array} - Lista de tareas
-   */
+  // ---------------------------------------------------------------------------------
+  // Los demás métodos: getAll, getAllByUserId, etc. 
+  // (aquí solo resaltamos los relevantes).
+  // ---------------------------------------------------------------------------------
+
   async getAll() {
     const query = `
       SELECT * FROM task
@@ -55,15 +83,11 @@ const Task = {
     }
   },
 
-  /**
-   * Obtener todas las tareas activas de un usuario específico
-   * @param {Integer} userId - ID del usuario
-   * @returns {Array} - Lista de tareas
-   */
   async getAllByUserId(userId) {
     const query = `
       SELECT * FROM task
-      WHERE user_id = $1 AND archived_at IS NULL
+      WHERE user_id = $1
+        AND archived_at IS NULL
       ORDER BY created_at DESC
     `;
     try {
@@ -75,11 +99,6 @@ const Task = {
     }
   },
 
-  /**
-   * Obtener una tarea por su ID
-   * @param {Integer} taskId - ID de la tarea
-   * @returns {Object} - Tarea encontrada
-   */
   async getById(taskId) {
     const query = `
       SELECT * FROM task
@@ -94,16 +113,11 @@ const Task = {
     }
   },
 
-  /**
-   * Obtener una tarea por su ID y el ID del usuario
-   * @param {Integer} taskId - ID de la tarea
-   * @param {Integer} userId - ID del usuario
-   * @returns {Object} - Tarea encontrada
-   */
   async getByIdAndUser(taskId, userId) {
     const query = `
       SELECT * FROM task
-      WHERE id = $1 AND user_id = $2
+      WHERE id = $1
+        AND user_id = $2
     `;
     try {
       const { rows } = await pool.query(query, [taskId, userId]);
@@ -115,15 +129,17 @@ const Task = {
   },
 
   /**
-   * Completar una tarea (is_active = false, completed_at = NOW())
-   * @param {Integer} taskId - ID de la tarea
-   * @returns {Object} - Tarea actualizada
+   * Completar => state="Completed"
    */
   async complete(taskId) {
     const query = `
-      UPDATE task 
-      SET is_active = FALSE, completed_at = NOW(), updated_at = NOW() 
-      WHERE id = $1 
+      UPDATE task
+      SET 
+        is_active = FALSE,
+        state = 'Completed',
+        completed_at = NOW(),
+        updated_at = NOW()
+      WHERE id = $1
       RETURNING *
     `;
     try {
@@ -136,15 +152,16 @@ const Task = {
   },
 
   /**
-   * Archivar una tarea (archived_at = NOW())
-   * @param {Integer} taskId - ID de la tarea
-   * @returns {Object} - Tarea actualizada
+   * Archivar => state="Archived"
    */
   async archive(taskId) {
     const query = `
-      UPDATE task 
-      SET archived_at = NOW(), updated_at = NOW() 
-      WHERE id = $1 
+      UPDATE task
+      SET 
+        archived_at = NOW(),
+        state = 'Archived',
+        updated_at = NOW()
+      WHERE id = $1
       RETURNING *
     `;
     try {
@@ -157,15 +174,15 @@ const Task = {
   },
 
   /**
-   * Desarchivar una tarea (archived_at = NULL)
-   * @param {Integer} taskId - ID de la tarea
-   * @returns {Object} - Tarea actualizada
+   * Desarchivar => archived_at=NULL
    */
   async unarchive(taskId) {
     const query = `
-      UPDATE task 
-      SET archived_at = NULL, updated_at = NOW() 
-      WHERE id = $1 
+      UPDATE task
+      SET
+        archived_at = NULL,
+        updated_at = NOW()
+      WHERE id = $1
       RETURNING *
     `;
     try {
@@ -179,14 +196,21 @@ const Task = {
 
   /**
    * Actualizar una tarea
-   * @param {Integer} taskId - ID de la tarea
-   * @param {Object} updateData - Datos a actualizar
-   * @returns {Object} - Tarea actualizada
+   * (El front envía status => state, difficulty => text, priority => text)
    */
   async update(taskId, updateData) {
-    const { title, description, start_date, end_date, is_active, total_time_spent } = updateData;
+    const {
+      title,
+      description,
+      status,
+      difficulty,
+      priority,
+      start_date,
+      end_date,
+      is_active,
+      total_time_spent,
+    } = updateData;
 
-    // Construir dinámicamente la consulta de actualización
     const fields = [];
     const values = [];
     let index = 1;
@@ -199,6 +223,20 @@ const Task = {
       fields.push(`description = $${index++}`);
       values.push(description);
     }
+    // status => state
+    if (status !== undefined) {
+      fields.push(`state = $${index++}`);
+      values.push(status);
+    }
+    // difficulty => text
+    if (difficulty !== undefined) {
+      fields.push(`difficulty = $${index++}`);
+      values.push(String(difficulty));
+    }
+    if (priority !== undefined) {
+      fields.push(`priority = $${index++}`);
+      values.push(priority);
+    }
     if (start_date !== undefined) {
       fields.push(`start_date = $${index++}`);
       values.push(start_date);
@@ -210,12 +248,9 @@ const Task = {
     if (is_active !== undefined) {
       fields.push(`is_active = $${index++}`);
       values.push(is_active);
-      // Si is_active es false, limpiar end_date
-      if (!is_active) {
-        fields.push(`end_date = NULL`);
-      }
     }
     if (total_time_spent !== undefined) {
+      // suponer que es algo en interval => sumamos
       fields.push(`total_time_spent = total_time_spent + $${index++}`);
       values.push(total_time_spent);
     }
@@ -226,7 +261,7 @@ const Task = {
 
     const query = `
       UPDATE task
-      SET 
+      SET
         ${fields.join(', ')},
         updated_at = NOW()
       WHERE id = $${index}
@@ -243,16 +278,8 @@ const Task = {
     }
   },
 
-  /**
-   * Eliminar una tarea
-   * @param {Integer} taskId - ID de la tarea
-   * @returns {Boolean} - Verdadero si se eliminó, falso si no
-   */
   async delete(taskId) {
-    const query = `
-      DELETE FROM task
-      WHERE id = $1
-    `;
+    const query = `DELETE FROM task WHERE id = $1`;
     try {
       const res = await pool.query(query, [taskId]);
       return res.rowCount > 0;
@@ -262,10 +289,6 @@ const Task = {
     }
   },
 
-  /**
-   * Obtener tareas archivadas
-   * @returns {Array} - Lista de tareas archivadas
-   */
   async getArchivedTasks() {
     const query = `
       SELECT * FROM task
@@ -281,15 +304,11 @@ const Task = {
     }
   },
 
-  /**
-   * Obtener tareas archivadas de un usuario específico
-   * @param {Integer} userId - ID del usuario
-   * @returns {Array} - Lista de tareas archivadas
-   */
   async getArchivedTasksByUserId(userId) {
     const query = `
       SELECT * FROM task
-      WHERE archived_at IS NOT NULL AND user_id = $1
+      WHERE archived_at IS NOT NULL
+        AND user_id = $1
       ORDER BY archived_at DESC
     `;
     try {
@@ -301,45 +320,7 @@ const Task = {
     }
   },
 
-  /**
-   * Contar todas las tareas
-   * @returns {Integer} - Total de tareas
-   */
-  async countAll() {
-    const { rows } = await pool.query('SELECT COUNT(*) FROM task');
-    return parseInt(rows[0].count, 10);
-  },
-
-  /**
-   * Contar todas las tareas de un usuario
-   * @param {Integer} userId - ID del usuario
-   * @returns {Integer} - Total de tareas del usuario
-   */
-  async countAllForUser(userId) {
-    const { rows } = await pool.query('SELECT COUNT(*) FROM task WHERE user_id = $1', [userId]);
-    return parseInt(rows[0].count, 10);
-  },
-
-  /**
-   * Contar tareas por estado
-   * @param {String} status - Estado de la tarea ('Completed', 'Pending', 'In Progress')
-   * @returns {Integer} - Total de tareas en el estado dado
-   */
-  async countByStatus(status) {
-    const { rows } = await pool.query('SELECT COUNT(*) FROM task WHERE status = $1', [status]);
-    return parseInt(rows[0].count, 10);
-  },
-
-  /**
-   * Contar tareas por estado para un usuario
-   * @param {String} status - Estado de la tarea
-   * @param {Integer} userId - ID del usuario
-   * @returns {Integer} - Total de tareas en el estado dado para el usuario
-   */
-  async countByStatusForUser(status, userId) {
-    const { rows } = await pool.query('SELECT COUNT(*) FROM task WHERE status = $1 AND user_id = $2', [status, userId]);
-    return parseInt(rows[0].count, 10);
-  },
+  // Y los métodos count... si requieres
 };
 
 module.exports = Task;

@@ -302,7 +302,7 @@ import {
 import authService from './services/authService';
 
 import useSound from './hooks/useSound'; // Hook personalizado
-import clickSoundFile from './assets/sounds/ui-sound-off-270300.mp3';
+import clickSoundFile from './assets/sounds/notification-pluck-on-269288.mp3';
 
 function App() {
   const [user, setUser] = useState(undefined); // null o {token, id, role}
@@ -1074,8 +1074,13 @@ import React, { useState } from 'react';
 import './TaskForm.css';
 import useSound from '../../hooks/useSound';
 import addTaskSound from '../../assets/sounds/notification-1-269296.mp3';
-import { Form, Button, Alert, Spinner } from 'react-bootstrap';
-import { FaEdit, FaClock, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
+import { Form, Button, Alert, Spinner, Row, Col } from 'react-bootstrap';
+import {
+  FaEdit,
+  FaClock,
+  FaCheckCircle,
+  FaExclamationCircle,
+} from 'react-icons/fa';
 import authService from '../../services/authService';
 
 function TaskForm({ onTaskAdded }) {
@@ -1086,7 +1091,10 @@ function TaskForm({ onTaskAdded }) {
     difficulty: 1,
     status: 'Pending',
     estimated_time: '',
+    start_date: '',
+    end_date: '',
   });
+  const [enableEndDate, setEnableEndDate] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -1105,6 +1113,14 @@ function TaskForm({ onTaskAdded }) {
     setTask({ ...task, [name]: newValue });
   };
 
+  const handleToggleEndDate = () => {
+    setEnableEndDate((prev) => !prev);
+    // Al desactivar el switch, limpiamos el end_date
+    if (enableEndDate) {
+      setTask((prev) => ({ ...prev, end_date: '' }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -1117,6 +1133,15 @@ function TaskForm({ onTaskAdded }) {
       return;
     }
 
+    // Validar que la fecha de fin no sea anterior a la fecha de inicio
+    if (task.start_date && task.end_date) {
+      if (new Date(task.end_date) < new Date(task.start_date)) {
+        setError('La fecha de fin no puede ser anterior a la fecha de inicio.');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const user = authService.getCurrentUser();
       if (!user || !user.token) {
@@ -1125,18 +1150,25 @@ function TaskForm({ onTaskAdded }) {
         return;
       }
 
+      // Si no está habilitada la fecha de fin, la limpiamos antes de enviar
+      const finalTaskData = { ...task };
+      if (!enableEndDate) {
+        finalTaskData.end_date = '';
+      }
+
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
         },
-        body: JSON.stringify(task),
+        body: JSON.stringify(finalTaskData),
       });
 
       if (response.ok) {
         const newTask = await response.json();
         onTaskAdded(newTask);
+        // Resetear formulario y switch
         setTask({
           title: '',
           description: '',
@@ -1144,7 +1176,10 @@ function TaskForm({ onTaskAdded }) {
           difficulty: 1,
           status: 'Pending',
           estimated_time: '',
+          start_date: '',
+          end_date: '',
         });
+        setEnableEndDate(false);
         playAddSound();
         setMessage('Tarea agregada exitosamente.');
       } else {
@@ -1174,8 +1209,11 @@ function TaskForm({ onTaskAdded }) {
       {message && <Alert variant="success">{message}</Alert>}
       {error && <Alert variant="danger">{error}</Alert>}
 
+      {/* TÍTULO */}
       <Form.Group>
-        <Form.Label><FaEdit /> Título:</Form.Label>
+        <Form.Label>
+          <FaEdit /> Título:
+        </Form.Label>
         <Form.Control
           type="text"
           name="title"
@@ -1186,8 +1224,11 @@ function TaskForm({ onTaskAdded }) {
         />
       </Form.Group>
 
+      {/* DESCRIPCIÓN */}
       <Form.Group>
-        <Form.Label><FaEdit /> Descripción:</Form.Label>
+        <Form.Label>
+          <FaEdit /> Descripción:
+        </Form.Label>
         <Form.Control
           as="textarea"
           name="description"
@@ -1197,8 +1238,11 @@ function TaskForm({ onTaskAdded }) {
         />
       </Form.Group>
 
+      {/* PRIORIDAD */}
       <Form.Group>
-        <Form.Label><FaExclamationCircle /> Prioridad:</Form.Label>
+        <Form.Label>
+          <FaExclamationCircle /> Prioridad:
+        </Form.Label>
         <Form.Control
           as="select"
           name="priority"
@@ -1212,8 +1256,11 @@ function TaskForm({ onTaskAdded }) {
         </Form.Control>
       </Form.Group>
 
+      {/* DIFICULTAD */}
       <Form.Group>
-        <Form.Label><FaExclamationCircle /> Dificultad:</Form.Label>
+        <Form.Label>
+          <FaExclamationCircle /> Dificultad:
+        </Form.Label>
         <Form.Control
           as="select"
           name="difficulty"
@@ -1221,20 +1268,25 @@ function TaskForm({ onTaskAdded }) {
           onChange={handleChange}
           className={`difficulty-dropdown difficulty-${task.difficulty}`}
         >
-          <option value={1}>1 - Fácil</option>
-          <option value={2}>2 - Medio</option>
-          <option value={3}>3 - Difícil</option>
+          <option value={1}>1 – Fácil</option>
+          <option value={2}>2 – Medio</option>
+          <option value={3}>3 – Difícil</option>
         </Form.Control>
       </Form.Group>
 
+      {/* ESTADO */}
       <Form.Group>
-        <Form.Label><FaCheckCircle /> Estado:</Form.Label>
+        <Form.Label>
+          <FaCheckCircle /> Estado:
+        </Form.Label>
         <Form.Control
           as="select"
           name="status"
           value={task.status}
           onChange={handleChange}
-          className={`status-dropdown status-${task.status.toLowerCase().replace(' ', '-')}`}
+          className={`status-dropdown status-${task.status
+            .toLowerCase()
+            .replace(' ', '-')}`}
         >
           <option value="Pending">Pendiente</option>
           <option value="In Progress">En Progreso</option>
@@ -1242,8 +1294,11 @@ function TaskForm({ onTaskAdded }) {
         </Form.Control>
       </Form.Group>
 
+      {/* TIEMPO ESTIMADO */}
       <Form.Group>
-        <Form.Label><FaClock /> Tiempo Estimado (horas):</Form.Label>
+        <Form.Label>
+          <FaClock /> Tiempo Estimado (horas):
+        </Form.Label>
         <Form.Control
           type="number"
           name="estimated_time"
@@ -1254,6 +1309,51 @@ function TaskForm({ onTaskAdded }) {
           placeholder="Horas estimadas"
         />
       </Form.Group>
+
+      {/* FECHAS */}
+      <Row className="mt-3">
+        <Col md={6}>
+          <Form.Group>
+            <Form.Label>Fecha de Inicio:</Form.Label>
+            <Form.Control
+              type="date"
+              name="start_date"
+              value={task.start_date}
+              onChange={handleChange}
+              placeholder="dd-mm-yyyy"
+            />
+          </Form.Group>
+        </Col>
+
+        <Col md={6}>
+          {/* Switch para activar/desactivar la fecha de fin */}
+          <Form.Group>
+            <Form.Label>Activar Fecha de Fin:</Form.Label>
+            <Form.Check
+              type="switch"
+              id="enable-end-date-switch"
+              label="Sí"
+              checked={enableEndDate}
+              onChange={handleToggleEndDate}
+              className="mb-2"
+            />
+          </Form.Group>
+
+          {/* Al activar el switch, aparece el campo para la fecha de fin */}
+          {enableEndDate && (
+            <Form.Group>
+              <Form.Label>Fecha de Fin:</Form.Label>
+              <Form.Control
+                type="date"
+                name="end_date"
+                value={task.end_date}
+                onChange={handleChange}
+                placeholder="dd-mm-yyyy"
+              />
+            </Form.Group>
+          )}
+        </Col>
+      </Row>
 
       <Button
         type="submit"
@@ -1284,176 +1384,167 @@ export default TaskForm;
 
 ----- frontend/src/components/TaskForm/TaskForm.css -----
 /* frontend/src/components/TaskForm.css */
+
+/* Contenedor general del formulario */
 .task-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    background-color: #f8f9fa;
-  }
-  
-  .form-title {
-    text-align: center;
-    color: var(--primary-color);
-    margin-bottom: 20px;
-    font-size: 1.8rem;
-  }
-  
-  .task-form .form-group {
-    margin-bottom: 20px;
-  }
-  
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 25px;
+  border-radius: 10px;
+  background-color: #fff; /* Fondo blanco para un mayor contraste */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Título del formulario */
+.form-title {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+  color: var(--primary-color);
+}
+
+/* Espaciado y disposición de grupos de campos */
+.task-form .form-group {
+  margin-bottom: 15px;
+}
+
+/* Labels con íconos */
+.task-form label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  color: var(--text-color);
+  margin-bottom: 5px;
+}
+
+.task-form label svg {
+  font-size: 1.2rem;
+}
+
+/* Campos de texto y selects */
+.task-form input,
+.task-form textarea,
+.task-form select {
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.task-form input:focus,
+.task-form textarea:focus,
+.task-form select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 6px rgba(0, 123, 255, 0.5);
+  outline: none;
+}
+
+/* Botón de agregar tarea */
+.add-task-button {
+  width: 100%;
+  background: linear-gradient(135deg, var(--success-color), var(--info-color));
+  color: white;
+  padding: 12px 20px;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition:
+    background 0.3s,
+    transform 0.2s,
+    box-shadow 0.3s;
+}
+
+.add-task-button:hover {
+  background: linear-gradient(135deg, #218838, #138496);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Mensajes de éxito y error */
+.success {
+  color: var(--success-color);
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.error {
+  color: var(--danger-color);
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+/* Flecha personalizada para los selects */
+.task-form .form-control {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%23333' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 8px;
+  padding-right: 30px; /* Espacio para la flecha del select */
+}
+
+/* Estilos para selects de prioridad, dificultad y estado */
+.task-form .priority-dropdown.priority-low,
+.task-form .status-dropdown.status-pending {
+  background-color: #007bff; /* Azul */
+  color: white;
+}
+
+.task-form .priority-dropdown.priority-medium,
+.task-form .status-dropdown.status-in-progress {
+  background-color: #ffc107; /* Amarillo */
+  color: black;
+}
+
+.task-form .priority-dropdown.priority-high {
+  background-color: #dc3545; /* Rojo */
+  color: white;
+}
+
+.task-form .difficulty-dropdown.difficulty-1 {
+  background-color: #28a745; /* Verde */
+  color: white;
+}
+
+.task-form .difficulty-dropdown.difficulty-2 {
+  background-color: #ffc107; /* Amarillo */
+  color: black;
+}
+
+.task-form .difficulty-dropdown.difficulty-3 {
+  background-color: #dc3545; /* Rojo */
+  color: white;
+}
+
+.task-form .status-dropdown.status-completed {
+  background-color: #28a745; /* Verde */
+  color: white;
+}
+
+/* Responsividad para pantallas pequeñas */
+@media (max-width: 768px) {
   .task-form label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 1rem;
-    color: var(--text-color);
-    margin-bottom: 5px;
+    flex-direction: column;
+    align-items: flex-start;
   }
-  
-  .task-form label svg {
-    font-size: 1.2rem;
-  }
-  
   .task-form input,
   .task-form textarea,
   .task-form select {
-    padding: 10px;
-    font-size: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    transition: border-color 0.3s, box-shadow 0.3s;
-  }
-  
-  .task-form input:focus,
-  .task-form textarea:focus,
-  .task-form select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 6px rgba(0, 123, 255, 0.5);
-    outline: none;
-  }
-  
-  .add-task-button {
-    background: linear-gradient(135deg, var(--success-color), var(--info-color));
-    color: white;
-    padding: 12px 20px;
-    font-size: 1.1rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
-    font-weight: 600;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .add-task-button:hover {
-    background: linear-gradient(135deg, #218838, #138496);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  }
-  
-  .success {
-    color: var(--success-color);
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 15px;
-  }
-  
-  .error {
-    color: var(--danger-color);
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 15px;
-  }
-  
-  .task-form .form-control {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%23333' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 12px 8px;
-    padding-right: 30px; /* Espacio para la flecha del select */
-  }
-  
-  /* Estilos para los select en específico */
-  .task-form .priority-dropdown.priority-low,
-  .task-form .status-dropdown.status-pending {
-    background-color: #007bff; /* Azul */
-    color: white;
-  }
-  
-  .task-form .priority-dropdown.priority-medium,
-  .task-form .status-dropdown.status-in-progress {
-    background-color: #ffc107; /* Amarillo */
-    color: black;
-  }
-  
-  .task-form .priority-dropdown.priority-high {
-    background-color: #dc3545; /* Rojo */
-    color: white;
-  }
-  
-  .task-form .difficulty-dropdown.difficulty-1 {
-    background-color: #28a745; /* Verde */
-    color: white;
-  }
-  
-  .task-form .difficulty-dropdown.difficulty-2 {
-    background-color: #ffc107; /* Amarillo */
-    color: black;
-  }
-  
-  .task-form .difficulty-dropdown.difficulty-3 {
-    background-color: #dc3545; /* Rojo */
-    color: white;
-  }
-  
-  .task-form .status-dropdown.status-completed {
-    background-color: #28a745; /* Verde */
-    color: white;
-  }
-  
-  /* Mejorar distribución de elementos en pantallas pequeñas */
-  @media (max-width: 768px) {
-    .task-form label {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  
-    .task-form input,
-    .task-form textarea,
-    .task-form select {
-      width: 100%;
-    }
-  }
-
-  .task-form {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  .form-title {
-    margin-bottom: 20px;
-    color: #333;
-  }
-  
-  .task-form .form-group {
-    margin-bottom: 15px;
-  }
-  
-  .task-form .add-task-button {
     width: 100%;
   }
------ frontend/src/components/EditTaskModal/EditTaskModal.js -----
-// frontend/src/components/EditTaskModal/EditTaskModal.js
+}
 
+----- frontend/src/components/EditTaskModal/EditTaskModal.js -----
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert, Spinner, Row, Col } from 'react-bootstrap';
 import './EditTaskModal.css';
@@ -1481,7 +1572,7 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
   const playEditTaskSound = useSound(editTaskSound);
 
   useEffect(() => {
-    if (task) {
+    if (task && show) {
       setUpdatedTask({
         title: task.title || '',
         description: task.description || '',
@@ -1490,8 +1581,12 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
         status: task.status || 'Pending',
         estimated_time: task.estimated_time || '',
         actual_time: task.actual_time || '',
-        start_date: task.start_date ? task.start_date.split('T')[0] : '',
-        end_date: task.end_date ? task.end_date.split('T')[0] : '',
+        start_date: task.start_date
+          ? task.start_date.split('T')[0] || task.start_date
+          : '',
+        end_date: task.end_date
+          ? task.end_date.split('T')[0] || task.end_date
+          : '',
       });
       setEnableEndDate(!!task.end_date);
       setFormError('');
@@ -1523,7 +1618,6 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
     setFormError('');
     setFormSuccess('');
 
-    // Validación
     if (!updatedTask.title.trim()) {
       setFormError('El título de la tarea es obligatorio.');
       return;
@@ -1532,7 +1626,9 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
     // Validación de fechas
     if (updatedTask.start_date && updatedTask.end_date) {
       if (new Date(updatedTask.end_date) < new Date(updatedTask.start_date)) {
-        setFormError('La fecha de término no puede ser anterior a la fecha de inicio.');
+        setFormError(
+          'La fecha de término no puede ser anterior a la fecha de inicio.'
+        );
         return;
       }
     }
@@ -1547,6 +1643,7 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
         return;
       }
 
+      // Enviar PUT con updatedTask
       const response = await fetch(`/api/tasks/${task.id}`, {
         method: 'PUT',
         headers: {
@@ -1556,20 +1653,20 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
         body: JSON.stringify(updatedTask),
       });
 
-      if (response.ok) {
+      if (!response.ok) {
+        const errorData = await response.json();
+        setFormError(errorData.error || 'Error al actualizar la tarea');
+      } else {
         const data = await response.json();
-        handleSave(data); // Actualizar el estado en el componente padre
-        playEditTaskSound(); // Reproducir sonido
+        // Notificar al padre
+        handleSave(data);
+        playEditTaskSound();
         setFormSuccess('Tarea actualizada exitosamente.');
-
-        // Cerrar modal un poco después
+        // Cerrar tras un breve delay
         setTimeout(() => {
           handleClose();
           setFormSuccess('');
         }, 1500);
-      } else {
-        const errorData = await response.json();
-        setFormError(errorData.error || 'Error al actualizar la tarea');
       }
     } catch (error) {
       console.error('Error al actualizar la tarea:', error);
@@ -1595,6 +1692,7 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
       <Modal.Body>
         {formError && <Alert variant="danger">{formError}</Alert>}
         {formSuccess && <Alert variant="success">{formSuccess}</Alert>}
+
         <Form>
           <Row>
             <Col md={6}>
@@ -1619,9 +1717,10 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
                   value={updatedTask.priority}
                   onChange={handleChange}
                 >
-                  <option>Low</option>
-                  <option>Medium</option>
-                  <option>High</option>
+                  {/* Los values siguen en inglés, para no romper la BD */}
+                  <option value="Low">Baja</option>
+                  <option value="Medium">Media</option>
+                  <option value="High">Alta</option>
                 </Form.Control>
               </Form.Group>
             </Col>
@@ -1652,10 +1751,10 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
                   value={updatedTask.status}
                   onChange={handleChange}
                 >
-                  <option>Pending</option>
-                  <option>In Progress</option>
-                  <option>Completed</option>
-                  <option>Archived</option>
+                  <option value="Pending">Pendiente</option>
+                  <option value="In Progress">En Progreso</option>
+                  <option value="Completed">Completado</option>
+                  <option value="Archived">Archivada</option>
                 </Form.Control>
               </Form.Group>
             </Col>
@@ -1832,7 +1931,7 @@ export default EditTaskModal;
   background-color: #0056b3;
 }
 
-/* Estilos para la vista previa de la imagen (si aplica) */
+/* Si usaras una vista previa de imagen (no aplica aquí, pero se deja) */
 .img-preview {
   width: 100px;
   height: 100px;
@@ -2046,8 +2145,14 @@ import archiveSound from '../../assets/sounds/intro-sound-2-269294.mp3';
 
 import authService from '../../services/authService';
 
+/**
+ * Notas:
+ * - El backend guarda "status" en la columna "state". Al traer la tarea, vendrá "state" con "Pending"/"Archived"/etc.
+ *   Para simplificar, asumimos que en "task" llega "task.state" en lugar de "task.status".
+ *   Pero si tu fetch te trae "status" directamente, ajusta la nomenclatura. 
+ */
 function TaskItem({
-  task,
+  task,          // { state, priority, difficulty, ... }
   onComplete,
   onDelete,
   onEdit,
@@ -2065,14 +2170,61 @@ function TaskItem({
   const playEditSound = useSound(editSound);
   const playArchiveSound = useSound(archiveSound);
 
+  // Si no hay ID, no renderizamos
   if (!task || typeof task.id === 'undefined') {
-    console.error('TaskItem: "task" o "task.id" está indefinido:', task);
+    console.error('TaskItem: "task.id" undefined:', task);
     return null;
   }
+
+  // OJO: en la BD "state" = front "status"
+  const status = task.state || 'Pending'; // Valor real del estado
+  const difficulty = parseInt(task.difficulty || '1', 10); // "1","2","3"
+  const priority = task.priority || 'Low';
 
   const user = authService.getCurrentUser();
   const token = user?.token;
 
+  // Helpers: mostrar label en español
+  const getStatusLabel = (st) => {
+    switch (st) {
+      case 'Pending':
+        return 'Pendiente';
+      case 'In Progress':
+        return 'En Progreso';
+      case 'Completed':
+        return 'Completado';
+      case 'Archived':
+        return 'Archivada';
+      default:
+        return st || 'Pendiente';
+    }
+  };
+  const getDifficultyLabel = (diff) => {
+    switch (diff) {
+      case 1:
+        return 'Fácil';
+      case 2:
+        return 'Medio';
+      case 3:
+        return 'Difícil';
+      default:
+        return String(diff);
+    }
+  };
+  const getPriorityLabel = (p) => {
+    switch ((p || '').toLowerCase()) {
+      case 'low':
+        return 'Baja';
+      case 'medium':
+        return 'Media';
+      case 'high':
+        return 'Alta';
+      default:
+        return p || 'Baja';
+    }
+  };
+
+  // Se llama tras guardar en el modal
   const handleEditSave = async (updatedTaskData) => {
     setActionError('');
     try {
@@ -2099,16 +2251,14 @@ function TaskItem({
     }
   };
 
+  // Confirmar borrado
   const handleDelete = () => setShowDeleteConfirm(true);
-
   const confirmDelete = async () => {
     setActionError('');
     try {
       const response = await fetch(`/api/tasks/${task.id}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
         onDelete && onDelete(task.id);
@@ -2124,6 +2274,7 @@ function TaskItem({
     }
   };
 
+  // Completar => PUT /complete
   const handleComplete = async () => {
     setActionError('');
     try {
@@ -2145,6 +2296,7 @@ function TaskItem({
     }
   };
 
+  // Archivar => PUT /archive
   const handleArchive = async () => {
     setActionError('');
     try {
@@ -2166,6 +2318,7 @@ function TaskItem({
     }
   };
 
+  // Desarchivar => PUT /unarchive
   const handleUnarchive = async () => {
     setActionError('');
     try {
@@ -2187,7 +2340,7 @@ function TaskItem({
     }
   };
 
-  // Actualizar STATUS sin abrir modal:
+  // Cambiar STATUS desde dropdown => PUT /api/tasks/:id con { status: newStatus }
   const handleStatusChange = async (newStatus) => {
     setActionError('');
     try {
@@ -2212,7 +2365,7 @@ function TaskItem({
     }
   };
 
-  // Actualizar DIFFICULTY
+  // Cambiar DIFICULTAD => { difficulty: newDiff } (1,2,3)
   const handleDifficultyChange = async (newDiff) => {
     setActionError('');
     try {
@@ -2237,7 +2390,7 @@ function TaskItem({
     }
   };
 
-  // NUEVO => Actualizar PRIORITY
+  // Cambiar PRIORIDAD => { priority: "Low"/"High"/...}
   const handlePriorityChange = async (newPriority) => {
     setActionError('');
     try {
@@ -2266,7 +2419,6 @@ function TaskItem({
   const handleStartTimer = () => {
     setTimerActive(true);
   };
-
   const handleStopTimer = async (time) => {
     setTimerActive(false);
     setTimeWorked((prevTime) => prevTime + time);
@@ -2278,6 +2430,7 @@ function TaskItem({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
+        // Por ejemplo, { duration: 1.5 } en horas
         body: JSON.stringify({ duration: time }),
       });
       if (response.ok) {
@@ -2297,22 +2450,22 @@ function TaskItem({
     <>
       <div
         className={`task-item ${
-          task.status === 'Completed' ? 'completed' : ''
-        } ${task.status === 'Archived' ? 'archived' : ''}`}
+          status === 'Completed' ? 'completed' : ''
+        } ${status === 'Archived' ? 'archived' : ''}`}
       >
-        {/* Dropdown menú (3 puntos) */}
+        {/* Botón de menú (3 puntos) */}
         <div className="dropdown-top-right">
           <Dropdown>
             <Dropdown.Toggle variant="secondary" id={`dropdown-${task.id}`}>
               <FaEllipsisV />
             </Dropdown.Toggle>
             <Dropdown.Menu>
-              {task.status !== 'Archived' && (
+              {status !== 'Archived' && (
                 <>
                   <Dropdown.Item onClick={() => setShowEditModal(true)}>
                     <FaEdit /> Editar
                   </Dropdown.Item>
-                  {task.status !== 'Completed' && (
+                  {status !== 'Completed' && (
                     <Dropdown.Item
                       onClick={handleComplete}
                       className="complete-dropdown-item"
@@ -2320,7 +2473,7 @@ function TaskItem({
                       <FaCheck /> Completar
                     </Dropdown.Item>
                   )}
-                  {task.status === 'Completed' && (
+                  {status === 'Completed' && (
                     <Dropdown.Item
                       onClick={handleUnarchive}
                       className="continue-dropdown-item"
@@ -2336,8 +2489,7 @@ function TaskItem({
                   </Dropdown.Item>
                 </>
               )}
-
-              {task.status === 'Archived' && (
+              {status === 'Archived' && (
                 <Dropdown.Item
                   onClick={handleUnarchive}
                   className="unarchive-dropdown-item"
@@ -2361,19 +2513,19 @@ function TaskItem({
         <p>{task.description}</p>
 
         {/* 3 dropdowns: Status, Difficulty, Priority */}
-        {task.status !== 'Archived' && (
+        {status !== 'Archived' && (
           <div className="status-difficulty">
-            {/* Status */}
+            {/* STATUS */}
             <Dropdown className="status-dropdown">
               <Dropdown.Toggle
                 variant="light"
                 className="status-toggle"
                 style={{
-                  backgroundColor: getStatusColor(task.status),
-                  color: 'white',
+                  backgroundColor: getStatusColor(status),
+                  color: '#fff',
                 }}
               >
-                {task.status}
+                {getStatusLabel(status)}
               </Dropdown.Toggle>
               <Dropdown.Menu>
                 <Dropdown.Item
@@ -2397,21 +2549,17 @@ function TaskItem({
               </Dropdown.Menu>
             </Dropdown>
 
-            {/* Difficulty */}
+            {/* DIFICULTAD */}
             <Dropdown className="difficulty-dropdown">
               <Dropdown.Toggle
                 variant="light"
                 className="difficulty-toggle"
                 style={{
-                  backgroundColor: getDifficultyColor(task.difficulty),
-                  color: 'white',
+                  backgroundColor: getDifficultyColor(difficulty),
+                  color: '#fff',
                 }}
               >
-                {task.difficulty === 1
-                  ? 'Fácil'
-                  : task.difficulty === 2
-                  ? 'Medio'
-                  : 'Difícil'}
+                {getDifficultyLabel(difficulty)}
               </Dropdown.Toggle>
               <Dropdown.Menu>
                 <Dropdown.Item
@@ -2435,17 +2583,17 @@ function TaskItem({
               </Dropdown.Menu>
             </Dropdown>
 
-            {/* Priority */}
+            {/* PRIORIDAD */}
             <Dropdown className="priority-dropdown">
               <Dropdown.Toggle
                 variant="light"
                 className="priority-toggle"
                 style={{
-                  backgroundColor: getPriorityColor(task.priority),
-                  color: 'white',
+                  backgroundColor: getPriorityColor(priority),
+                  color: '#fff',
                 }}
               >
-                {task.priority}
+                {getPriorityLabel(priority)}
               </Dropdown.Toggle>
               <Dropdown.Menu>
                 <Dropdown.Item onClick={() => handlePriorityChange('Low')}>
@@ -2466,36 +2614,32 @@ function TaskItem({
         {task.estimated_time && (
           <p>Tiempo Estimado: {task.estimated_time} horas</p>
         )}
-        {task.actual_time && (
-          <p>Tiempo Real: {timeWorked.toFixed(2)} horas</p>
-        )}
+        {task.actual_time && <p>Tiempo Real: {timeWorked.toFixed(2)} horas</p>}
 
-        {/* Botón "Completar" si no está completada/archivada */}
-        {task.status !== 'Archived' && task.status !== 'Completed' && (
+        {/* Botón "Completar" si no está completada ni archivada */}
+        {status !== 'Archived' && status !== 'Completed' && (
           <Button
             variant="success"
             className="complete-button"
             onClick={handleComplete}
-            title="Completar Tarea"
           >
             <FaCheck /> Completar
           </Button>
         )}
 
         {/* Botón "Desarchivar" si está archivada */}
-        {task.status === 'Archived' && (
+        {status === 'Archived' && (
           <Button
             variant="info"
             className="unarchive-button"
             onClick={handleUnarchive}
-            title="Desarchivar Tarea"
           >
             <FaUndo /> Desarchivar
           </Button>
         )}
 
         {/* Temporizador */}
-        {task.status !== 'Archived' && (
+        {status !== 'Archived' && (
           <div className="timer-button">
             {timerActive ? (
               <Button variant="warning" onClick={() => setTimerActive(false)}>
@@ -2514,13 +2658,21 @@ function TaskItem({
         {timerActive && <Timer onStop={handleStopTimer} />}
       </div>
 
+      {/* Modal de edición */}
       <EditTaskModal
         show={showEditModal}
         handleClose={() => setShowEditModal(false)}
-        task={task}
+        task={{
+          ...task,
+          // Pasamos status = state, difficulty=int, priority=string...
+          status,
+          difficulty,
+          priority,
+        }}
         handleSave={handleEditSave}
       />
 
+      {/* Modal de confirmación de borrado */}
       <ConfirmModal
         show={showDeleteConfirm}
         handleClose={() => setShowDeleteConfirm(false)}
@@ -2532,12 +2684,13 @@ function TaskItem({
   );
 }
 
-const getStatusColor = (status) => {
-  switch (status) {
+/** Colores de status, difficulty, priority (igual a TaskForm). */
+export const getStatusColor = (st) => {
+  switch (st) {
     case 'Pending':
-      return '#ffc107'; // Amarillo
+      return '#007bff'; // Azul
     case 'In Progress':
-      return '#17a2b8'; // Azul
+      return '#ffc107'; // Amarillo
     case 'Completed':
       return '#28a745'; // Verde
     case 'Archived':
@@ -2547,8 +2700,8 @@ const getStatusColor = (status) => {
   }
 };
 
-const getDifficultyColor = (difficulty) => {
-  switch (difficulty) {
+export const getDifficultyColor = (diff) => {
+  switch (diff) {
     case 1:
       return '#28a745'; // Verde
     case 2:
@@ -2556,12 +2709,12 @@ const getDifficultyColor = (difficulty) => {
     case 3:
       return '#dc3545'; // Rojo
     default:
-      return '#6c757d'; // Gris
+      return '#6c757d';
   }
 };
 
-const getPriorityColor = (priority) => {
-  switch ((priority || '').toLowerCase()) {
+export const getPriorityColor = (prio) => {
+  switch ((prio || '').toLowerCase()) {
     case 'low':
       return '#007bff'; // Azul
     case 'medium':
@@ -2578,207 +2731,175 @@ export default TaskItem;
 ----- frontend/src/components/TaskItem/TaskItem.css -----
 /* frontend/src/components/TaskItem/TaskItem.css */
 
-/* Estilos Generales */
 .task-item {
     padding: 20px;
     border: 1px solid #ccc;
-    border-radius: 10px; /* Bordes redondeados */
+    border-radius: 10px;
     background-color: var(--neutral-white);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
     position: relative;
     margin-bottom: 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;
-}
-
-.task-item:hover {
-    transform: translateY(-5px); /* Efecto de elevación al pasar el ratón */
+  }
+  
+  .task-item:hover {
+    transform: translateY(-5px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-}
-
-.task-item.completed {
-    background-color: var(--accent-light-green); /* Verde claro */
+  }
+  
+  /* Si la tarea está completada => verde claro */
+  .task-item.completed {
+    background-color: var(--accent-light-green);
     border-color: var(--primary-green);
-}
-
-.task-item.archived {
-    background-color: var(--secondary-light-gray); /* Gris claro */
+  }
+  
+  /* Si la tarea está archivada => gris */
+  .task-item.archived {
+    background-color: var(--secondary-light-gray);
     border-color: var(--secondary-dark-gray);
-}
-
-/* Dropdown en la esquina superior derecha */
-.dropdown-top-right {
+  }
+  
+  .dropdown-top-right {
     position: absolute;
     top: 10px;
     right: 10px;
-}
-
-/* Estilos para los Dropdowns de Estado y Dificultad */
-.status-difficulty {
+  }
+  
+  .status-difficulty {
     display: flex;
     gap: 10px;
     margin-bottom: 10px;
-}
-
-.status-dropdown .dropdown-toggle,
-.difficulty-dropdown .dropdown-toggle {
+  }
+  
+  /* Botones dropdown */
+  .status-dropdown .dropdown-toggle,
+  .difficulty-dropdown .dropdown-toggle,
+  .priority-dropdown .dropdown-toggle {
     border: none;
     border-radius: 5px;
     padding: 5px 10px;
     font-weight: bold;
     cursor: pointer;
-    transition: transform 0.2s ease-in-out; /* Transición suave al hacer hover */
-}
-
-/* Efecto hover para los botones de los dropdowns */
-.status-dropdown .dropdown-toggle:hover,
-.difficulty-dropdown .dropdown-toggle:hover {
-    transform: translateY(-2px); /* Ligero desplazamiento hacia arriba */
-}
-
-.status-dropdown .dropdown-menu,
-.difficulty-dropdown .dropdown-menu {
+    transition: transform 0.2s ease-in-out;
+    color: #fff; /* texto blanco */
+  }
+  
+  .status-dropdown .dropdown-toggle:hover,
+  .difficulty-dropdown .dropdown-toggle:hover,
+  .priority-dropdown .dropdown-toggle:hover {
+    transform: translateY(-2px);
+  }
+  
+  /* El menú: anchura mínima */
+  .status-dropdown .dropdown-menu,
+  .difficulty-dropdown .dropdown-menu,
+  .priority-dropdown .dropdown-menu {
     min-width: 150px;
-}
-
-.status-dropdown .dropdown-item.status-pending {
-    color: var(--primary-blue); /* Azul */
-}
-
-.status-dropdown .dropdown-item.status-in-progress {
-    color: var(--primary-yellow); /* Amarillo */
-}
-
-.status-dropdown .dropdown-item.status-completed {
-    color: var(--primary-green); /* Verde */
-}
-
-.difficulty-dropdown .dropdown-item.difficulty-1 {
-    color: var(--primary-green); /* Verde */
-}
-
-.difficulty-dropdown .dropdown-item.difficulty-2 {
-    color: var(--primary-yellow); /* Amarillo */
-}
-
-.difficulty-dropdown .dropdown-item.difficulty-3 {
-    color: var(--primary-red); /* Rojo */
-}
-
-/* Botón Completar en la esquina inferior izquierda */
-.complete-button {
+  }
+  
+  /* Items de color */
+  .status-dropdown .dropdown-item.status-pending {
+    color: var(--primary-blue);
+  }
+  .status-dropdown .dropdown-item.status-in-progress {
+    color: var(--primary-yellow);
+  }
+  .status-dropdown .dropdown-item.status-completed {
+    color: var(--primary-green);
+  }
+  
+  /* ... etc. en la misma línea para difficulty, priority ... */
+  
+  .complete-button {
     align-self: flex-start;
-    background-color: var(--primary-green); /* Verde */
+    background-color: var(--primary-green);
     color: white;
     border: none;
     padding: 8px 12px;
     border-radius: 5px;
     transition: background-color 0.3s, transform 0.2s;
-    font-weight: bold; /* Texto en negrita */
-}
-
-.complete-button:hover {
+    font-weight: bold;
+  }
+  
+  .complete-button:hover {
     background-color: #218838;
-    transform: translateY(-2px); /* Ligero desplazamiento hacia arriba */
-}
-
-/* Botón Desarchivar en la esquina inferior izquierda */
-.unarchive-button {
+    transform: translateY(-2px);
+  }
+  
+  .unarchive-button {
     align-self: flex-start;
-    background-color: var(--accent-cyan); /* Azul */
+    background-color: var(--accent-cyan);
     color: white;
     border: none;
     padding: 8px 12px;
     border-radius: 5px;
     transition: background-color 0.3s, transform 0.2s;
-    font-weight: bold; /* Texto en negrita */
-}
-
-.unarchive-button:hover {
+    font-weight: bold;
+  }
+  
+  .unarchive-button:hover {
     background-color: #138496;
-    transform: translateY(-2px); /* Ligero desplazamiento hacia arriba */
-}
-
-/* Botón Temporizador */
-.timer-button {
+    transform: translateY(-2px);
+  }
+  
+  .timer-button {
     align-self: flex-start;
     margin-top: 10px;
-}
-
-.timer-button .btn {
+  }
+  
+  .timer-button .btn {
     transition: background-color 0.3s, transform 0.2s;
-}
-
-.timer-button .btn:hover {
+  }
+  
+  .timer-button .btn:hover {
     transform: translateY(-2px);
-}
-
-/* Estilos para los Dropdown Items con colores */
-.complete-dropdown-item {
-    color: var(--primary-green); /* Verde */
-}
-
-.continue-dropdown-item {
-    color: var(--primary-yellow); /* Amarillo */
-}
-
-.archive-dropdown-item {
-    color: var(--secondary-gray); /* Gris */
-}
-
-.unarchive-dropdown-item {
-    color: var(--accent-cyan); /* Azul */
-}
-
-.delete-dropdown-item {
-    color: var(--primary-red); /* Rojo */
-}
-
-/* Botón de Eliminar en la esquina inferior derecha */
-.delete-button {
-    background-color: transparent;
-    color: var(--primary-red); /* Rojo */
-    border: none;
-    font-size: 18px;
-    cursor: pointer;
-    position: absolute;
-    bottom: 15px;
-    right: 15px;
-    transition: color 0.3s;
-}
-
-.delete-button:hover {
-    color: #a71d2a;
-}
-
-/* Estilos adicionales para mejorar la tipografía */
-h3 {
+  }
+  
+  /* Menú items color */
+  .complete-dropdown-item {
+    color: var(--primary-green);
+  }
+  .continue-dropdown-item {
+    color: var(--primary-yellow);
+  }
+  .archive-dropdown-item {
+    color: var(--secondary-gray);
+  }
+  .unarchive-dropdown-item {
+    color: var(--accent-cyan);
+  }
+  .delete-dropdown-item {
+    color: var(--primary-red);
+  }
+  
+  /* Tipografía */
+  h3 {
     color: var(--primary-blue);
     font-size: 1.4rem;
     margin-bottom: 5px;
-}
-
-p {
+  }
+  
+  p {
     font-size: 1rem;
     color: var(--text-color);
     line-height: 1.5;
-}
-
-/* Estilos para el temporizador */
-.timer-container {
+  }
+  
+  .timer-container {
     margin-top: 10px;
     display: flex;
     align-items: center;
     gap: 10px;
-}
-
-.timer-container p {
+  }
+  
+  .timer-container p {
     font-size: 1rem;
     color: var(--text-color);
-}
-
+  }
+  
 ----- frontend/src/components/TaskList/TaskList.css -----
 /* frontend/src/components/TaskList/TaskList.css */
 
@@ -2788,9 +2909,9 @@ p {
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     position: relative;
-}
-
-.filter-toggle {
+  }
+  
+  .filter-toggle {
     position: absolute;
     top: -15px;
     right: 0;
@@ -2798,9 +2919,9 @@ p {
     display: flex;
     align-items: center;
     gap: 5px;
-}
-
-.filters {
+  }
+  
+  .filters {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -2810,46 +2931,51 @@ p {
     background-color: var(--secondary-light-gray);
     padding: 15px;
     border-radius: 8px;
-}
-
-.filters .form-group {
+  }
+  
+  .filters .form-group {
     flex: 1;
     min-width: 200px;
-}
-
-.filters .form-group label {
+  }
+  
+  .filters .form-group label {
     font-weight: bold;
     color: var(--text-color);
-}
-
-.filters .form-check-input:checked {
+  }
+  
+  .filters .form-check-input:checked {
     background-color: var(--primary-blue);
     border-color: var(--primary-blue);
-}
-
-.task-container {
+  }
+  
+  .task-container {
     display: flex;
     flex-direction: column;
     gap: 20px;
-}
-
-/* Estilo para el efecto de arrastre */
-.dragging {
-    background-color: #f0f8ff;
+  }
+  
+  /* Estilo para el efecto de arrastre */
+  .dragging {
+    background-color: rgba(0, 123, 255, 0.1); /* un azul clarito */
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    transform: rotate(2deg);
+    transform: rotate(3deg) scale(1.02);
     transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
-}
-
+  }
+  
 ----- frontend/src/components/TaskList/TaskList.js -----
 // frontend/src/components/TaskList/TaskList.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import TaskItem from '../TaskItem/TaskItem';
 import './TaskList.css';
 import { Form, Row, Col, Button } from 'react-bootstrap';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { FaFilter, FaTimes } from 'react-icons/fa';
+
+// Importamos el hook de sonido
+import useSound from '../../hooks/useSound';
+// Sonido para drag & drop
+import dragSoundFile from '../../assets/sounds/navigation-sound-2-269295.mp3';
 
 function TaskList({ tasks, setTasks }) {
   const [filters, setFilters] = useState({
@@ -2859,12 +2985,16 @@ function TaskList({ tasks, setTasks }) {
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  // Aplicar filtros directamente en el render
+  // Hook para reproducir sonido
+  const playDragSound = useSound(dragSoundFile);
+
   const getFilteredTasks = () => {
     let filtered = [...tasks];
     // Filtro Prioridad
     if (filters.priority.length > 0) {
-      filtered = filtered.filter((task) => filters.priority.includes(task.priority));
+      filtered = filtered.filter((task) =>
+        filters.priority.includes(task.priority)
+      );
     }
     // Filtro Dificultad
     if (filters.difficulty.length > 0) {
@@ -2874,7 +3004,9 @@ function TaskList({ tasks, setTasks }) {
     }
     // Filtro Estado
     if (filters.status.length > 0) {
-      filtered = filtered.filter((task) => filters.status.includes(task.status));
+      filtered = filtered.filter((task) =>
+        filters.status.includes(task.status)
+      );
     }
     return filtered;
   };
@@ -2882,10 +3014,10 @@ function TaskList({ tasks, setTasks }) {
   const handleFilterChange = (category, value) => {
     setFilters((prevFilters) => {
       const alreadySelected = prevFilters[category].includes(value);
-      const newCategory = alreadySelected
+      const newArray = alreadySelected
         ? prevFilters[category].filter((item) => item !== value)
         : [...prevFilters[category], value];
-      return { ...prevFilters, [category]: newCategory };
+      return { ...prevFilters, [category]: newArray };
     });
   };
 
@@ -2900,18 +3032,21 @@ function TaskList({ tasks, setTasks }) {
   // Lógica drag & drop
   const handleOnDragEnd = (result) => {
     if (!result.destination) return;
+
+    // Reproducir sonido
+    playDragSound();
+
     const items = Array.from(tasks);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
     setTasks(items);
-    // Opcional: Actualizar orden en el backend si es necesario
+    // Opcional: Actualizar orden en backend
   };
 
   const filteredTasks = getFilteredTasks();
 
   return (
     <div className="task-list">
-      {/* Botón para Filtros */}
       <Button
         variant="outline-primary"
         className="filter-toggle"
@@ -2927,7 +3062,9 @@ function TaskList({ tasks, setTasks }) {
             <Row>
               <Col md={4} sm={12}>
                 <Form.Group>
-                  <Form.Label><FaFilter /> Prioridad</Form.Label>
+                  <Form.Label>
+                    <FaFilter /> Prioridad
+                  </Form.Label>
                   <Form.Check
                     type="checkbox"
                     label="Baja"
@@ -2951,9 +3088,12 @@ function TaskList({ tasks, setTasks }) {
                   />
                 </Form.Group>
               </Col>
+
               <Col md={4} sm={12}>
                 <Form.Group>
-                  <Form.Label><FaFilter /> Dificultad</Form.Label>
+                  <Form.Label>
+                    <FaFilter /> Dificultad
+                  </Form.Label>
                   <Form.Check
                     type="checkbox"
                     label="1 - Fácil"
@@ -2977,9 +3117,12 @@ function TaskList({ tasks, setTasks }) {
                   />
                 </Form.Group>
               </Col>
+
               <Col md={4} sm={12}>
                 <Form.Group>
-                  <Form.Label><FaFilter /> Estado</Form.Label>
+                  <Form.Label>
+                    <FaFilter /> Estado
+                  </Form.Label>
                   <Form.Check
                     type="checkbox"
                     label="Pendiente"
@@ -3004,7 +3147,11 @@ function TaskList({ tasks, setTasks }) {
                 </Form.Group>
               </Col>
             </Row>
-            <Button variant="secondary" onClick={handleClearFilters} className="mt-3">
+            <Button
+              variant="secondary"
+              onClick={handleClearFilters}
+              className="mt-3"
+            >
               Limpiar Filtros
             </Button>
           </Form>
@@ -3014,10 +3161,18 @@ function TaskList({ tasks, setTasks }) {
       <DragDropContext onDragEnd={handleOnDragEnd}>
         <Droppable droppableId="task-droppable">
           {(provided) => (
-            <div className="task-container" {...provided.droppableProps} ref={provided.innerRef}>
+            <div
+              className="task-container"
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+            >
               {filteredTasks.length > 0 ? (
                 filteredTasks.map((task, index) => (
-                  <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
+                  <Draggable
+                    key={task.id}
+                    draggableId={task.id.toString()}
+                    index={index}
+                  >
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
@@ -3039,7 +3194,9 @@ function TaskList({ tasks, setTasks }) {
                           }
                           onEdit={(updatedTask) =>
                             setTasks((prev) =>
-                              prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+                              prev.map((t) =>
+                                t.id === updatedTask.id ? updatedTask : t
+                              )
                             )
                           }
                           onArchive={(updatedTask) =>
@@ -3380,18 +3537,31 @@ const useSound = (src, options = {}) => {
 
   useEffect(() => {
     audioRef.current = new Audio(src);
+
     if (options.loop) {
       audioRef.current.loop = true;
     }
+
     return () => {
-      audioRef.current.pause();
+      // Si deseas pausar al desmontar, se hace aquí.
+      // Pero para evitar el error de “interrupted by a call to pause()”,
+      // lo encapsulamos en un try/catch o lo removemos si no es necesario.
+      try {
+        audioRef.current.pause();
+      } catch (err) {
+        console.warn('Audio pause interrupted:', err);
+      }
     };
   }, [src, options.loop]);
 
-  const play = () => {
+  const play = async () => {
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
-      audioRef.current.play();
+      try {
+        await audioRef.current.play();
+      } catch (err) {
+        console.warn('Audio play was interrupted:', err);
+      }
     }
   };
 
@@ -3889,48 +4059,157 @@ export default ArchivedTasksPage;
 }
 
 ----- frontend/src/pages/AdminPage/AdminPage.js -----
-// frontend/src/pages/AdminPage.js
+// frontend/src/pages/AdminPage/AdminPage.js
+
 import React, { useEffect, useState } from 'react';
 import authService from '../../services/authService';
-import { Table, Alert } from 'react-bootstrap';
+import { Table, Alert, Button, Modal, Form } from 'react-bootstrap';
 import './AdminPage.css';
 
 function AdminPage() {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState(null);
 
+  // Para editar
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editUser, setEditUser] = useState({ id: '', name: '' });
+
+  // Para crear
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'user',
+  });
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const currentUser = authService.getCurrentUser();
-        if (!currentUser || !currentUser.token) {
-          setError('No hay usuario logueado o no tienes permisos.');
-          return;
-        }
-        // Llamar a /api/users (sólo admin)
-        const response = await fetch('/api/users', {
-          headers: {
-            Authorization: `Bearer ${currentUser.token}`,
-          },
-        });
-        if (!response.ok) {
-          throw new Error('Error al obtener usuarios');
-        }
-        const data = await response.json();
-        setUsers(data);
-      } catch (err) {
-        console.error('Error al obtener usuarios:', err);
-        setError('Error al obtener usuarios');
-      }
-    };
     fetchUsers();
+    // eslint-disable-next-line
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser || !currentUser.token) {
+        setError('No hay usuario logueado o no tienes permisos.');
+        return;
+      }
+      const response = await fetch('/api/users', {
+        headers: {
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Error al obtener usuarios');
+      }
+      const data = await response.json();
+      setUsers(data);
+    } catch (err) {
+      console.error('Error al obtener usuarios:', err);
+      setError('Error al obtener usuarios');
+    }
+  };
+
+  // Abrir modal de edición
+  const handleOpenEdit = (user) => {
+    setEditUser({ id: user.id, name: user.name });
+    setShowEditModal(true);
+  };
+
+  const handleEditChange = (e) => {
+    setEditUser({ ...editUser, [e.target.name]: e.target.value });
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      setError(null);
+      const currentUser = authService.getCurrentUser();
+      const response = await fetch(`/api/users/${editUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+        body: JSON.stringify({ name: editUser.name }),
+      });
+      if (!response.ok) {
+        throw new Error('Error al actualizar usuario');
+      }
+      await response.json();
+      setShowEditModal(false);
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      setError('No se pudo actualizar el usuario.');
+    }
+  };
+
+  // Eliminar usuario
+  const handleDelete = async (id) => {
+    try {
+      setError(null);
+      const currentUser = authService.getCurrentUser();
+      const response = await fetch(`/api/users/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Error al eliminar usuario');
+      }
+      await response.json();
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      setError('No se pudo eliminar el usuario.');
+    }
+  };
+
+  // Crear usuario
+  const handleCreateUser = async () => {
+    try {
+      setError(null);
+      // Podrías usar /api/auth/register (y forzar role='admin'),
+      // o tener un endpoint /api/users con POST
+      const currentUser = authService.getCurrentUser();
+      // EJEMPLO: USANDO /api/auth/register con role
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentUser.token}`, // si exiges token
+        },
+        body: JSON.stringify({
+          name: newUser.name,
+          email: newUser.email,
+          password: newUser.password,
+          // role: newUser.role, // si tu backend lo permite
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Error al crear usuario');
+      }
+      await response.json();
+      setShowCreateModal(false);
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      setError('No se pudo crear el usuario.');
+    }
+  };
 
   return (
     <div className="admin-container">
       <h1>Panel de Administración</h1>
       {error && <Alert variant="danger">{error}</Alert>}
-      {!error && users.length > 0 && (
+
+      <Button variant="success" className="mb-3" onClick={() => setShowCreateModal(true)}>
+        Crear Usuario
+      </Button>
+
+      {users.length > 0 ? (
         <Table striped bordered hover responsive className="admin-table">
           <thead>
             <tr>
@@ -3938,6 +4217,7 @@ function AdminPage() {
               <th>Nombre</th>
               <th>Email</th>
               <th>Rol</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -3947,11 +4227,99 @@ function AdminPage() {
                 <td>{u.name}</td>
                 <td>{u.email}</td>
                 <td>{u.role}</td>
+                <td>
+                  <Button variant="info" size="sm" onClick={() => handleOpenEdit(u)}>
+                    Editar
+                  </Button>{' '}
+                  <Button variant="danger" size="sm" onClick={() => handleDelete(u.id)}>
+                    Eliminar
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
         </Table>
+      ) : (
+        <p>No hay usuarios disponibles.</p>
       )}
+
+      {/* Modal para editar usuario */}
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Editar Usuario</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Group>
+            <Form.Label>Nombre</Form.Label>
+            <Form.Control
+              type="text"
+              name="name"
+              value={editUser.name}
+              onChange={handleEditChange}
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={handleSaveEdit}>
+            Guardar
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal para crear usuario */}
+      <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Crear Usuario</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Group>
+            <Form.Label>Nombre</Form.Label>
+            <Form.Control
+              type="text"
+              value={newUser.name}
+              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+            />
+          </Form.Group>
+          <Form.Group className="mt-3">
+            <Form.Label>Email</Form.Label>
+            <Form.Control
+              type="email"
+              value={newUser.email}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+            />
+          </Form.Group>
+          <Form.Group className="mt-3">
+            <Form.Label>Contraseña</Form.Label>
+            <Form.Control
+              type="password"
+              value={newUser.password}
+              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+            />
+          </Form.Group>
+          {/* Si deseas elegir rol: */}
+          {/* <Form.Group className="mt-3">
+            <Form.Label>Rol</Form.Label>
+            <Form.Select
+              value={newUser.role}
+              onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+            >
+              <option value="user">user</option>
+              <option value="admin">admin</option>
+            </Form.Select>
+          </Form.Group> */}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
+            Cancelar
+          </Button>
+          <Button variant="success" onClick={handleCreateUser}>
+            Crear
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

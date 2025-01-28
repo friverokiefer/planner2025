@@ -26,8 +26,14 @@ import archiveSound from '../../assets/sounds/intro-sound-2-269294.mp3';
 
 import authService from '../../services/authService';
 
+/**
+ * Notas:
+ * - El backend guarda "status" en la columna "state". Al traer la tarea, vendrá "state" con "Pending"/"Archived"/etc.
+ *   Para simplificar, asumimos que en "task" llega "task.state" en lugar de "task.status".
+ *   Pero si tu fetch te trae "status" directamente, ajusta la nomenclatura. 
+ */
 function TaskItem({
-  task,
+  task,          // { state, priority, difficulty, ... }
   onComplete,
   onDelete,
   onEdit,
@@ -45,14 +51,61 @@ function TaskItem({
   const playEditSound = useSound(editSound);
   const playArchiveSound = useSound(archiveSound);
 
+  // Si no hay ID, no renderizamos
   if (!task || typeof task.id === 'undefined') {
-    console.error('TaskItem: "task" o "task.id" está indefinido:', task);
+    console.error('TaskItem: "task.id" undefined:', task);
     return null;
   }
+
+  // OJO: en la BD "state" = front "status"
+  const status = task.state || 'Pending'; // Valor real del estado
+  const difficulty = parseInt(task.difficulty || '1', 10); // "1","2","3"
+  const priority = task.priority || 'Low';
 
   const user = authService.getCurrentUser();
   const token = user?.token;
 
+  // Helpers: mostrar label en español
+  const getStatusLabel = (st) => {
+    switch (st) {
+      case 'Pending':
+        return 'Pendiente';
+      case 'In Progress':
+        return 'En Progreso';
+      case 'Completed':
+        return 'Completado';
+      case 'Archived':
+        return 'Archivada';
+      default:
+        return st || 'Pendiente';
+    }
+  };
+  const getDifficultyLabel = (diff) => {
+    switch (diff) {
+      case 1:
+        return 'Fácil';
+      case 2:
+        return 'Medio';
+      case 3:
+        return 'Difícil';
+      default:
+        return String(diff);
+    }
+  };
+  const getPriorityLabel = (p) => {
+    switch ((p || '').toLowerCase()) {
+      case 'low':
+        return 'Baja';
+      case 'medium':
+        return 'Media';
+      case 'high':
+        return 'Alta';
+      default:
+        return p || 'Baja';
+    }
+  };
+
+  // Se llama tras guardar en el modal
   const handleEditSave = async (updatedTaskData) => {
     setActionError('');
     try {
@@ -79,16 +132,14 @@ function TaskItem({
     }
   };
 
+  // Confirmar borrado
   const handleDelete = () => setShowDeleteConfirm(true);
-
   const confirmDelete = async () => {
     setActionError('');
     try {
       const response = await fetch(`/api/tasks/${task.id}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
         onDelete && onDelete(task.id);
@@ -104,6 +155,7 @@ function TaskItem({
     }
   };
 
+  // Completar => PUT /complete
   const handleComplete = async () => {
     setActionError('');
     try {
@@ -125,6 +177,7 @@ function TaskItem({
     }
   };
 
+  // Archivar => PUT /archive
   const handleArchive = async () => {
     setActionError('');
     try {
@@ -146,6 +199,7 @@ function TaskItem({
     }
   };
 
+  // Desarchivar => PUT /unarchive
   const handleUnarchive = async () => {
     setActionError('');
     try {
@@ -167,7 +221,7 @@ function TaskItem({
     }
   };
 
-  // Actualizar STATUS sin abrir modal:
+  // Cambiar STATUS desde dropdown => PUT /api/tasks/:id con { status: newStatus }
   const handleStatusChange = async (newStatus) => {
     setActionError('');
     try {
@@ -192,7 +246,7 @@ function TaskItem({
     }
   };
 
-  // Actualizar DIFFICULTY
+  // Cambiar DIFICULTAD => { difficulty: newDiff } (1,2,3)
   const handleDifficultyChange = async (newDiff) => {
     setActionError('');
     try {
@@ -217,7 +271,7 @@ function TaskItem({
     }
   };
 
-  // NUEVO => Actualizar PRIORITY
+  // Cambiar PRIORIDAD => { priority: "Low"/"High"/...}
   const handlePriorityChange = async (newPriority) => {
     setActionError('');
     try {
@@ -246,7 +300,6 @@ function TaskItem({
   const handleStartTimer = () => {
     setTimerActive(true);
   };
-
   const handleStopTimer = async (time) => {
     setTimerActive(false);
     setTimeWorked((prevTime) => prevTime + time);
@@ -258,6 +311,7 @@ function TaskItem({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
+        // Por ejemplo, { duration: 1.5 } en horas
         body: JSON.stringify({ duration: time }),
       });
       if (response.ok) {
@@ -277,22 +331,22 @@ function TaskItem({
     <>
       <div
         className={`task-item ${
-          task.status === 'Completed' ? 'completed' : ''
-        } ${task.status === 'Archived' ? 'archived' : ''}`}
+          status === 'Completed' ? 'completed' : ''
+        } ${status === 'Archived' ? 'archived' : ''}`}
       >
-        {/* Dropdown menú (3 puntos) */}
+        {/* Botón de menú (3 puntos) */}
         <div className="dropdown-top-right">
           <Dropdown>
             <Dropdown.Toggle variant="secondary" id={`dropdown-${task.id}`}>
               <FaEllipsisV />
             </Dropdown.Toggle>
             <Dropdown.Menu>
-              {task.status !== 'Archived' && (
+              {status !== 'Archived' && (
                 <>
                   <Dropdown.Item onClick={() => setShowEditModal(true)}>
                     <FaEdit /> Editar
                   </Dropdown.Item>
-                  {task.status !== 'Completed' && (
+                  {status !== 'Completed' && (
                     <Dropdown.Item
                       onClick={handleComplete}
                       className="complete-dropdown-item"
@@ -300,7 +354,7 @@ function TaskItem({
                       <FaCheck /> Completar
                     </Dropdown.Item>
                   )}
-                  {task.status === 'Completed' && (
+                  {status === 'Completed' && (
                     <Dropdown.Item
                       onClick={handleUnarchive}
                       className="continue-dropdown-item"
@@ -316,8 +370,7 @@ function TaskItem({
                   </Dropdown.Item>
                 </>
               )}
-
-              {task.status === 'Archived' && (
+              {status === 'Archived' && (
                 <Dropdown.Item
                   onClick={handleUnarchive}
                   className="unarchive-dropdown-item"
@@ -341,19 +394,19 @@ function TaskItem({
         <p>{task.description}</p>
 
         {/* 3 dropdowns: Status, Difficulty, Priority */}
-        {task.status !== 'Archived' && (
+        {status !== 'Archived' && (
           <div className="status-difficulty">
-            {/* Status */}
+            {/* STATUS */}
             <Dropdown className="status-dropdown">
               <Dropdown.Toggle
                 variant="light"
                 className="status-toggle"
                 style={{
-                  backgroundColor: getStatusColor(task.status),
-                  color: 'white',
+                  backgroundColor: getStatusColor(status),
+                  color: '#fff',
                 }}
               >
-                {task.status}
+                {getStatusLabel(status)}
               </Dropdown.Toggle>
               <Dropdown.Menu>
                 <Dropdown.Item
@@ -377,21 +430,17 @@ function TaskItem({
               </Dropdown.Menu>
             </Dropdown>
 
-            {/* Difficulty */}
+            {/* DIFICULTAD */}
             <Dropdown className="difficulty-dropdown">
               <Dropdown.Toggle
                 variant="light"
                 className="difficulty-toggle"
                 style={{
-                  backgroundColor: getDifficultyColor(task.difficulty),
-                  color: 'white',
+                  backgroundColor: getDifficultyColor(difficulty),
+                  color: '#fff',
                 }}
               >
-                {task.difficulty === 1
-                  ? 'Fácil'
-                  : task.difficulty === 2
-                  ? 'Medio'
-                  : 'Difícil'}
+                {getDifficultyLabel(difficulty)}
               </Dropdown.Toggle>
               <Dropdown.Menu>
                 <Dropdown.Item
@@ -415,17 +464,17 @@ function TaskItem({
               </Dropdown.Menu>
             </Dropdown>
 
-            {/* Priority */}
+            {/* PRIORIDAD */}
             <Dropdown className="priority-dropdown">
               <Dropdown.Toggle
                 variant="light"
                 className="priority-toggle"
                 style={{
-                  backgroundColor: getPriorityColor(task.priority),
-                  color: 'white',
+                  backgroundColor: getPriorityColor(priority),
+                  color: '#fff',
                 }}
               >
-                {task.priority}
+                {getPriorityLabel(priority)}
               </Dropdown.Toggle>
               <Dropdown.Menu>
                 <Dropdown.Item onClick={() => handlePriorityChange('Low')}>
@@ -446,36 +495,32 @@ function TaskItem({
         {task.estimated_time && (
           <p>Tiempo Estimado: {task.estimated_time} horas</p>
         )}
-        {task.actual_time && (
-          <p>Tiempo Real: {timeWorked.toFixed(2)} horas</p>
-        )}
+        {task.actual_time && <p>Tiempo Real: {timeWorked.toFixed(2)} horas</p>}
 
-        {/* Botón "Completar" si no está completada/archivada */}
-        {task.status !== 'Archived' && task.status !== 'Completed' && (
+        {/* Botón "Completar" si no está completada ni archivada */}
+        {status !== 'Archived' && status !== 'Completed' && (
           <Button
             variant="success"
             className="complete-button"
             onClick={handleComplete}
-            title="Completar Tarea"
           >
             <FaCheck /> Completar
           </Button>
         )}
 
         {/* Botón "Desarchivar" si está archivada */}
-        {task.status === 'Archived' && (
+        {status === 'Archived' && (
           <Button
             variant="info"
             className="unarchive-button"
             onClick={handleUnarchive}
-            title="Desarchivar Tarea"
           >
             <FaUndo /> Desarchivar
           </Button>
         )}
 
         {/* Temporizador */}
-        {task.status !== 'Archived' && (
+        {status !== 'Archived' && (
           <div className="timer-button">
             {timerActive ? (
               <Button variant="warning" onClick={() => setTimerActive(false)}>
@@ -494,13 +539,21 @@ function TaskItem({
         {timerActive && <Timer onStop={handleStopTimer} />}
       </div>
 
+      {/* Modal de edición */}
       <EditTaskModal
         show={showEditModal}
         handleClose={() => setShowEditModal(false)}
-        task={task}
+        task={{
+          ...task,
+          // Pasamos status = state, difficulty=int, priority=string...
+          status,
+          difficulty,
+          priority,
+        }}
         handleSave={handleEditSave}
       />
 
+      {/* Modal de confirmación de borrado */}
       <ConfirmModal
         show={showDeleteConfirm}
         handleClose={() => setShowDeleteConfirm(false)}
@@ -512,12 +565,13 @@ function TaskItem({
   );
 }
 
-const getStatusColor = (status) => {
-  switch (status) {
+/** Colores de status, difficulty, priority (igual a TaskForm). */
+export const getStatusColor = (st) => {
+  switch (st) {
     case 'Pending':
-      return '#ffc107'; // Amarillo
+      return '#007bff'; // Azul
     case 'In Progress':
-      return '#17a2b8'; // Azul
+      return '#ffc107'; // Amarillo
     case 'Completed':
       return '#28a745'; // Verde
     case 'Archived':
@@ -527,8 +581,8 @@ const getStatusColor = (status) => {
   }
 };
 
-const getDifficultyColor = (difficulty) => {
-  switch (difficulty) {
+export const getDifficultyColor = (diff) => {
+  switch (diff) {
     case 1:
       return '#28a745'; // Verde
     case 2:
@@ -536,12 +590,12 @@ const getDifficultyColor = (difficulty) => {
     case 3:
       return '#dc3545'; // Rojo
     default:
-      return '#6c757d'; // Gris
+      return '#6c757d';
   }
 };
 
-const getPriorityColor = (priority) => {
-  switch ((priority || '').toLowerCase()) {
+export const getPriorityColor = (prio) => {
+  switch ((prio || '').toLowerCase()) {
     case 'low':
       return '#007bff'; // Azul
     case 'medium':

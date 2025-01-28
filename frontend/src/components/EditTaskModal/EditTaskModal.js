@@ -1,5 +1,3 @@
-// frontend/src/components/EditTaskModal/EditTaskModal.js
-
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert, Spinner, Row, Col } from 'react-bootstrap';
 import './EditTaskModal.css';
@@ -27,7 +25,7 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
   const playEditTaskSound = useSound(editTaskSound);
 
   useEffect(() => {
-    if (task) {
+    if (task && show) {
       setUpdatedTask({
         title: task.title || '',
         description: task.description || '',
@@ -36,8 +34,12 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
         status: task.status || 'Pending',
         estimated_time: task.estimated_time || '',
         actual_time: task.actual_time || '',
-        start_date: task.start_date ? task.start_date.split('T')[0] : '',
-        end_date: task.end_date ? task.end_date.split('T')[0] : '',
+        start_date: task.start_date
+          ? task.start_date.split('T')[0] || task.start_date
+          : '',
+        end_date: task.end_date
+          ? task.end_date.split('T')[0] || task.end_date
+          : '',
       });
       setEnableEndDate(!!task.end_date);
       setFormError('');
@@ -69,7 +71,6 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
     setFormError('');
     setFormSuccess('');
 
-    // Validación
     if (!updatedTask.title.trim()) {
       setFormError('El título de la tarea es obligatorio.');
       return;
@@ -78,7 +79,9 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
     // Validación de fechas
     if (updatedTask.start_date && updatedTask.end_date) {
       if (new Date(updatedTask.end_date) < new Date(updatedTask.start_date)) {
-        setFormError('La fecha de término no puede ser anterior a la fecha de inicio.');
+        setFormError(
+          'La fecha de término no puede ser anterior a la fecha de inicio.'
+        );
         return;
       }
     }
@@ -93,6 +96,7 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
         return;
       }
 
+      // Enviar PUT con updatedTask
       const response = await fetch(`/api/tasks/${task.id}`, {
         method: 'PUT',
         headers: {
@@ -102,20 +106,20 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
         body: JSON.stringify(updatedTask),
       });
 
-      if (response.ok) {
+      if (!response.ok) {
+        const errorData = await response.json();
+        setFormError(errorData.error || 'Error al actualizar la tarea');
+      } else {
         const data = await response.json();
-        handleSave(data); // Actualizar el estado en el componente padre
-        playEditTaskSound(); // Reproducir sonido
+        // Notificar al padre
+        handleSave(data);
+        playEditTaskSound();
         setFormSuccess('Tarea actualizada exitosamente.');
-
-        // Cerrar modal un poco después
+        // Cerrar tras un breve delay
         setTimeout(() => {
           handleClose();
           setFormSuccess('');
         }, 1500);
-      } else {
-        const errorData = await response.json();
-        setFormError(errorData.error || 'Error al actualizar la tarea');
       }
     } catch (error) {
       console.error('Error al actualizar la tarea:', error);
@@ -141,6 +145,7 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
       <Modal.Body>
         {formError && <Alert variant="danger">{formError}</Alert>}
         {formSuccess && <Alert variant="success">{formSuccess}</Alert>}
+
         <Form>
           <Row>
             <Col md={6}>
@@ -165,9 +170,10 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
                   value={updatedTask.priority}
                   onChange={handleChange}
                 >
-                  <option>Low</option>
-                  <option>Medium</option>
-                  <option>High</option>
+                  {/* Los values siguen en inglés, para no romper la BD */}
+                  <option value="Low">Baja</option>
+                  <option value="Medium">Media</option>
+                  <option value="High">Alta</option>
                 </Form.Control>
               </Form.Group>
             </Col>
@@ -198,10 +204,10 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
                   value={updatedTask.status}
                   onChange={handleChange}
                 >
-                  <option>Pending</option>
-                  <option>In Progress</option>
-                  <option>Completed</option>
-                  <option>Archived</option>
+                  <option value="Pending">Pendiente</option>
+                  <option value="In Progress">En Progreso</option>
+                  <option value="Completed">Completado</option>
+                  <option value="Archived">Archivada</option>
                 </Form.Control>
               </Form.Group>
             </Col>
