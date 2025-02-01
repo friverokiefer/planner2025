@@ -1,6 +1,6 @@
 // frontend/src/pages/AdminPage/AdminPage.js
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import authService from '../../services/authService';
 import { Table, Alert, Button, Modal, Form } from 'react-bootstrap';
 import './AdminPage.css';
@@ -51,12 +51,12 @@ function AdminPage() {
   };
 
   // Abrir modal de edición
-  const handleOpenEdit = (user) => {
+  const handleOpenEdit = user => {
     setEditUser({ id: user.id, name: user.name });
     setShowEditModal(true);
   };
 
-  const handleEditChange = (e) => {
+  const handleEditChange = e => {
     setEditUser({ ...editUser, [e.target.name]: e.target.value });
   };
 
@@ -85,7 +85,7 @@ function AdminPage() {
   };
 
   // Eliminar usuario
-  const handleDelete = async (id) => {
+  const handleDelete = async id => {
     try {
       setError(null);
       const currentUser = authService.getCurrentUser();
@@ -144,7 +144,11 @@ function AdminPage() {
       <h1>Panel de Administración</h1>
       {error && <Alert variant="danger">{error}</Alert>}
 
-      <Button variant="success" className="mb-3" onClick={() => setShowCreateModal(true)}>
+      <Button
+        variant="success"
+        className="mb-3"
+        onClick={() => setShowCreateModal(true)}
+      >
         Crear Usuario
       </Button>
 
@@ -160,17 +164,25 @@ function AdminPage() {
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
+            {users.map(u => (
               <tr key={u.id}>
                 <td>{u.id}</td>
                 <td>{u.name}</td>
                 <td>{u.email}</td>
                 <td>{u.role}</td>
                 <td>
-                  <Button variant="info" size="sm" onClick={() => handleOpenEdit(u)}>
+                  <Button
+                    variant="info"
+                    size="sm"
+                    onClick={() => handleOpenEdit(u)}
+                  >
                     Editar
                   </Button>{' '}
-                  <Button variant="danger" size="sm" onClick={() => handleDelete(u.id)}>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDelete(u.id)}
+                  >
                     Eliminar
                   </Button>
                 </td>
@@ -183,7 +195,11 @@ function AdminPage() {
       )}
 
       {/* Modal para editar usuario */}
-      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
+      <Modal
+        show={showEditModal}
+        onHide={() => setShowEditModal(false)}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Editar Usuario</Modal.Title>
         </Modal.Header>
@@ -209,7 +225,11 @@ function AdminPage() {
       </Modal>
 
       {/* Modal para crear usuario */}
-      <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)} centered>
+      <Modal
+        show={showCreateModal}
+        onHide={() => setShowCreateModal(false)}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Crear Usuario</Modal.Title>
         </Modal.Header>
@@ -219,7 +239,7 @@ function AdminPage() {
             <Form.Control
               type="text"
               value={newUser.name}
-              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+              onChange={e => setNewUser({ ...newUser, name: e.target.value })}
             />
           </Form.Group>
           <Form.Group className="mt-3">
@@ -227,7 +247,7 @@ function AdminPage() {
             <Form.Control
               type="email"
               value={newUser.email}
-              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              onChange={e => setNewUser({ ...newUser, email: e.target.value })}
             />
           </Form.Group>
           <Form.Group className="mt-3">
@@ -235,7 +255,9 @@ function AdminPage() {
             <Form.Control
               type="password"
               value={newUser.password}
-              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              onChange={e =>
+                setNewUser({ ...newUser, password: e.target.value })
+              }
             />
           </Form.Group>
           {/* Si deseas elegir rol: */}

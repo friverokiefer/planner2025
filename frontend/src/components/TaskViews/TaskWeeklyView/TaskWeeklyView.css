@@ -1,0 +1,19 @@
+.task-weekly-view {
+  padding: 20px;
+}
+
+.task-weekly-view .no-tasks {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #555;
+}
+
+.weekly-view-loading {
+  text-align: center;
+  padding: 20px;
+}
+
+/* Puedes ajustar el layout para tarjetas (por ejemplo, en filas o columnas) */
+.task-weekly-view > * {
+  margin-bottom: 20px;
+}

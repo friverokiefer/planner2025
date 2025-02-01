@@ -1,17 +1,19 @@
+/* frontend/src/pages/LoginPage/LoginPage.css */
+
 .login-page-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 40px;
-    max-width: 400px;
-    margin: 0 auto;
-  }
-  
-  .login-page-container h1 {
-    margin-bottom: 20px;
-    color: #333;
-  }
-  
-  .login-page-container .alert {
-    width: 100%;
-  }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+  max-width: 500px;
+  margin: 0 auto;
+  background-color: #ffffff; /* Fondo blanco para contraste */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Sombra sutil para profundidad */
+  border-radius: 8px; /* Bordes redondeados */
+}
+
+.login-page-container h2 {
+  margin-bottom: 20px;
+  color: #333333;
+  text-align: center;
+}

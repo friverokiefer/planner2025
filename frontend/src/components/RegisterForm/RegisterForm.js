@@ -1,7 +1,8 @@
 // frontend/src/components/RegisterForm/RegisterForm.js
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Form, Button, Alert, Spinner } from 'react-bootstrap';
+import PropTypes from 'prop-types'; // Importamos PropTypes
 import './RegisterForm.css';
 
 function RegisterForm({ onRegister }) {
@@ -14,11 +15,11 @@ function RegisterForm({ onRegister }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
+  const handleChange = e => {
     setUserData({ ...userData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -86,7 +87,12 @@ function RegisterForm({ onRegister }) {
         />
       </Form.Group>
 
-      <Button variant="success" type="submit" className="mt-4" disabled={loading}>
+      <Button
+        variant="success"
+        type="submit"
+        className="mt-4"
+        disabled={loading}
+      >
         {loading ? (
           <>
             <Spinner
@@ -105,5 +111,10 @@ function RegisterForm({ onRegister }) {
     </Form>
   );
 }
+
+// Definimos las propTypes
+RegisterForm.propTypes = {
+  onRegister: PropTypes.func.isRequired,
+};
 
 export default RegisterForm;

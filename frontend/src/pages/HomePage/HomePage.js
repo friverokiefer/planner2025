@@ -1,5 +1,5 @@
 // frontend/src/pages/HomePage.js
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import authService from '../../services/authService';
 
 function HomePage() {
@@ -13,9 +13,9 @@ function HomePage() {
         Authorization: `Bearer ${user.token}`,
       },
     })
-      .then((res) => res.json())
-      .then((data) => setProfile(data))
-      .catch((err) => console.error(err));
+      .then(res => res.json())
+      .then(data => setProfile(data))
+      .catch(err => console.error(err));
   }, []);
 
   return (

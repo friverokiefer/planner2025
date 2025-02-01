@@ -1,18 +1,18 @@
 // backend/src/models/profile.js
 
-const User = require('./User');
-const pool = require('../config/db');
+const User = require("./User");
+const pool = require("../config/db");
 
 const Profile = {
   getByUserId: async (userId) => {
     try {
       const { rows } = await pool.query(
-        'SELECT * FROM profiles WHERE user_id = $1',
-        [userId]
+        "SELECT * FROM profiles WHERE user_id = $1",
+        [userId],
       );
       return rows[0] || null;
     } catch (error) {
-      console.error('Profile.getByUserId:', error.message);
+      console.error("Profile.getByUserId:", error.message);
       throw error;
     }
   },
@@ -31,7 +31,7 @@ const Profile = {
       // Obtener información base desde "users"
       const userData = await User.findById(userId);
       if (!userData) {
-        throw new Error('Usuario no encontrado');
+        throw new Error("Usuario no encontrado");
       }
       const userEmail = userData.email;
       const userNameFromUsers = userData.name;
@@ -50,8 +50,8 @@ const Profile = {
           userId,
           finalName,
           userEmail,
-          bio || '',
-          profile_picture_url || '',
+          bio || "",
+          profile_picture_url || "",
         ];
         const { rows } = await pool.query(insertQuery, values);
         return rows[0];
@@ -69,15 +69,15 @@ const Profile = {
         `;
         const values = [
           finalName,
-          bio || '',
-          profile_picture_url || '',
+          bio || "",
+          profile_picture_url || "",
           userId,
         ];
         const { rows } = await pool.query(updateQuery, values);
         return rows[0];
       }
     } catch (error) {
-      console.error('Profile.updateOrCreate:', error.message);
+      console.error("Profile.updateOrCreate:", error.message);
       throw error;
     }
   },

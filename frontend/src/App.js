@@ -1,6 +1,5 @@
 // frontend/src/App.js
-
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,7 +8,7 @@ import {
   Navigate,
 } from 'react-router-dom';
 
-import TaskPage from './pages/TaskPage/TaskPage';
+import TaskRoutes from './routes/TaskRoutes';
 import ProfilePage from './pages/ProfilePage/ProfilePage';
 import ArchivedTasksPage from './pages/ArchivedTasksPage/ArchivedTasksPage';
 import TaskMetricsPage from './pages/TaskMetricsPage/TaskMetricsPage';
@@ -18,7 +17,8 @@ import HomePage from './pages/HomePage/HomePage';
 import LoginPage from './pages/LoginPage/LoginPage';
 import RegisterPage from './pages/RegisterPage/RegisterPage';
 import AdminPage from './pages/AdminPage/AdminPage';
-import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary'; // Componente global para errores
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+
 import './App.css';
 
 import {
@@ -33,33 +33,34 @@ import {
 } from 'react-icons/fa';
 
 import authService from './services/authService';
-
-import useSound from './hooks/useSound'; // Hook personalizado
+import useSound from './hooks/useSound';
 import clickSoundFile from './assets/sounds/notification-pluck-on-269288.mp3';
 
 function App() {
-  const [user, setUser] = useState(undefined); // null o {token, id, role}
+  const [user, setUser] = useState(null); // Estado inicial en null
   const [theme, setTheme] = useState('default');
   const [profilePicUrl, setProfilePicUrl] = useState(null);
   const [profileName, setProfileName] = useState('');
 
-  // Sonido al hacer clic en el menú
+  // Sonido click
   const playClickSound = useSound(clickSoundFile);
 
-  // Cargar user y sus datos (nombre, foto)
+  // Cargar usuario al montar el componente
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (!currentUser) {
-      setUser(null);
-    } else {
-      setUser(currentUser);
-      fetchProfileData(currentUser.token);
-    }
-    // eslint-disable-next-line
+    const loadUser = async () => {
+      const currentUser = authService.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+        await fetchProfileData(currentUser.token);
+      } else {
+        setUser(null);
+      }
+    };
+    loadUser();
   }, []);
 
-  // Llamada a /api/profile para obtener name, pic...
-  const fetchProfileData = async (token) => {
+  // Obtener datos de perfil
+  const fetchProfileData = async token => {
     try {
       const res = await fetch('/api/profile', {
         headers: { Authorization: `Bearer ${token}` },
@@ -76,23 +77,33 @@ function App() {
     }
   };
 
-  // Manejo de login
-  const handleLogin = (userData) => {
-    setUser(userData);
-    fetchProfileData(userData.token);
+  // Manejo login (actualizado para usar authService directamente)
+  const handleLogin = async (userDataOrToken) => {
+    // Aquí se puede recibir directamente un token (como en LoginPage)
+    // o un objeto usuario (como se obtiene en RegisterPage)
+    // En ambos casos se actualizará el estado
+    if (typeof userDataOrToken === 'string') {
+      // Es un token
+      authService.login(userDataOrToken);
+      const currentUser = authService.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+        await fetchProfileData(currentUser.token);
+      }
+    } else {
+      // Se asume que ya es un objeto usuario
+      setUser(userDataOrToken);
+      await fetchProfileData(userDataOrToken.token);
+    }
   };
 
-  // Manejo de logout
+  // Manejo logout
   const handleLogout = () => {
     authService.logout();
     setUser(null);
     setProfilePicUrl(null);
     setProfileName('');
   };
-
-  if (user === undefined) {
-    return <div className="loading-screen">Cargando sesión...</div>;
-  }
 
   return (
     <div className={`app-container theme-${theme}`}>
@@ -116,7 +127,7 @@ function App() {
             <select
               id="theme-select"
               value={theme}
-              onChange={(e) => setTheme(e.target.value)}
+              onChange={e => setTheme(e.target.value)}
             >
               <option value="default">Default</option>
               <option value="dark">Oscuro</option>
@@ -253,32 +264,46 @@ function App() {
         <ErrorBoundary>
           <div className="main-container">
             <Routes>
-              <Route path="/" element={<HomePage />} />
-
+              {/* Si el usuario está autenticado, redirige de "/" a "/profile" */}
+              <Route
+                path="/"
+                element={user ? <Navigate to="/profile" /> : <HomePage />}
+              />
               <Route
                 path="/login"
                 element={
-                  !user ? <LoginPage onLogin={handleLogin} /> : <Navigate to="/" />
+                  !user ? (
+                    <LoginPage onLogin={handleLogin} />
+                  ) : (
+                    <Navigate to="/profile" />
+                  )
                 }
               />
               <Route
                 path="/register"
                 element={
-                  !user ? <RegisterPage onLogin={handleLogin} /> : <Navigate to="/" />
+                  !user ? (
+                    <RegisterPage onLogin={handleLogin} />
+                  ) : (
+                    <Navigate to="/profile" />
+                  )
                 }
               />
-
               <Route
                 path="/profile"
                 element={user ? <ProfilePage /> : <Navigate to="/login" />}
               />
               <Route
-                path="/tasks"
-                element={user ? <TaskPage /> : <Navigate to="/login" />}
+                path="/tasks/*"
+                element={
+                  user ? <TaskRoutes user={user} /> : <Navigate to="/login" />
+                }
               />
               <Route
                 path="/archived-tasks"
-                element={user ? <ArchivedTasksPage /> : <Navigate to="/login" />}
+                element={
+                  user ? <ArchivedTasksPage /> : <Navigate to="/login" />
+                }
               />
               <Route
                 path="/task-metrics"
@@ -288,18 +313,17 @@ function App() {
                 path="/friends"
                 element={user ? <FriendsPage /> : <Navigate to="/login" />}
               />
-
               {user && user.role === 'admin' && (
                 <Route path="/admin" element={<AdminPage />} />
               )}
-
-              {/* Ruta para manejar páginas no encontradas (404) */}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </div>
         </ErrorBoundary>
 
-        <footer className="footer">© 2025 Planner2025. Construido con 💜</footer>
+        <footer className="footer">
+          © 2025 Planner2025. Construido con 💜
+        </footer>
       </Router>
     </div>
   );

@@ -1,0 +1,11 @@
+/* frontend/src/components/TaskViews/TaskTableView/TaskTableView.css */
+.task-table-view {
+  padding: 20px;
+  overflow-x: auto;
+}
+
+.task-table-loading {
+  padding: 20px;
+  text-align: center;
+  font-size: 1.2rem;
+}

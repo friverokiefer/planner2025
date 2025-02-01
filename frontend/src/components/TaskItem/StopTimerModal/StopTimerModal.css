@@ -1,0 +1,10 @@
+/* Estilos básicos para el modal de temporizador */
+.modal-header,
+.modal-footer {
+  padding: 15px;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+}

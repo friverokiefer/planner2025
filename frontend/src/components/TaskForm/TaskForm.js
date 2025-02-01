@@ -1,6 +1,7 @@
 // frontend/src/components/TaskForm/TaskForm.js
 
-import React, { useState } from 'react';
+import { useState } from 'react';
+import PropTypes from 'prop-types';
 import './TaskForm.css';
 import useSound from '../../hooks/useSound';
 import addTaskSound from '../../assets/sounds/notification-1-269296.mp3';
@@ -31,7 +32,7 @@ function TaskForm({ onTaskAdded }) {
 
   const playAddSound = useSound(addTaskSound);
 
-  const handleChange = (e) => {
+  const handleChange = e => {
     const { name, value } = e.target;
     let newValue = value;
 
@@ -44,14 +45,14 @@ function TaskForm({ onTaskAdded }) {
   };
 
   const handleToggleEndDate = () => {
-    setEnableEndDate((prev) => !prev);
+    setEnableEndDate(prev => !prev);
     // Al desactivar el switch, limpiamos el end_date
     if (enableEndDate) {
-      setTask((prev) => ({ ...prev, end_date: '' }));
+      setTask(prev => ({ ...prev, end_date: '' }));
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -198,9 +199,9 @@ function TaskForm({ onTaskAdded }) {
           onChange={handleChange}
           className={`difficulty-dropdown difficulty-${task.difficulty}`}
         >
-          <option value={1}>1 – Fácil</option>
-          <option value={2}>2 – Medio</option>
-          <option value={3}>3 – Difícil</option>
+          <option value={1}>1 - Fácil</option>
+          <option value={2}>2 - Medio</option>
+          <option value={3}>3 - Difícil</option>
         </Form.Control>
       </Form.Group>
 
@@ -214,9 +215,7 @@ function TaskForm({ onTaskAdded }) {
           name="status"
           value={task.status}
           onChange={handleChange}
-          className={`status-dropdown status-${task.status
-            .toLowerCase()
-            .replace(' ', '-')}`}
+          className={`status-dropdown status-${task.status.toLowerCase().replace(' ', '-')}`}
         >
           <option value="Pending">Pendiente</option>
           <option value="In Progress">En Progreso</option>
@@ -309,5 +308,9 @@ function TaskForm({ onTaskAdded }) {
     </Form>
   );
 }
+
+TaskForm.propTypes = {
+  onTaskAdded: PropTypes.func.isRequired,
+};
 
 export default TaskForm;

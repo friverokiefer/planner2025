@@ -1,26 +1,26 @@
 // frontend/src/pages/RegisterPage/RegisterPage.js
-
-import React, { useState } from 'react';
-import RegisterForm from '../../components/RegisterForm/RegisterForm'; // Ruta corregida
-import authService from '../../services/authService'; 
+import { useState } from 'react';
+import RegisterForm from '../../components/RegisterForm/RegisterForm';
+import authService from '../../services/authService';
 import { useNavigate } from 'react-router-dom';
 import { Alert } from 'react-bootstrap';
 import './RegisterPage.css';
+import PropTypes from 'prop-types';
 
 function RegisterPage({ onLogin }) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const navigate = useNavigate();
 
-  const handleRegister = async (userData) => {
+  const handleRegister = async userData => {
     try {
       const user = await authService.register(userData);
-      onLogin(user); // Autenticación automática después del registro
+      onLogin(user); // Actualiza el estado global para marcar al usuario como autenticado
       setSuccess('Usuario registrado y autenticado con éxito.');
       setError(null);
-      navigate('/'); // Redirige a la página principal o a donde desees
+      // Redirige a la ruta privada, por ejemplo, "/profile"
+      navigate('/profile');
     } catch (error) {
-      // Manejar errores específicos si el backend envía mensajes
       setError(error.response?.data?.msg || error.message);
       setSuccess(null);
     }
@@ -35,5 +35,9 @@ function RegisterPage({ onLogin }) {
     </div>
   );
 }
+
+RegisterPage.propTypes = {
+  onLogin: PropTypes.func.isRequired,
+};
 
 export default RegisterPage;

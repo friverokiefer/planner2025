@@ -1,31 +1,35 @@
+/* frontend/src/pages/TaskPage/TaskPage.css */
 .task-page {
-    padding: 25px;
-  }
-  
-  .task-page h2 {
-    margin-bottom: 25px;
-    color: var(--primary-blue);
-    text-align: center;
-  }
-  
-  .task-layout {
-    display: flex;
-    gap: 30px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  .task-form-column {
-    flex: 1;
-    min-width: 300px;
-    background-color: var(--neutral-white);
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  .task-list-column {
-    flex: 2;
-    min-width: 300px;
-  }
-  
+  padding: 25px;
+}
+
+.task-page .task-content {
+  width: 100%;
+}
+
+.task-page h2 {
+  margin-bottom: 25px;
+  color: var(--primary-blue);
+  text-align: center;
+}
+
+.task-layout {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.task-form-column {
+  flex: 1;
+  min-width: 300px;
+  background-color: var(--neutral-white);
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.task-list-column {
+  flex: 2;
+  min-width: 300px;
+}

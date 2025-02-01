@@ -1,45 +1,32 @@
+// frontend/src/components/EditTaskModal/EditTaskModal.js
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert, Spinner, Row, Col } from 'react-bootstrap';
 import './EditTaskModal.css';
 import useSound from '../../hooks/useSound';
 import editTaskSound from '../../assets/sounds/notification-1-269296.mp3';
 import authService from '../../services/authService';
+import PropTypes from 'prop-types';
 
 function EditTaskModal({ show, handleClose, task, handleSave }) {
-  const [updatedTask, setUpdatedTask] = useState({
-    title: '',
-    description: '',
-    priority: 'Low',
-    difficulty: 1,
-    status: 'Pending',
-    estimated_time: '',
-    actual_time: '',
-    start_date: '',
-    end_date: '',
-  });
+  const [updatedTask, setUpdatedTask] = useState({});
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [enableEndDate, setEnableEndDate] = useState(false);
+  const [enableEndDate, setEnableEndDate] = useState(!!task.end_date);
 
   const playEditTaskSound = useSound(editTaskSound);
 
   useEffect(() => {
-    if (task && show) {
+    if (show && task) {
       setUpdatedTask({
         title: task.title || '',
         description: task.description || '',
         priority: task.priority || 'Low',
         difficulty: task.difficulty || 1,
-        status: task.status || 'Pending',
+        state: task.state || 'Pending',
         estimated_time: task.estimated_time || '',
-        actual_time: task.actual_time || '',
-        start_date: task.start_date
-          ? task.start_date.split('T')[0] || task.start_date
-          : '',
-        end_date: task.end_date
-          ? task.end_date.split('T')[0] || task.end_date
-          : '',
+        start_date: task.start_date ? task.start_date.split('T')[0] : '',
+        end_date: task.end_date ? task.end_date.split('T')[0] : '',
       });
       setEnableEndDate(!!task.end_date);
       setFormError('');
@@ -49,45 +36,30 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    let newValue = value;
-
-    // Convertir campos numéricos a número
-    if (name === 'difficulty') {
-      newValue = parseInt(value, 10);
-    } else if (name === 'estimated_time' || name === 'actual_time') {
-      newValue = value === '' ? '' : parseFloat(value);
-    }
-    setUpdatedTask((prev) => ({ ...prev, [name]: newValue }));
+    setUpdatedTask(prev => ({ ...prev, [name]: value }));
   };
 
   const handleToggleEndDate = () => {
-    setEnableEndDate((prev) => !prev);
+    setEnableEndDate(prev => !prev);
     if (enableEndDate) {
-      setUpdatedTask((prev) => ({ ...prev, end_date: '' }));
+      setUpdatedTask(prev => ({ ...prev, end_date: '' }));
     }
   };
 
   const onSave = async () => {
     setFormError('');
     setFormSuccess('');
-
     if (!updatedTask.title.trim()) {
-      setFormError('El título de la tarea es obligatorio.');
+      setFormError('El título es obligatorio.');
       return;
     }
-
-    // Validación de fechas
     if (updatedTask.start_date && updatedTask.end_date) {
       if (new Date(updatedTask.end_date) < new Date(updatedTask.start_date)) {
-        setFormError(
-          'La fecha de término no puede ser anterior a la fecha de inicio.'
-        );
+        setFormError('La fecha de término no puede ser anterior a la fecha de inicio.');
         return;
       }
     }
-
     setLoading(true);
-
     try {
       const user = authService.getCurrentUser();
       if (!user || !user.token) {
@@ -95,8 +67,6 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
         setLoading(false);
         return;
       }
-
-      // Enviar PUT con updatedTask
       const response = await fetch(`/api/tasks/${task.id}`, {
         method: 'PUT',
         headers: {
@@ -105,17 +75,14 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
         },
         body: JSON.stringify(updatedTask),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         setFormError(errorData.error || 'Error al actualizar la tarea');
       } else {
         const data = await response.json();
-        // Notificar al padre
         handleSave(data);
         playEditTaskSound();
         setFormSuccess('Tarea actualizada exitosamente.');
-        // Cerrar tras un breve delay
         setTimeout(() => {
           handleClose();
           setFormSuccess('');
@@ -145,7 +112,6 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
       <Modal.Body>
         {formError && <Alert variant="danger">{formError}</Alert>}
         {formSuccess && <Alert variant="success">{formSuccess}</Alert>}
-
         <Form>
           <Row>
             <Col md={6}>
@@ -170,7 +136,6 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
                   value={updatedTask.priority}
                   onChange={handleChange}
                 >
-                  {/* Los values siguen en inglés, para no romper la BD */}
                   <option value="Low">Baja</option>
                   <option value="Medium">Media</option>
                   <option value="High">Alta</option>
@@ -178,7 +143,6 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
               </Form.Group>
             </Col>
           </Row>
-
           <Row className="mt-3">
             <Col md={6}>
               <Form.Group controlId="formTaskDifficulty">
@@ -189,19 +153,19 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
                   value={updatedTask.difficulty}
                   onChange={handleChange}
                 >
-                  <option value={1}>1 - Fácil</option>
-                  <option value={2}>2 - Medio</option>
-                  <option value={3}>3 - Difícil</option>
+                  <option value="1">1 - Fácil</option>
+                  <option value="2">2 - Medio</option>
+                  <option value="3">3 - Difícil</option>
                 </Form.Control>
               </Form.Group>
             </Col>
             <Col md={6}>
-              <Form.Group controlId="formTaskStatus">
+              <Form.Group controlId="formTaskState">
                 <Form.Label>Estado</Form.Label>
                 <Form.Control
                   as="select"
-                  name="status"
-                  value={updatedTask.status}
+                  name="state"
+                  value={updatedTask.state}
                   onChange={handleChange}
                 >
                   <option value="Pending">Pendiente</option>
@@ -212,7 +176,6 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
               </Form.Group>
             </Col>
           </Row>
-
           <Row className="mt-3">
             <Col md={6}>
               <Form.Group controlId="formTaskEstimatedTime">
@@ -229,24 +192,6 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
               </Form.Group>
             </Col>
             <Col md={6}>
-              <Form.Group controlId="formTaskActualTime">
-                <Form.Label>Tiempo Real (horas)</Form.Label>
-                <Form.Control
-                  type="number"
-                  name="actual_time"
-                  value={updatedTask.actual_time}
-                  onChange={handleChange}
-                  placeholder="Tiempo real"
-                  min="0"
-                  step="0.1"
-                  readOnly
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-
-          <Row className="mt-3 align-items-center">
-            <Col md={6}>
               <Form.Group controlId="formTaskStartDate">
                 <Form.Label>Fecha de Inicio</Form.Label>
                 <Form.Control
@@ -257,9 +202,10 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
                 />
               </Form.Group>
             </Col>
+          </Row>
+          <Row className="mt-3">
             <Col md={6}>
-              <Form.Group controlId="formTaskEndDate">
-                <Form.Label>Fecha de Término</Form.Label>
+              <Form.Group controlId="formTaskToggleEndDate">
                 <Form.Check
                   type="switch"
                   id="enable-end-date-switch"
@@ -267,17 +213,22 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
                   checked={enableEndDate}
                   onChange={handleToggleEndDate}
                 />
-                <Form.Control
-                  type="date"
-                  name="end_date"
-                  value={updatedTask.end_date}
-                  onChange={handleChange}
-                  disabled={!enableEndDate}
-                />
               </Form.Group>
             </Col>
+            {enableEndDate && (
+              <Col md={6}>
+                <Form.Group controlId="formTaskEndDate">
+                  <Form.Label>Fecha de Término</Form.Label>
+                  <Form.Control
+                    type="date"
+                    name="end_date"
+                    value={updatedTask.end_date}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+            )}
           </Row>
-
           <Form.Group controlId="formTaskDescription" className="mt-3">
             <Form.Label>Descripción</Form.Label>
             <Form.Control
@@ -323,5 +274,22 @@ function EditTaskModal({ show, handleClose, task, handleSave }) {
     </Modal>
   );
 }
+
+EditTaskModal.propTypes = {
+  show: PropTypes.bool.isRequired,
+  handleClose: PropTypes.func.isRequired,
+  task: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    title: PropTypes.string,
+    description: PropTypes.string,
+    priority: PropTypes.string,
+    difficulty: PropTypes.number,
+    state: PropTypes.string,
+    estimated_time: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    start_date: PropTypes.string,
+    end_date: PropTypes.string,
+  }).isRequired,
+  handleSave: PropTypes.func.isRequired,
+};
 
 export default EditTaskModal;

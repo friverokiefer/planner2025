@@ -1,0 +1,24 @@
+.task-wide-view {
+  display: grid;
+  /* Usamos auto-fit y minmax flexible */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  grid-auto-flow: row dense;
+  gap: 20px;
+  padding: 20px;
+}
+
+.task-wide-card {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: box-shadow 0.2s;
+  padding: 20px; 
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.task-wide-card.dragging {
+  opacity: 0.8;
+  background-color: #f0f8ff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}

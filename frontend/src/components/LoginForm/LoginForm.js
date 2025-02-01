@@ -1,7 +1,7 @@
 // frontend/src/components/LoginForm/LoginForm.js
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Form, Button, Alert, Spinner } from 'react-bootstrap';
+import PropTypes from 'prop-types';
 import './LoginForm.css';
 
 function LoginForm({ onLogin }) {
@@ -9,22 +9,50 @@ function LoginForm({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
-    setCredentials({ ...credentials, [e.target.name]: e.target.value });
+  const handleChange = e => {
+    setCredentials({ ...credentials, [e.target.name]: e.target.value.trim() });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    console.log('Credentials before login:', credentials);
+
     try {
-      await onLogin(credentials);
-    } catch (err) {
-      if (err.response && err.response.data && err.response.data.msg) {
-        setError(err.response.data.msg);
-      } else {
-        setError('Credenciales inválidas.');
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw errorData;
       }
+
+      const data = await response.json();
+      // Llama a onLogin con el token, que ahora actualiza el estado en App.js
+      onLogin(data.token);
+      console.log('Login successful!');
+    } catch (err) {
+      console.error('Login error:', err);
+      setLoading(false);
+
+      if (err.msg) {
+        setError(err.msg);
+      } else if (err.errors) {
+        const errorMessages = err.errors.map(error => error.msg).join(', ');
+        setError(errorMessages);
+      } else {
+        setError(
+          'Credenciales inválidas. Por favor, verifica tu correo y contraseña.'
+        );
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -56,7 +84,12 @@ function LoginForm({ onLogin }) {
         />
       </Form.Group>
 
-      <Button variant="primary" type="submit" className="mt-4" disabled={loading}>
+      <Button
+        variant="primary"
+        type="submit"
+        className="mt-4"
+        disabled={loading}
+      >
         {loading ? (
           <>
             <Spinner
@@ -75,5 +108,9 @@ function LoginForm({ onLogin }) {
     </Form>
   );
 }
+
+LoginForm.propTypes = {
+  onLogin: PropTypes.func.isRequired,
+};
 
 export default LoginForm;

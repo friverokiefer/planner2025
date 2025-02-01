@@ -1,5 +1,5 @@
 // frontend/src/pages/FriendsPage/FriendsPage.js
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import authService from '../../services/authService';
 import useSound from '../../hooks/useSound';
 import { Alert, Button, Form, Card, Row, Col } from 'react-bootstrap';
@@ -70,7 +70,7 @@ function FriendsPage() {
   }, []);
 
   // Buscar usuarios
-  const handleSearch = async (e) => {
+  const handleSearch = async e => {
     e.preventDefault();
     setError('');
     try {
@@ -91,7 +91,7 @@ function FriendsPage() {
   };
 
   // Enviar solicitud
-  const handleSendRequest = async (to_user_id) => {
+  const handleSendRequest = async to_user_id => {
     setError('');
     try {
       const res = await fetch('/api/friends/send', {
@@ -117,7 +117,7 @@ function FriendsPage() {
   };
 
   // Aceptar solicitud
-  const handleAccept = async (requestId) => {
+  const handleAccept = async requestId => {
     setError('');
     try {
       const res = await fetch(`/api/friends/${requestId}/accept`, {
@@ -125,7 +125,7 @@ function FriendsPage() {
         headers: { Authorization: `Bearer ${user?.token}` },
       });
       if (res.ok) {
-        setRequests((prev) => prev.filter((r) => r.id !== requestId));
+        setRequests(prev => prev.filter(r => r.id !== requestId));
         fetchFriends();
         playAcceptSound();
       } else {
@@ -139,7 +139,7 @@ function FriendsPage() {
   };
 
   // Rechazar solicitud
-  const handleReject = async (requestId) => {
+  const handleReject = async requestId => {
     setError('');
     try {
       const res = await fetch(`/api/friends/${requestId}/reject`, {
@@ -148,7 +148,7 @@ function FriendsPage() {
       });
       if (res.ok) {
         // Quitamos la solicitud del array local
-        setRequests((prev) => prev.filter((r) => r.id !== requestId));
+        setRequests(prev => prev.filter(r => r.id !== requestId));
       } else {
         playErrorSound();
         setError('Error al rechazar solicitud');
@@ -159,7 +159,7 @@ function FriendsPage() {
     }
   };
 
-  const getPhotoOrDefault = (url) =>
+  const getPhotoOrDefault = url =>
     url && url.trim() !== '' ? url : '/default_silueta.jpeg';
 
   return (
@@ -175,7 +175,7 @@ function FriendsPage() {
               type="text"
               placeholder="user@example.com o 123"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
             />
           </Form.Group>
           <Button variant="primary" type="submit" className="mt-2">
@@ -188,7 +188,7 @@ function FriendsPage() {
         <div className="search-results mb-4">
           <h4>Resultados de la búsqueda:</h4>
           <Row>
-            {searchResults.map((u) => (
+            {searchResults.map(u => (
               <Col key={u.id} xs={12} md={6} lg={4} className="mb-3">
                 <Card className="p-2">
                   <Card.Body className="d-flex align-items-center">
@@ -227,7 +227,7 @@ function FriendsPage() {
           <p>No tienes solicitudes pendientes.</p>
         ) : (
           <Row>
-            {requests.map((req) => (
+            {requests.map(req => (
               <Col key={req.id} xs={12} md={6} lg={4} className="mb-3">
                 <Card className="p-2">
                   <Card.Body className="d-flex align-items-center">
@@ -273,7 +273,7 @@ function FriendsPage() {
           <p>Aún no tienes amigos aceptados.</p>
         ) : (
           <Row>
-            {friends.map((f) => {
+            {friends.map(f => {
               const isFromMe = f.from_user_id === user?.id;
               const friendId = isFromMe ? f.to_user_id : f.from_user_id;
               const friendName = isFromMe ? f.to_name : f.from_name;

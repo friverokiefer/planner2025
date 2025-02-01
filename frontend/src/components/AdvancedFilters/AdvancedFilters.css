@@ -1,0 +1,54 @@
+/* frontend/src/components/AdvancedFilters/AdvancedFilters.css */
+
+.advanced-filters {
+  padding: 20px;
+  border-bottom: 1px solid #ddd;
+  background-color: #f9f9f9;
+}
+
+.advanced-filters h4 {
+  margin-bottom: 15px;
+}
+
+.filter-group {
+  margin-bottom: 10px;
+}
+
+.filter-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.filter-group input,
+.filter-group select {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.advanced-filters button {
+  padding: 10px 15px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.advanced-filters button:hover {
+  background-color: #218838;
+}
+
+.reset-button {
+  background-color: #dc3545;
+}
+
+.reset-button:hover {
+  background-color: #c82333;
+}

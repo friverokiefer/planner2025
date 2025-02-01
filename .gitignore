@@ -2,3 +2,14 @@ node_modules
 backend/.env
 backend/node_modules/
 frontend/node_modules/
+consolidate_code_backend.txt
+consolidate_code_frontend.txt
+consolidated_code.txt
+find_large_files.py
+consolidate_code2.py
+consolidate_code3.py
+consolidated_code_specific_files_v2.txt
+consolidated_code_backend.txt
+consolidated_code_frontend.txt
+consolidated_code_specific_files.txt
+components.txt

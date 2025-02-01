@@ -1,33 +1,99 @@
-.profile-dashboard {
-  background-color: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+.container.my-4 {
+  background-color: #f8f9fa; /* Un fondo suave para toda la página */
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra ligera para el contenedor */
 }
 
-.charts-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 30px;
-  justify-content: center;
-}
-
-.chart-item {
-  flex: 1;
-  min-width: 300px;
-  max-width: 600px;
-  background-color: #f9f9f9;
-  padding: 15px;
-  border-radius: 12px;
+.text-center {
+  color: #343a40; /* Color de texto oscuro para el título */
   margin-bottom: 20px;
 }
 
-.chart-item h4 {
-  text-align: center;
-  margin-bottom: 10px;
+.row.mt-4 {
+  justify-content: center;
 }
 
-.additional-stats {
-  background: #f9f9f9;
-  padding: 20px;
-  border-radius: 12px;
+.col-md-6 {
+  margin-bottom: 20px;
+}
+
+/* Estilos para los gráficos */
+.recharts-wrapper {
+  margin: 0 auto;
+}
+
+/* Estilos para los tooltips de los gráficos */
+.recharts-default-tooltip {
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.recharts-tooltip-label,
+.recharts-tooltip-item {
+  color: #343a40; /* Mismo color que el título para consistencia */
+}
+
+/* Estilos para la leyenda de los gráficos */
+.recharts-legend-wrapper {
+  margin-top: 10px;
+}
+
+.recharts-legend-item {
+  margin-right: 15px; /* Más espacio entre elementos de la leyenda */
+}
+
+.recharts-legend-item-text {
+  color: #343a40; /* Color para los textos de la leyenda */
+  font-size: 0.9em;
+}
+
+/* Estilos para la sección de estadísticas adicionales */
+.bg-light {
+  background-color: #e9ecef !important; /* Un gris más claro para las estadísticas */
+  border: 1px solid #ced4da; /* Borde sutil */
+}
+
+.bg-light p {
+  margin-bottom: 5px; /* Reducir el espacio entre líneas */
+}
+
+.bg-light strong {
+  color: #343a40; /* Consistencia en el color del texto */
+}
+
+/* Estilos para los mensajes de error */
+.alert-danger {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+  padding: 10px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
+/* Estilos para el selector de filtro */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  font-weight: bold;
+  color: #343a40; /* Color para las etiquetas del formulario */
+}
+
+.form-select {
+  border: 1px solid #ced4da; /* Borde para el selector */
+  width: auto; /* Ajustar ancho automáticamente */
+  display: inline-block;
+  margin-left: 10px;
+}
+
+/* Estilos para los títulos de los gráficos */
+.text-center.h4,
+h4.text-center {
+  color: #495057; /* Un color un poco más oscuro para los subtítulos */
+  margin-top: 15px;
 }

@@ -1,0 +1,20 @@
+.view-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px;
+}
+
+.view-switcher label {
+  font-weight: bold;
+  color: #007bff;
+}
+
+.view-switcher-select {
+  padding: 8px 12px;
+  border: 1px solid #007bff;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #333;
+  cursor: pointer;
+}

@@ -1,10 +1,7 @@
 // backend/src/models/Friend.js
-const pool = require('../config/db');
+const pool = require("../config/db");
 
 const Friend = {
-  /**
-   * Enviar solicitud de amistad
-   */
   async sendRequest(fromUserId, toUserId) {
     const existsQuery = `
       SELECT 1
@@ -15,7 +12,6 @@ const Friend = {
     `;
     const exists = await pool.query(existsQuery, [fromUserId, toUserId]);
     if (exists.rows.length > 0) {
-      // Ya existe
       return null;
     }
 
@@ -29,11 +25,7 @@ const Friend = {
     return result.rows[0];
   },
 
-  /**
-   * Aceptar solicitud
-   */
   async acceptRequest(friendReqId, currentUserId) {
-    // Solo el destinatario puede aceptar
     const updateQuery = `
       UPDATE friendship
         SET status = 'accepted'
@@ -46,11 +38,7 @@ const Friend = {
     return result.rows[0];
   },
 
-  /**
-   * Rechazar solicitud
-   */
   async rejectRequest(friendReqId, currentUserId) {
-    // Solo el destinatario puede rechazar
     const updateQuery = `
       UPDATE friendship
         SET status = 'rejected'
@@ -60,17 +48,9 @@ const Friend = {
     `;
     const values = [friendReqId, currentUserId];
     const result = await pool.query(updateQuery, values);
-    if (!result.rows[0]) {
-      console.error(
-        `[rejectRequest] No se encontró la solicitud (id=${friendReqId}) para friend_id=${currentUserId}`
-      );
-    }
     return result.rows[0];
   },
 
-  /**
-   * Obtener amigos aceptados
-   */
   async getFriendsOfUser(userId) {
     const query = `
       SELECT 
@@ -95,9 +75,6 @@ const Friend = {
     return rows;
   },
 
-  /**
-   * Solicitudes pendientes
-   */
   async getRequestsForUser(userId) {
     const query = `
       SELECT 
@@ -117,9 +94,6 @@ const Friend = {
     return rows;
   },
 
-  /**
-   * Buscar
-   */
   async findUserByEmailOrId(queryText) {
     const sql = `
       SELECT

@@ -1,0 +1,35 @@
+/* frontend/src/components/WorkloadSummary/WorkloadSummary.css */
+
+.workload-summary {
+  padding: 20px;
+  border-top: 1px solid #ddd;
+  background-color: #f1f1f1;
+}
+
+.workload-summary h4 {
+  margin-bottom: 10px;
+}
+
+.overload-alert {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f8d7da;
+  border-radius: 4px;
+}
+
+.overload-alert p {
+  margin-bottom: 10px;
+}
+
+.overload-alert button {
+  padding: 8px 12px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.overload-alert button:hover {
+  background-color: #c82333;
+}

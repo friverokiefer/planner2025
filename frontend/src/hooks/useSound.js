@@ -1,5 +1,4 @@
 // frontend/src/hooks/useSound.js
-
 import { useEffect, useRef } from 'react';
 
 const useSound = (src, options = {}) => {
@@ -13,20 +12,16 @@ const useSound = (src, options = {}) => {
     }
 
     return () => {
-      // Si deseas pausar al desmontar, se hace aquí.
-      // Pero para evitar el error de “interrupted by a call to pause()”,
-      // lo encapsulamos en un try/catch o lo removemos si no es necesario.
-      try {
+      // Pausar el audio cuando el componente se desmonta o cambia la fuente
+      if (audioRef.current) {
         audioRef.current.pause();
-      } catch (err) {
-        console.warn('Audio pause interrupted:', err);
       }
     };
   }, [src, options.loop]);
 
   const play = async () => {
     if (audioRef.current) {
-      audioRef.current.currentTime = 0;
+      audioRef.current.currentTime = 0; // Reiniciar el audio al principio
       try {
         await audioRef.current.play();
       } catch (err) {
@@ -35,13 +30,7 @@ const useSound = (src, options = {}) => {
     }
   };
 
-  const pause = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-  };
-
-  return play;
+  return play; // Solo devolvemos la función play
 };
 
 export default useSound;

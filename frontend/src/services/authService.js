@@ -1,71 +1,56 @@
 // frontend/src/services/authService.js
-
-import axios from 'axios';
-import { jwtDecode } from 'jwt-decode'; // Importación corregida
-
-const API_URL = '/api/auth/';
-
-const register = async (userData) => {
-  try {
-    const response = await axios.post(`${API_URL}register`, userData);
-    if (response.data.token) {
-      const decoded = jwtDecode(response.data.token); // Uso corregido
-      const user = {
-        token: response.data.token,
-        id: decoded.user.id,
-        role: decoded.user.role,
-      };
-      localStorage.setItem('user', JSON.stringify(user));
-      return user;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error en el registro:', error.response?.data || error.message);
-    throw error;
-  }
-};
-
-const login = async (credentials) => {
-  try {
-    const response = await axios.post(`${API_URL}login`, credentials);
-    if (response.data.token) {
-      const decoded = jwtDecode(response.data.token); // Uso corregido
-      const user = {
-        token: response.data.token,
-        id: decoded.user.id,
-        role: decoded.user.role,
-      };
-      localStorage.setItem('user', JSON.stringify(user));
-      return user;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error en el login:', error.response?.data || error.message);
-    throw error;
-  }
-};
-
-const logout = () => {
-  localStorage.removeItem('user');
-};
-
-const getCurrentUser = () => {
-  const userStr = localStorage.getItem('user');
-  if (!userStr) return null;
-  try {
-    const user = JSON.parse(userStr);
-    return user;
-  } catch (error) {
-    console.error('Error al parsear el usuario de localStorage:', error);
-    return null;
-  }
-};
+import axios from './axiosInstance'; // Se utiliza la instancia configurada
 
 const authService = {
-  register,
-  login,
-  logout,
-  getCurrentUser,
+  login: token => {
+    localStorage.setItem('token', token);
+  },
+  logout: () => {
+    localStorage.removeItem('token');
+  },
+  isAuthenticated: () => {
+    return !!localStorage.getItem('token');
+  },
+  getToken: () => {
+    return localStorage.getItem('token');
+  },
+  getCurrentUser: () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    try {
+      const payloadBase64 = token.split('.')[1];
+      const payloadString = atob(payloadBase64);
+      const payload = JSON.parse(payloadString);
+
+      // Verifica si el token ha expirado
+      if (Date.now() >= payload.exp * 1000) {
+        console.warn('El token ha expirado. Cerrando sesión...');
+        authService.logout(); // Cierra la sesión
+        return null;
+      }
+
+      return {
+        id: payload.user.id,
+        role: payload.user.role,
+        token: token,
+      };
+    } catch (error) {
+      console.error('Error al decodificar el token:', error);
+      return null;
+    }
+  },
+  register: async (userData) => {
+    // Se envía la petición al endpoint de registro (http://localhost:5000/api/auth/register)
+    const response = await axios.post('/auth/register', userData);
+    const token = response.data.token;
+    
+    // Guarda el token en localStorage
+    authService.login(token);
+    
+    // Devuelve el usuario decodificado a partir del token
+    return authService.getCurrentUser();
+  }
 };
 
 export default authService;

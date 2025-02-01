@@ -1,11 +1,12 @@
 // frontend/src/components/EditProfileModal/EditProfileModal.js
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, Button, Form, Alert, Spinner } from 'react-bootstrap';
 import './EditProfileModal.css';
 import useSound from '../../hooks/useSound';
 import editProfileSound from '../../assets/sounds/notification-1-269296.mp3';
 import authService from '../../services/authService';
+import PropTypes from 'prop-types';
 
 function EditProfileModal({ show, handleClose, profile, handleSave }) {
   const [updatedProfile, setUpdatedProfile] = useState({
@@ -37,17 +38,17 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
   }, [profile, show]);
 
   // Manejo de campos de texto
-  const handleChange = (e) => {
+  const handleChange = e => {
     const { name, value } = e.target;
-    setUpdatedProfile((prev) => ({ ...prev, [name]: value }));
+    setUpdatedProfile(prev => ({ ...prev, [name]: value }));
   };
 
   // Manejo de selección de imagen
-  const handleImageChange = (e) => {
+  const handleImageChange = e => {
     if (e.target.files && e.target.files[0]) {
       setImageFile(e.target.files[0]);
       // Muestra un preview local
-      setUpdatedProfile((prev) => ({
+      setUpdatedProfile(prev => ({
         ...prev,
         profile_picture_url: URL.createObjectURL(e.target.files[0]),
       }));
@@ -245,5 +246,16 @@ function EditProfileModal({ show, handleClose, profile, handleSave }) {
     </Modal>
   );
 }
+
+EditProfileModal.propTypes = {
+  show: PropTypes.bool.isRequired,
+  handleClose: PropTypes.func.isRequired,
+  profile: PropTypes.shape({
+    name: PropTypes.string,
+    bio: PropTypes.string,
+    profile_picture_url: PropTypes.string,
+  }).isRequired,
+  handleSave: PropTypes.func.isRequired,
+};
 
 export default EditProfileModal;

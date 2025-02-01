@@ -1,0 +1,60 @@
+/* frontend/src/components/TaskRedistribution/TaskRedistribution.css */
+
+.task-redistribution {
+  padding: 20px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  margin-top: 20px;
+}
+
+.task-redistribution h4 {
+  margin-bottom: 15px;
+}
+
+.redistribution-list {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+}
+
+.redistribution-item {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+}
+
+.redistribution-item:hover,
+.redistribution-item.selected {
+  background-color: #ffeeba;
+}
+
+.redistribution-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.redistribution-form label {
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.redistribution-form input {
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.redistribution-form button {
+  padding: 8px 12px;
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.redistribution-form button:hover {
+  background-color: #138496;
+}

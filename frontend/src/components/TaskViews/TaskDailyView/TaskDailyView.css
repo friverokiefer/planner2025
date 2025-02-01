@@ -1,0 +1,16 @@
+/* frontend/src/components/TaskViews/TaskDailyView/TaskDailyView.css */
+.task-daily-view {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .daily-view-loading,
+  .no-tasks {
+    text-align: center;
+    padding: 20px;
+    font-size: 1.2rem;
+    color: #666;
+  }
+  

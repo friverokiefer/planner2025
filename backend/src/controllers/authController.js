@@ -1,5 +1,4 @@
 // backend/src/controllers/authController.js
-
 const User = require('../models/User');
 const Profile = require('../models/profile');
 const bcrypt = require('bcryptjs');
@@ -18,7 +17,9 @@ const authController = {
     }
 
     const { name, email, password } = req.body; // 'role' no se recibe del frontend
-    console.log(`AuthController: Datos recibidos - Nombre: ${name}, Email: ${email}`);
+    console.log(
+      `AuthController: Datos recibidos - Nombre: ${name}, Email: ${email}`
+    );
 
     try {
       // Verificar si el usuario ya existe
@@ -44,11 +45,13 @@ const authController = {
 
       // Crear el perfil del usuario
       const profile = await Profile.updateOrCreate(user.id, {
-        name: user.name,             // Inicializar con el nombre del usuario
-        bio: '',                     // Biografía vacía por defecto
-        profile_picture_url: '',     // URL de foto vacía al inicio
+        name: user.name, // Inicializar con el nombre del usuario
+        bio: '', // Biografía vacía por defecto
+        profile_picture_url: '', // URL de foto vacía al inicio
       });
-      console.log(`AuthController: Perfil creado para el usuario ID ${user.id}`);
+      console.log(
+        `AuthController: Perfil creado para el usuario ID ${user.id}`
+      );
 
       // Generar el token JWT
       const payload = {

@@ -1,0 +1,20 @@
+.task-list-view {
+  width: 100%;
+  max-width: none;
+  padding: 10px;
+}
+
+.filter-toggle {
+  margin-bottom: 10px;
+}
+
+.filters {
+  margin-bottom: 20px;
+}
+
+.task-container.normal {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}

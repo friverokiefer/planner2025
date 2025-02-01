@@ -1,0 +1,23 @@
+.task-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .quick-update-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  
+  .quick-update-group {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  

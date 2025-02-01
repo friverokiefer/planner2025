@@ -1,10 +1,28 @@
 // backend/src/models/task.js
-const pool = require('../config/db');
+const pool = require("../config/db");
+
+/**
+ * Convierte un string de intervalo (por ejemplo, '1 day 02:03:04') a horas (número decimal).
+ */
+function parseIntervalToHours(intervalStr) {
+  if (!intervalStr) return 0;
+  // Si no es string, lo convertimos
+  if (typeof intervalStr !== 'string') {
+    intervalStr = intervalStr.toString();
+  }
+  const regex = /(?:(\d+)\s*days?)?\s*(?:(\d+):(\d+):(\d+))?/;
+  const match = intervalStr.match(regex);
+  if (!match) return 0;
+  const days = parseInt(match[1] || '0', 10);
+  const hours = parseInt(match[2] || '0', 10);
+  const minutes = parseInt(match[3] || '0', 10);
+  const seconds = parseInt(match[4] || '0', 10);
+  return days * 24 + hours + minutes / 60 + seconds / 3600;
+}
+
+
 
 const Task = {
-  /**
-   * Crear una nueva tarea
-   */
   async create(taskData) {
     const {
       user_id,
@@ -16,16 +34,12 @@ const Task = {
       start_date,
       end_date,
       is_active,
-      // total_time_spent => OPCIONAL, si existiera
     } = taskData;
 
-    // Mapeos
     const stateValue = status || null;
-    const difficultyValue = (difficulty !== undefined) ? String(difficulty) : null;
+    const difficultyValue = difficulty !== undefined ? String(difficulty) : null;
     const priorityValue = priority || null;
 
-    // (*) total_time_spent ya no es recomendable con Estrategia 1
-    // pero si sigue existiendo en la BD, lo inicializamos con '00:00:00'
     const query = `
       INSERT INTO task (
         user_id, title, description,
@@ -37,14 +51,14 @@ const Task = {
         $1, $2, $3,
         $4, $5, $6,
         $7, $8, $9,
-        '00:00:00', now()
+        '00:00:00', NOW()
       )
       RETURNING *
     `;
     const values = [
       user_id,
       title,
-      description || '',
+      description || "",
       stateValue,
       difficultyValue,
       priorityValue,
@@ -55,98 +69,94 @@ const Task = {
 
     try {
       const { rows } = await pool.query(query, values);
-      return rows[0];
+      const task = rows[0];
+      task.total_time_spent_hours = parseIntervalToHours(task.total_time_spent);
+      return task;
     } catch (error) {
-      console.error('Task.create:', error.message);
+      console.error("Task.create:", error.message);
       throw error;
     }
   },
 
-  // --------------------------------------------------------------------------
-  // Métodos de obtención
-  // --------------------------------------------------------------------------
-  async getAll() {
-    const query = `
-      SELECT * FROM task
-      WHERE archived_at IS NULL
-      ORDER BY created_at DESC
-    `;
+  async getAll({ userId = null, asCollaborator = false } = {}) {
+    let query = `SELECT t.* FROM task t`;
+    const values = [];
+    if (asCollaborator) {
+      query += ` JOIN task_assignment ta ON t.id = ta.task_id`;
+    }
+    if (userId) {
+      query += ` WHERE ${asCollaborator ? 'ta.user_id' : 't.user_id'} = $1`;
+      values.push(userId);
+      query += " AND t.archived_at IS NULL";
+    } else {
+      query += " WHERE t.archived_at IS NULL";
+    }
+    query += " ORDER BY t.created_at DESC";
     try {
-      const { rows } = await pool.query(query);
-      return rows;
+      const { rows } = await pool.query(query, values);
+      return rows.map(task => ({
+        ...task,
+        total_time_spent_hours: parseIntervalToHours(task.total_time_spent),
+      }));
     } catch (error) {
-      console.error('Task.getAll:', error.message);
+      console.error("Task.getAll:", error.message);
       throw error;
     }
-  },
-
-  async getAllByUserId(userId) {
-    const query = `
-      SELECT * FROM task
-      WHERE user_id = $1
-        AND archived_at IS NULL
-      ORDER BY created_at DESC
-    `;
-    try {
-      const { rows } = await pool.query(query, [userId]);
-      return rows;
-    } catch (error) {
-      console.error('Task.getAllByUserId:', error.message);
-      throw error;
-    }
-  },
-
-  // Si implementas "task_assignment" real, rellena:
-  async getAllAsCollaborator(userId) {
-    // Ejemplo real:
-    // SELECT t.* FROM task t
-    // JOIN task_assignment ta ON t.id = ta.task_id
-    // WHERE ta.user_id = $1 AND ta.role='collaborator'
-    // AND t.archived_at IS NULL
-    return [];
   },
 
   async getAllOwnerOrCollaborator(userId) {
-    const ownerTasks = await this.getAllByUserId(userId);
-    const collabTasks = await this.getAllAsCollaborator(userId);
-
-    const all = [...ownerTasks, ...collabTasks];
-    const map = new Map();
-    for (const t of all) {
-      map.set(t.id, t);
+    try {
+      const ownerTasks = await this.getAll({ userId, asCollaborator: false });
+      const collabTasks = await this.getAll({ userId, asCollaborator: true });
+      const all = [...ownerTasks, ...collabTasks];
+      const map = new Map();
+      for (const t of all) {
+        map.set(t.id, t);
+      }
+      return Array.from(map.values());
+    } catch (error) {
+      console.error("Task.getAllOwnerOrCollaborator:", error.message);
+      throw error;
     }
-    return Array.from(map.values());
   },
 
   async getById(taskId) {
-    const query = `SELECT * FROM task WHERE id = $1`;
+    const query = `
+      SELECT *
+      FROM task
+      WHERE id = $1
+    `;
     try {
       const { rows } = await pool.query(query, [taskId]);
-      return rows[0];
+      if (rows.length === 0) return null;
+      const task = rows[0];
+      task.total_time_spent_hours = parseIntervalToHours(task.total_time_spent);
+      return task;
     } catch (error) {
-      console.error('Task.getById:', error.message);
+      console.error("Task.getById:", error.message);
       throw error;
     }
   },
 
   async getByIdAndUser(taskId, userId) {
     const query = `
-      SELECT * FROM task
-      WHERE id = $1
-        AND user_id = $2
+      SELECT t.*
+      FROM task t
+      WHERE t.id = $1
+        AND t.user_id = $2
     `;
     try {
       const { rows } = await pool.query(query, [taskId, userId]);
-      return rows[0];
+      if (rows.length === 0) return null;
+      const task = rows[0];
+      task.total_time_spent_hours = parseIntervalToHours(task.total_time_spent);
+      return task;
     } catch (error) {
-      console.error('Task.getByIdAndUser:', error.message);
+      console.error("Task.getByIdAndUser:", error.message);
       throw error;
     }
   },
 
-  // --------------------------------------------------------------------------
-  // Completar, Archivar, Desarchivar
-  // --------------------------------------------------------------------------
   async complete(taskId) {
     const query = `
       UPDATE task
@@ -160,9 +170,12 @@ const Task = {
     `;
     try {
       const { rows } = await pool.query(query, [taskId]);
-      return rows[0];
+      if (rows.length === 0) return null;
+      const task = rows[0];
+      task.total_time_spent_hours = parseIntervalToHours(task.total_time_spent);
+      return task;
     } catch (error) {
-      console.error('Task.complete:', error.message);
+      console.error("Task.complete:", error.message);
       throw error;
     }
   },
@@ -179,15 +192,17 @@ const Task = {
     `;
     try {
       const { rows } = await pool.query(query, [taskId]);
-      return rows[0];
+      if (rows.length === 0) return null;
+      const task = rows[0];
+      task.total_time_spent_hours = parseIntervalToHours(task.total_time_spent);
+      return task;
     } catch (error) {
-      console.error('Task.archive:', error.message);
+      console.error("Task.archive:", error.message);
       throw error;
     }
   },
 
   async unarchive(taskId) {
-    // (*) Ajuste para volver a 'Pending' cuando se desarchiva
     const query = `
       UPDATE task
       SET
@@ -199,33 +214,30 @@ const Task = {
     `;
     try {
       const { rows } = await pool.query(query, [taskId]);
-      return rows[0];
+      if (rows.length === 0) return null;
+      const task = rows[0];
+      task.total_time_spent_hours = parseIntervalToHours(task.total_time_spent);
+      return task;
     } catch (error) {
-      console.error('Task.unarchive:', error.message);
+      console.error("Task.unarchive:", error.message);
       throw error;
     }
   },
 
-  // --------------------------------------------------------------------------
-  // Actualizar
-  // --------------------------------------------------------------------------
   async update(taskId, updateData) {
     const {
       title,
       description,
-      status,
+      state,
       difficulty,
       priority,
       start_date,
       end_date,
       is_active,
-      // total_time_spent => OJO si lo usas
     } = updateData;
-
     const fields = [];
     const values = [];
     let index = 1;
-
     if (title !== undefined) {
       fields.push(`title = $${index++}`);
       values.push(title);
@@ -234,10 +246,9 @@ const Task = {
       fields.push(`description = $${index++}`);
       values.push(description);
     }
-    // status => state
-    if (status !== undefined) {
+    if (state !== undefined) {
       fields.push(`state = $${index++}`);
-      values.push(status);
+      values.push(state);
     }
     if (difficulty !== undefined) {
       fields.push(`difficulty = $${index++}`);
@@ -259,163 +270,233 @@ const Task = {
       fields.push(`is_active = $${index++}`);
       values.push(is_active);
     }
-
-    // Opcional: si quieres seguir soportando total_time_spent
-    // Pero con Estrategia 1 no es tan necesario
-    // if (total_time_spent !== undefined) {
-    //   fields.push(`total_time_spent = total_time_spent + $${index++}`);
-    //   values.push(total_time_spent);
-    // }
-
     if (fields.length === 0) {
-      throw new Error('No hay campos para actualizar');
+      const existing = await this.getById(taskId);
+      return existing;
     }
-
     const query = `
       UPDATE task
-      SET
-        ${fields.join(', ')},
-        updated_at = NOW()
+      SET ${fields.join(", ")}, updated_at = NOW()
       WHERE id = $${index}
       RETURNING *
     `;
     values.push(taskId);
-
     try {
       const { rows } = await pool.query(query, values);
-      return rows[0];
+      if (rows.length === 0) return null;
+      const task = rows[0];
+      task.total_time_spent_hours = parseIntervalToHours(task.total_time_spent);
+      return task;
     } catch (error) {
-      console.error('Task.update:', error.message);
+      console.error("Task.update:", error.message);
       throw error;
     }
   },
 
   async delete(taskId) {
-    const query = `DELETE FROM task WHERE id = $1`;
+    const query = `
+      DELETE FROM task
+      WHERE id = $1
+    `;
     try {
       const res = await pool.query(query, [taskId]);
       return res.rowCount > 0;
     } catch (error) {
-      console.error('Task.delete:', error.message);
+      console.error("Task.delete:", error.message);
       throw error;
     }
   },
 
-  // --------------------------------------------------------------------------
-  // Tareas Archivadas
-  // --------------------------------------------------------------------------
-  async getArchivedTasks() {
-    const query = `
-      SELECT * FROM task
-      WHERE archived_at IS NOT NULL
-      ORDER BY archived_at DESC
+  async getArchivedTasks({ userId = null } = {}) {
+    let query = `
+      SELECT t.*
+      FROM task t
+      WHERE t.archived_at IS NOT NULL
     `;
+    const values = [];
+    if (userId) {
+      query += ` AND t.user_id = $1`;
+      values.push(userId);
+    }
+    query += ` ORDER BY t.archived_at DESC`;
     try {
-      const { rows } = await pool.query(query);
-      return rows;
+      const { rows } = await pool.query(query, values);
+      return rows.map(task => ({
+        ...task,
+        total_time_spent_hours: parseIntervalToHours(task.total_time_spent),
+      }));
     } catch (error) {
-      console.error('Task.getArchivedTasks:', error.message);
+      console.error("Task.getArchivedTasks:", error.message);
       throw error;
     }
   },
 
-  async getArchivedTasksByUserId(userId) {
-    const query = `
-      SELECT * FROM task
-      WHERE archived_at IS NOT NULL
-        AND user_id = $1
-      ORDER BY archived_at DESC
-    `;
-    try {
-      const { rows } = await pool.query(query, [userId]);
-      return rows;
-    } catch (error) {
-      console.error('Task.getArchivedTasksByUserId:', error.message);
-      throw error;
-    }
-  },
-
-  // --------------------------------------------------------------------------
-  // shareTask => si usas task_assignment
-  // --------------------------------------------------------------------------
   async shareTask(taskId, collaboratorId) {
-    // tu lógica real, p.ej:
-    // INSERT INTO task_assignment(task_id, user_id, role) VALUES(...)
-    // RETURNING ...
-    return null;
-  },
-
-  // --------------------------------------------------------------------------
-  // Métodos "dummy" para evitar error 500 en countAll, etc.
-  // --------------------------------------------------------------------------
-  async countAll() {
-    const query = `SELECT COUNT(*) AS cnt FROM task`;
-    const { rows } = await pool.query(query);
-    return parseInt(rows[0].cnt, 10);
-  },
-
-  async countByStatus(statusValue) {
-    const query = `SELECT COUNT(*) AS cnt FROM task WHERE state = $1`;
-    const { rows } = await pool.query(query, [statusValue]);
-    return parseInt(rows[0].cnt, 10);
-  },
-
-  async countAllForUser(userId) {
-    const query = `SELECT COUNT(*) AS cnt FROM task WHERE user_id = $1`;
-    const { rows } = await pool.query(query, [userId]);
-    return parseInt(rows[0].cnt, 10);
-  },
-
-  async countByStatusForUser(statusValue, userId) {
-    const query = `SELECT COUNT(*) AS cnt FROM task WHERE state = $1 AND user_id = $2`;
-    const { rows } = await pool.query(query, [statusValue, userId]);
-    return parseInt(rows[0].cnt, 10);
-  },
-
-  async getStackedPriorityDifficultyAll() {
-    // Devuelve array con { priority, difficulty_1, difficulty_2, ...}
-    // Ejemplo ficticio:
-    return [];
-  },
-
-  async getStackedPriorityDifficultyByUser(userId) {
-    // Devuelve array con { priority, difficulty_1, ...} para un user
-    return [];
-  },
-
-  // --------------------------------------------------------------------------
-  // addTime: Insertar en la tabla time_track
-  // --------------------------------------------------------------------------
-  async addTime(taskId, userId, durationHrs, comment) {
-    // Queremos insertar un registro en time_track,
-    // asumiendo que "durationHrs" es un número de horas en decimal.
-    // Generamos un "start_time" y "end_time" ficticio, o guardamos sólo end_time.
-    // Aquí simulo: end_time = now(), start_time = now() - durationHrs
-    // y guardamos el comment
-    const insertQuery = `
-      INSERT INTO time_track (
-        task_id, user_id,
-        start_time, end_time,
-        comment,
-        created_at
-      )
-      VALUES (
-        $1, $2,
-        NOW() - ($3 * INTERVAL '1 hour'),
-        NOW(),
-        $4,
-        NOW()
-      )
-      RETURNING *
-    `;
-    const values = [taskId, userId, durationHrs, comment || ''];
-
     try {
-      const { rows } = await pool.query(insertQuery, values);
-      return rows[0];
+      const query = `
+        INSERT INTO task_assignment (task_id, user_id, role, created_at)
+        VALUES ($1, $2, 'collaborator', NOW())
+        ON CONFLICT (task_id, user_id) DO NOTHING
+        RETURNING id, task_id, user_id, role
+      `;
+      const values = [taskId, collaboratorId];
+      const { rows } = await pool.query(query, values);
+      return rows[0] || null;
     } catch (error) {
-      console.error('Task.addTime:', error);
+      console.error("Task.shareTask:", error.message);
       return null;
+    }
+  },
+
+  async countAll({ userId = null, asCollaborator = false } = {}) {
+    let query = `SELECT COUNT(DISTINCT t.id) AS cnt FROM task t`;
+    const values = [];
+    if (asCollaborator) {
+      query += ` JOIN task_assignment ta ON t.id = ta.task_id WHERE ta.user_id = $1`;
+      values.push(userId);
+    } else if (userId) {
+      query += ` WHERE t.user_id = $1`;
+      values.push(userId);
+    }
+    try {
+      const { rows } = await pool.query(query, values);
+      return parseInt(rows[0].cnt, 10);
+    } catch (error) {
+      console.error("Task.countAll:", error.message);
+      throw error;
+    }
+  },
+
+  async countByStatus({ statusValue, userId = null, asCollaborator = false } = {}) {
+    let query = `SELECT COUNT(DISTINCT t.id) AS cnt FROM task t`;
+    const values = [statusValue];
+    const conditions = [`t.state = $1`];
+    if (asCollaborator) {
+      query += ` JOIN task_assignment ta ON t.id = ta.task_id`;
+      conditions.push(`ta.user_id = $${values.length + 1}`);
+      values.push(userId);
+    } else if (userId) {
+      conditions.push(`t.user_id = $${values.length + 1}`);
+      values.push(userId);
+    }
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(" AND ");
+    }
+    try {
+      const { rows } = await pool.query(query, values);
+      return parseInt(rows[0].cnt, 10);
+    } catch (error) {
+      console.error("Task.countByStatus:", error.message);
+      throw error;
+    }
+  },
+
+  async getStackedPriorityDifficulty({ userId = null, role = 'all' } = {}) {
+    let query = "SELECT t.priority, t.difficulty, COUNT(*) as count FROM task t";
+    const values = [];
+    const conditions = [];
+    if (role === 'collaborator') {
+      query += " JOIN task_assignment ta ON t.id = ta.task_id";
+      conditions.push("ta.user_id = $1");
+      values.push(userId);
+    } else if (role === 'owner') {
+      conditions.push("t.user_id = $1");
+      values.push(userId);
+    } else if (userId) {
+      query += " LEFT JOIN task_assignment ta ON t.id = ta.task_id";
+      conditions.push("(t.user_id = $1 OR ta.user_id = $1)");
+      values.push(userId);
+    }
+    conditions.push("t.priority IS NOT NULL", "t.difficulty IS NOT NULL");
+    if (conditions.length) {
+      query += " WHERE " + conditions.join(" AND ");
+    }
+    query += " GROUP BY t.priority, t.difficulty ORDER BY t.priority, t.difficulty";
+    console.log('Consulta SQL:', query);
+    try {
+      const { rows } = await pool.query(query, values);
+      return rows;
+    } catch (error) {
+      console.error("Task.getStackedPriorityDifficulty:", error.message);
+      throw error;
+    }
+  },
+
+  async addTime(taskId, userId, durationHrs, comment) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const insertTimeTrackQuery = `
+        INSERT INTO time_track (
+          task_id, user_id,
+          start_time, end_time,
+          comment,
+          created_at
+        )
+        VALUES (
+          $1, $2,
+          NOW() - ($3 * INTERVAL '1 hour'),
+          NOW(),
+          $4,
+          NOW()
+        )
+        RETURNING *
+      `;
+      const insertTimeTrackValues = [taskId, userId, durationHrs, comment || ""];
+      const { rows: timeTrackRows } = await client.query(insertTimeTrackQuery, insertTimeTrackValues);
+      if (timeTrackRows.length === 0) {
+        throw new Error("No se pudo insertar el tiempo en time_track");
+      }
+      const updateTaskQuery = `
+        UPDATE task
+        SET total_time_spent = total_time_spent + ($1 * INTERVAL '1 hour'),
+            updated_at = NOW()
+        WHERE id = $2
+        RETURNING *
+      `;
+      const updateTaskValues = [durationHrs, taskId];
+      const { rows: taskRows } = await client.query(updateTaskQuery, updateTaskValues);
+      if (taskRows.length === 0) {
+        throw new Error("No se pudo actualizar el total_time_spent en task");
+      }
+      await client.query('COMMIT');
+      const updatedTask = taskRows[0];
+      updatedTask.total_time_spent_hours = parseIntervalToHours(updatedTask.total_time_spent);
+      return { timeTrack: timeTrackRows[0], task: updatedTask };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error("Task.addTime:", error.message);
+      return null;
+    } finally {
+      client.release();
+    }
+  },
+
+  async getByPeriod({ startDate, endDate, userId = null } = {}) {
+    let query = "SELECT t.* FROM task t WHERE t.archived_at IS NULL";
+    const values = [];
+    if (startDate) {
+      query += " AND t.start_date >= $" + (values.length + 1);
+      values.push(startDate);
+    }
+    if (endDate) {
+      query += " AND t.start_date <= $" + (values.length + 1);
+      values.push(endDate);
+    }
+    if (userId) {
+      query += " AND t.user_id = $" + (values.length + 1);
+      values.push(userId);
+    }
+    query += " ORDER BY t.created_at DESC";
+    try {
+      const { rows } = await pool.query(query, values);
+      return rows.map(task => ({
+        ...task,
+        total_time_spent_hours: parseIntervalToHours(task.total_time_spent),
+      }));
+    } catch (error) {
+      console.error("Task.getByPeriod:", error.message);
+      throw error;
     }
   },
 };

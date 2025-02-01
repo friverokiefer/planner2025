@@ -1,0 +1,12 @@
+.collab-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collab-photo {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+}

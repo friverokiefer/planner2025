@@ -1,0 +1,16 @@
+/* frontend/src/components/TaskViews/TaskKanbanView/KanbanSwitchController/KanbanSwitchController.css */
+.kanban-switch-controller {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .kanban-switch-controller label {
+    font-weight: bold;
+  }
+  
+  .kanban-switch-controller select {
+    padding: 5px;
+  }
+  

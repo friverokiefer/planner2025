@@ -1,7 +1,7 @@
 // frontend/src/components/ConfirmModal/ConfirmModal.js
 
-import React from 'react';
 import { Modal, Button } from 'react-bootstrap';
+import PropTypes from 'prop-types'; // Importamos PropTypes
 import './ConfirmModal.css';
 
 function ConfirmModal({ show, handleClose, handleConfirm, title, body }) {
@@ -24,5 +24,14 @@ function ConfirmModal({ show, handleClose, handleConfirm, title, body }) {
     </Modal>
   );
 }
+
+// Definimos los propTypes
+ConfirmModal.propTypes = {
+  show: PropTypes.bool.isRequired,
+  handleClose: PropTypes.func.isRequired,
+  handleConfirm: PropTypes.func.isRequired,
+  title: PropTypes.string,
+  body: PropTypes.string,
+};
 
 export default ConfirmModal;

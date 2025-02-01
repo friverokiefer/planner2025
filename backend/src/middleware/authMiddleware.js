@@ -1,24 +1,35 @@
 // backend/src/middleware/authMiddleware.js
 
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
+const dotenv = require("dotenv");
 
-module.exports = function (req, res, next) {
-  const authHeader = req.header('Authorization');
+dotenv.config();
+
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
   if (!authHeader) {
-    console.log('AuthMiddleware: No hay token');
-    return res.status(401).json({ msg: 'No hay token, autorización denegada' });
+    return res.status(401).json({ msg: "No hay token, autorización denegada" });
   }
 
-  const token = authHeader.startsWith('Bearer ')
-    ? authHeader.split(' ')[1]
-    : authHeader;
+  // El token debe tener la forma "Bearer <token>"
+  const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ msg: "No hay token, autorización denegada" });
+  }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || '123456');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Se espera que el token tenga la estructura { user: { id, role, ... } }
+    if (!decoded || !decoded.user) {
+      return res.status(401).json({ msg: "Token mal formado" });
+    }
     req.user = decoded.user;
     next();
   } catch (err) {
-    console.error('AuthMiddleware => jwt.verify error:', err.message);
-    return res.status(401).json({ msg: 'Token no válido' });
+    console.error("Token no válido:", err.message);
+    return res.status(401).json({ msg: "Token no válido" });
   }
 };
+
+module.exports = authMiddleware;

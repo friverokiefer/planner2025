@@ -1,6 +1,6 @@
 // frontend/src/pages/ProfilePage/ProfilePage.js
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './ProfilePage.css';
 import EditProfileModal from '../../components/EditProfileModal/EditProfileModal';
 import useSound from '../../hooks/useSound';
@@ -43,22 +43,18 @@ function ProfilePage() {
 
       const data = await response.json();
       setProfile(data);
-      setError(null); // limpiar error si todo va bien
+      setError(null);
     } catch (err) {
       console.error('Error al obtener el perfil:', err);
       setError('Error al obtener el perfil');
     }
   };
 
-  // Al guardar en EditProfileModal, se actualiza el estado local
-  const handleSaveProfile = (updatedProfile) => {
+  const handleSaveProfile = updatedProfile => {
     setProfile(updatedProfile);
     playEditProfileSound();
-    // Si deseas reconfirmar con DB:
-    // fetchProfile();
   };
 
-  // Si no hay URL => fallback a default
   const displayImage = profile.profile_picture_url?.trim()
     ? profile.profile_picture_url
     : '/default_silueta.jpeg';
@@ -67,13 +63,13 @@ function ProfilePage() {
     <div className="profile-layout">
       <aside className="profile-sidebar">
         <div className="profile-picture-container">
-          <img
-            src={displayImage}
-            alt="Profile"
-            className="profile-picture"
+          <button
+            className="btn mt-3"
             onClick={() => setShowEditModal(true)}
-            title="Editar Perfil"
-          />
+            aria-label="Editar Perfil"
+          >
+            <img src={displayImage} alt="Profile" className="profile-picture" />
+          </button>
         </div>
         <h3>{profile.name}</h3>
         <p>{profile.bio}</p>
@@ -89,10 +85,8 @@ function ProfilePage() {
 
       <div className="profile-content">
         {error && <Alert variant="danger">{error}</Alert>}
-        {/* Aquí podrías mostrar más info (tareas, etc.) */}
       </div>
 
-      {/* Modal para editar */}
       <EditProfileModal
         show={showEditModal}
         handleClose={() => setShowEditModal(false)}

@@ -1,0 +1,14 @@
+.task-details .detail-row {
+  display: flex;
+  margin-bottom: 5px;
+}
+
+.detail-label {
+  font-weight: bold;
+  margin-right: 5px;
+  color: var(--primary-blue, #007bff);
+}
+
+.detail-value {
+  color: var(--text-color, #333);
+}

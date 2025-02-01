@@ -19,32 +19,25 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// (opcional) Para que Express confíe en proxies si usas Heroku, etc.
+// Para entornos con proxy
 app.set('trust proxy', 1);
 
-/**
- * Configurar Helmet para que:
- * - No aplique contentSecurityPolicy estricto en dev.
- * - crossOriginResourcePolicy se permita cross-origin.
- */
+// Configurar Helmet
 app.use(
   helmet({
-    // Desactivamos CSP en local (o lo configuramos a false)
     contentSecurityPolicy: false,
-    // Permitimos que el navegador cargue recursos (imágenes) desde otro origen
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
 
-// Configurar CORS (permite acceso desde http://localhost:3000 y http://localhost:5000)
+// Configurar CORS
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000'];
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Si no hay 'origin' (ej. Postman), permitir
       if (!origin) return callback(null, true);
-      const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000'];
       if (allowedOrigins.indexOf(origin) === -1) {
-        const msg = `CORS bloqueado para la url: ${origin}`;
+        const msg = `CORS policy does not allow access from this Origin.`;
         return callback(new Error(msg), false);
       }
       return callback(null, true);
@@ -52,30 +45,25 @@ app.use(
   })
 );
 
-// Rate Limit (opcional)
+// Rate Limit
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 15 * 60 * 1000,
   max: 100,
-  message: 'Demasiadas solicitudes. Intenta más tarde.',
+  message: 'Too many requests from this IP, please try again later.',
 });
 app.use(limiter);
 
 app.use(express.json());
 
-// Logger en modo dev
+// Logger para desarrollo
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-/**
- * Servir la carpeta de subidas
- * IMPORTANTE para ver http://localhost:5000/uploads/<nombre.png>
- */
+// Servir la carpeta uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-/**
- * Rutas de la API
- */
+// Rutas
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/profile', profileRoutes);
@@ -83,31 +71,23 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/friends', friendsRoutes);
 
-/**
- * Ruta raíz
- */
+// Ruta raíz
 app.get('/', (req, res) => {
   res.send('API Planner2025');
 });
 
-/**
- * Manejo de errores 404
- */
+// 404
 app.use((req, res) => {
-  res.status(404).json({ error: 'Ruta no encontrada' });
+  res.status(404).json({ error: 'Route not found' });
 });
 
-/**
- * Manejo de errores internos
- */
+// Manejador de errores internos
 app.use((err, req, res, next) => {
-  console.error('Error no controlado:', err.stack);
-  res.status(500).json({ error: err.message || 'Error interno' });
+  console.error('Unhandled error:', err.stack);
+  res.status(500).json({ error: err.message || 'Internal Server Error' });
 });
 
-/**
- * Iniciar servidor
- */
+// Iniciar servidor
 app.listen(PORT, () => {
-  console.log(`Servidor backend corriendo en el puerto ${PORT}`);
+  console.log(`Backend server running on port ${PORT}`);
 });
